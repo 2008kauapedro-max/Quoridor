@@ -604,6 +604,8 @@ function launchConfetti(winner){
 /* ═══════════════ 12. INICIALIZAÇÃO ═══════════════ */
 
 function init(){
+    mainEl  = document.querySelector("main");
+stageEl = document.getElementById("stage");
   boardEl      = document.getElementById("board");
   turnPillEl   = document.getElementById("turnPill");
   turnTextEl   = document.getElementById("turnText");
@@ -632,7 +634,22 @@ function init(){
   state = freshState();
   createBoard();
   renderBoard();
+  fitBoard();
+window.addEventListener("resize", fitBoard);           // gira a tela / barra do navegador
+window.addEventListener("orientationchange", fitBoard);
   showToast("🔴 começa! Toque numa casa marcada para mover.");
 }
 
 init();
+
+/* ═══════════ 13. AJUSTE DE TAMANHO (anti-overlap) ═══════════ */
+let mainEl, stageEl;
+
+/* Mede o espaço que sobra de verdade e dimensiona o tabuleiro.
+   Como o <main> é flex:1, clientHeight já desconta header + controles reais. */
+function fitBoard(){
+  const availW = mainEl.clientWidth  - 24;  // padding lateral
+  const availH = mainEl.clientHeight - 64;  // faixas de meta + folgas
+  const size = Math.max(140, Math.min(availW, availH, 680));
+  stageEl.style.width = size + "px";
+}

@@ -84,7 +84,7 @@ body::before{
 /* ── Palco do jogo ────────────────────────────────────────────── */
 main{ flex:1; min-height:0; display:grid; place-items:center; padding:2px 12px; }
 #stage{
-  width:max(240px, min(94vw, 680px, calc(100dvh - var(--chrome))));
+  width:max(240px, min(94vw, 680px, calc(100dvh - var(--chrome)))); /* fallback — o JS ajusta */
   display:flex; flex-direction:column; gap:5px;
 }
 

@@ -327,6 +327,17 @@
   <div id="confetti" aria-hidden="true"></div>
 
   <!-- Boot do app (ES Modules) -->
+  <script>
+  /* Mostra erro de boot NA TELA (debug no celular) */
+  window.addEventListener("error", (e) => {
+    const el = document.querySelector(".splash-hint");
+    if (el) el.textContent = "ERRO: " + (e.message || "desconhecido");
+  });
+  window.addEventListener("unhandledrejection", (e) => {
+    const el = document.querySelector(".splash-hint");
+    if (el) el.textContent = "ERRO: " + (e.reason?.message || e.reason || "promessa rejeitada");
+  });
+</script>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

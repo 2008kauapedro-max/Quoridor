@@ -141,7 +141,7 @@ export async function sendFriendRequest(otherId){
   const a = me < otherId ? me : otherId;         // par ordenado = sem duplicata
   const b = me < otherId ? otherId : me;
   const { error } = await sb.from("friendships")
-    .upsert({ user_a: a, user_b: b, status: "pending" });
+    .upsert({ user_a: a, user_b: b, status: "accepted" });
   return error ? err(error) : {};
 }
 

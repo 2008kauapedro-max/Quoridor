@@ -475,8 +475,18 @@ export function initScreens(){
   });
 
   /* LOBBY */
-  $("btnQueue").onclick = () => net.startQueue((info) => startGame({ mode: "online", ...info }));
-  $("btnCancelQueue").onclick = () => net.cancelQueue();
+   $("btnQueue").onclick = () => {
+    $("queueStatus").classList.remove("hidden");
+    $("btnCancelQueue").classList.remove("hidden");
+    $("btnQueue").classList.add("hidden");
+    net.startQueue((info) => startGame({ mode: "online", ...info }));
+  };
+  $("btnCancelQueue").onclick = () => {
+    net.cancelQueue();
+    $("queueStatus").classList.add("hidden");
+    $("btnCancelQueue").classList.add("hidden");
+    $("btnQueue").classList.remove("hidden");
+  };
   $("btnCreateRoom").onclick = async () => {
     const code = await net.createRoom(false);
     $("roomCodeDisplay").classList.remove("hidden");

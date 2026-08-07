@@ -1,12 +1,7 @@
 /* =============================================================
    Quoridor Arena — services/realtime.js  (v2 — polling confiável)
-   -------------------------------------------------------------
-   Matchmaking/salas via consulta rápida (1,2–1,5s) ao banco,
-   que é 100% confiável. A partida em si usa broadcast Realtime
-   (que já funciona) para jogadas e chat.
    ============================================================= */
 import { getSession, sbClient } from "./supabase.js";
-import { randomFirstTurn } from "../core/rules.js";
 
 let eventCb = null, statusCb = null, inviteCb = null;
 let roomChannel = null, userChannel = null;
@@ -161,4 +156,14 @@ export function inviteFriend(id){
 
 export function bindSession(userId, handlers){
   inviteCb = handlers?.onInvite || null;
-  if
+  if (!sbClient || !userId) return;
+  userChannel = sbClient.channel("user:" + userId)
+    .on("broadcast", { event:"invite" }, (m) => inviteCb?.(m.payload))
+    .subscribe();
+}
+
+/* ═══════ FINAL DO ARQUIVO — confere se chegou até aqui ═══════ */
+export const net = {
+  startQueue, cancelQueue, createRoom, joinRoom, leaveRoom,
+  onEvent, sendAction, sendChat, onStatus, inviteFriend
+};

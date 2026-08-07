@@ -1,0 +1,345 @@
+/* ═══════════════════════════════════════════════════════════════
+   QUORIDOR — folha de estilo
+   Visual: fundo cinza claro, tabuleiro de madeira, casas brancas,
+   bolinhas vermelha/azul, barreiras marrons, fantasma verde.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root{
+  --ink:#2c241b;
+  --ink-soft:#6d6152;
+  --red:#e0453a;   --red-soft:#ffe3e0;
+  --blue:#2f7fd6;  --blue-soft:#dcebfb;
+  --wood-1:#b07a42; --wood-2:#8a5a2e; --wood-3:#6f4520;
+  --groove:#573517;
+  --wall:#7a4c24;
+  --chrome:272px; /* altura aprox. de cabeçalho + controles (p/ dimensionar o tabuleiro) */
+  --font-display:"Trebuchet MS","Segoe UI",Verdana,sans-serif;
+  --font-body:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+@media (max-height:600px){ :root{ --chrome:190px; } }
+
+/* ── Reset & base ─────────────────────────────────────────────── */
+*{ margin:0; padding:0; box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  font-family:var(--font-body);
+  color:var(--ink);
+  background-color:#e9ebee;              /* fundo cinza claro */
+  overflow:hidden;
+  overscroll-behavior:none;
+  -webkit-user-select:none; user-select:none;
+  -webkit-touch-callout:none;
+  touch-action:manipulation;             /* elimina zoom por toque duplo */
+}
+
+/* Textura ambiente: pontos sutis + brilhos suaves nas cores dos times */
+body::before{
+  content:""; position:fixed; inset:-20%; z-index:-1;
+  background:
+    radial-gradient(620px 440px at 12% 6%,  rgba(47,127,214,.10), transparent 70%),
+    radial-gradient(660px 480px at 88% 94%, rgba(224,69,58,.10),  transparent 70%),
+    radial-gradient(rgba(90,70,50,.07) 1px, transparent 1.4px);
+  background-size:auto, auto, 26px 26px;
+  animation:drift 26s ease-in-out infinite alternate;
+}
+@keyframes drift{
+  from{ transform:translate3d(-1.5%,-1%,0) scale(1); }
+  to  { transform:translate3d(1.5%,1%,0)  scale(1.04); }
+}
+
+:focus-visible{ outline:3px solid var(--wood-2); outline-offset:2px; }
+
+#app{ height:100vh; height:100dvh; display:flex; flex-direction:column; }
+
+/* ── Cabeçalho ────────────────────────────────────────────────── */
+#topbar{ flex:0 0 auto; display:flex; align-items:center; gap:14px; padding:10px 18px; }
+.brand{ display:flex; align-items:center; gap:10px; margin-right:auto; }
+.brand svg{ width:38px; height:38px; filter:drop-shadow(0 2px 3px rgba(0,0,0,.25)); }
+.brand h1{ font-family:var(--font-display); font-size:clamp(20px,3.4vmin,30px); letter-spacing:.08em; line-height:1; }
+.brand small{ display:block; font-size:10px; letter-spacing:.34em; text-transform:uppercase; color:var(--ink-soft); margin-top:2px; }
+
+/* Pílula "Vez do X" */
+#turnPill{
+  display:flex; align-items:center; gap:10px;
+  padding:8px 18px; border-radius:999px; border:2px solid;
+  font-family:var(--font-display); font-weight:700; font-size:clamp(14px,2.2vmin,19px);
+  box-shadow:0 4px 14px -6px rgba(0,0,0,.25);
+  transition:background .25s, border-color .25s, color .25s;
+}
+#turnPill .dot{ width:14px; height:14px; border-radius:50%; position:relative; flex:0 0 auto; }
+#turnPill .dot::after{ content:""; position:absolute; inset:0; border-radius:50%; background:inherit; animation:dotPulse 1.5s ease-out infinite; }
+#turnPill.is-red { border-color:var(--red);  color:#8f231b; background:var(--red-soft); }
+#turnPill.is-red  .dot{ background:var(--red); }
+#turnPill.is-blue{ border-color:var(--blue); color:#17497f; background:var(--blue-soft); }
+#turnPill.is-blue .dot{ background:var(--blue); }
+@keyframes dotPulse{ 0%{transform:scale(1);opacity:.6;} 100%{transform:scale(2.5);opacity:0;} }
+
+.icon-btn{
+  width:42px; height:42px; border:0; border-radius:12px; background:#fff;
+  box-shadow:0 2px 8px -2px rgba(0,0,0,.2); font-size:18px; cursor:pointer; transition:.15s;
+}
+.icon-btn:hover{ transform:translateY(-2px); }
+.icon-btn:active{ transform:scale(.92); }
+
+/* ── Palco do jogo ────────────────────────────────────────────── */
+main{ flex:1; min-height:0; display:grid; place-items:center; padding:2px 12px; }
+#stage{
+  width:max(240px, min(94vw, 680px, calc(100dvh - var(--chrome))));
+  display:flex; flex-direction:column; gap:5px;
+}
+
+/* Faixas de meta */
+.goal-strip{
+  display:flex; justify-content:center; align-items:center;
+  font-size:clamp(9px,1.5vmin,12px); font-weight:700; letter-spacing:.18em; text-transform:uppercase;
+  padding:3px; border-radius:8px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.35);
+}
+.goal-strip.top   { background:linear-gradient(90deg,transparent, var(--red)  18%, var(--red)  82%, transparent); }
+.goal-strip.bottom{ background:linear-gradient(90deg,transparent, var(--blue) 18%, var(--blue) 82%, transparent); }
+
+/* Moldura de madeira */
+#boardFrame{
+  width:100%; aspect-ratio:1;
+  padding:clamp(8px,1.6vmin,16px);
+  border-radius:clamp(12px,2.4vmin,22px);
+  background:
+    repeating-linear-gradient(97deg, rgba(255,255,255,.055) 0 2px, transparent 2px 6px),
+    repeating-linear-gradient(2deg,  rgba(0,0,0,.06) 0 1px, transparent 1px 9px),
+    linear-gradient(155deg, var(--wood-1), var(--wood-2) 55%, var(--wood-3));
+  box-shadow:
+    inset 0 2px 2px rgba(255,255,255,.28),
+    inset 0 -3px 6px rgba(0,0,0,.35),
+    0 22px 44px -20px rgba(70,45,20,.6);
+}
+
+/* Tabuleiro (os "sulcos" entre as casas) */
+#board{
+  position:relative; width:100%; height:100%;
+  border-radius:clamp(6px,1.2vmin,12px);
+  background:linear-gradient(180deg,#6a4322,var(--groove));
+  box-shadow:inset 0 3px 10px rgba(0,0,0,.55);
+  touch-action:none;               /* essencial p/ arrastar no touch sem rolar a página */
+  cursor:default;
+}
+#board.mode-wall{ cursor:crosshair; }
+
+/* Cor do turno, usada nos alvos de movimento */
+#board.turn-red { --turn:var(--red);  --turn-soft:var(--red-soft); }
+#board.turn-blue{ --turn:var(--blue); --turn-soft:var(--blue-soft); }
+
+/* ── Casas ────────────────────────────────────────────────────── */
+.cell{
+  position:absolute; z-index:1; border-radius:16%;
+  background:linear-gradient(180deg,#fffdf6,#f3ecdc);
+  box-shadow:inset 0 -2px 0 rgba(146,114,72,.22), inset 0 1px 0 #fff, 0 1px 2px rgba(0,0,0,.28);
+  transition:background .16s, transform .16s, box-shadow .16s;
+}
+#board.mode-wall .cell{ cursor:crosshair; }
+
+/* Casas para onde o jogador da vez pode andar */
+.cell.target{ cursor:pointer; }
+.cell.target::after{
+  content:""; position:absolute; inset:33%; border-radius:50%;
+  background:var(--turn); opacity:.3; transform:scale(.75); transition:.16s;
+}
+.cell.target:hover{
+  background:linear-gradient(180deg,#fffdf6, var(--turn-soft));
+  transform:translateY(-2%) scale(1.045);
+  box-shadow:0 4px 10px -2px rgba(0,0,0,.3), inset 0 0 0 2px var(--turn);
+}
+.cell.target:hover::after{ opacity:.75; transform:scale(1); }
+.cell.target:active{ transform:scale(.96); }
+
+/* Marca da última casa visitada */
+.cell.last::before{ content:""; position:absolute; inset:24%; border-radius:50%; border:2px dashed rgba(60,45,30,.22); }
+
+/* Movimento negado */
+.cell.deny{ animation:denyShake .2s 2; }
+@keyframes denyShake{ 25%{transform:translateX(-5%);} 75%{transform:translateX(5%);} }
+
+/* ── Barreiras ────────────────────────────────────────────────── */
+#wallLayer{ position:absolute; inset:0; z-index:3; pointer-events:none; }
+.wall{
+  position:absolute; border-radius:999px;
+  box-shadow:0 2px 4px rgba(0,0,0,.4), inset 0 1px 1px rgba(255,255,255,.45), inset 0 -1px 2px rgba(0,0,0,.35);
+  animation:wallPop .3s cubic-bezier(.34,1.56,.64,1);
+}
+.wall.no-anim{ animation:none; }
+
+/* 🔴 Barreiras do jogador Vermelho */
+.wall.by-red{
+  background:linear-gradient(180deg, #f0786c, var(--red) 45%, #992219);
+  box-shadow:0 2px 4px rgba(0,0,0,.4), inset 0 1px 1px rgba(255,255,255,.45), inset 0 -1px 2px rgba(0,0,0,.35);
+}
+
+/* 🔵 Barreiras do jogador Azul */
+.wall.by-blue{
+  background:linear-gradient(180deg, #6aa8e8, var(--blue) 45%, #184a80);
+  box-shadow:0 2px 4px rgba(0,0,0,.4), inset 0 1px 1px rgba(255,255,255,.45), inset 0 -1px 2px rgba(0,0,0,.35);
+}
+
+@keyframes wallPop{
+  0%  { transform:scale(.35); opacity:0; }
+  65% { transform:scale(1.07); opacity:1; }
+  100%{ transform:scale(1); }
+}
+
+/* ── Silhueta (fantasma) da barreira ──────────────────────────── */
+#ghost{
+  position:absolute; z-index:4; border-radius:999px; pointer-events:none; opacity:0;
+  background:rgba(56,201,106,.5);
+  box-shadow:0 0 0 2px rgba(27,146,74,.75), 0 0 14px rgba(56,201,106,.55);
+  transition:left .09s ease-out, top .09s ease-out, width .09s, height .09s, opacity .14s, background .14s;
+}
+#ghost.show{ opacity:1; }
+#ghost.invalid{
+  background:rgba(236,84,60,.45);
+  box-shadow:0 0 0 2px rgba(190,45,25,.8), 0 0 14px rgba(236,84,60,.5);
+}
+#ghost.shake{ animation:ghostShake .3s; }
+@keyframes ghostShake{ 20%{transform:translateX(-4%);} 40%{transform:translateX(4%);} 60%{transform:translateX(-3%);} 80%{transform:translateX(2%);} }
+
+/* ── Bolinhas ─────────────────────────────────────────────────── */
+.piece{
+  position:absolute; z-index:5; pointer-events:none;
+  transition:left .34s cubic-bezier(.3,1.3,.5,1), top .34s cubic-bezier(.3,1.3,.5,1);
+  filter:drop-shadow(0 5px 5px rgba(0,0,0,.38));
+}
+.piece .core{ position:absolute; inset:8%; border-radius:50%; }
+.piece.red .core{
+  background:radial-gradient(circle at 32% 26%, #ffc2b8, #f1584a 42%, #a8261c 100%);
+  box-shadow:inset 0 -3px 6px rgba(0,0,0,.3), inset 0 2px 3px rgba(255,255,255,.35);
+}
+.piece.blue .core{
+  background:radial-gradient(circle at 32% 26%, #b8dcff, #3d8ce0 42%, #17497f 100%);
+  box-shadow:inset 0 -3px 6px rgba(0,0,0,.3), inset 0 2px 3px rgba(255,255,255,.35);
+}
+/* Anel pulsante na bolinha da vez */
+.piece.active::after{ content:""; position:absolute; inset:-8%; border-radius:50%; border:3px solid #fff; animation:ringPulse 1.5s ease-out infinite; }
+.piece.red.active::after { border-color:var(--red); }
+.piece.blue.active::after{ border-color:var(--blue); }
+@keyframes ringPulse{ 0%{transform:scale(.85);opacity:.85;} 100%{transform:scale(1.25);opacity:0;} }
+
+/* ── Controles inferiores ─────────────────────────────────────── */
+#controls{
+  flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:4px;
+  padding:8px 12px calc(10px + env(safe-area-inset-bottom));
+}
+.panel{
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px 22px;
+  background:rgba(255,255,255,.92); border:1px solid rgba(0,0,0,.06);
+  border-radius:18px; padding:10px 18px;
+  box-shadow:0 12px 30px -18px rgba(0,0,0,.35); max-width:100%;
+}
+.group{ display:flex; flex-direction:column; align-items:center; gap:5px; }
+.group-label{ font-size:9.5px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-soft); }
+
+/* Seletor de ação */
+.mode-row{ display:flex; gap:6px; background:#e8e2d8; padding:5px; border-radius:14px; flex-wrap:wrap; justify-content:center; }
+.mode-btn{
+  display:flex; align-items:center; gap:7px; border:0; background:transparent;
+  padding:8px 13px; border-radius:10px; font:inherit; font-weight:700;
+  font-size:clamp(12px,1.7vmin,14.5px); color:var(--ink-soft); cursor:pointer;
+  transition:.16s; white-space:nowrap; touch-action:manipulation;
+}
+.mode-btn svg{ width:19px; height:19px; flex:0 0 auto; }
+.mode-btn:hover:not(:disabled){ background:#fff; color:var(--ink); transform:translateY(-1px); box-shadow:0 3px 8px -3px rgba(0,0,0,.25); }
+.mode-btn.active{ background:var(--ink); color:#fff; box-shadow:0 4px 10px -3px rgba(0,0,0,.4); }
+.mode-btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+/* Jogador atual */
+#currentBadge{
+  display:flex; align-items:center; gap:8px; font-weight:800;
+  font-family:var(--font-display); font-size:clamp(13px,2vmin,17px);
+  padding:6px 14px; border-radius:999px; transition:.2s;
+}
+#currentBadge .dot{ width:12px; height:12px; border-radius:50%; }
+#currentBadge.is-red { background:var(--red-soft);  color:#8f231b; }
+#currentBadge.is-red  .dot{ background:var(--red); }
+#currentBadge.is-blue{ background:var(--blue-soft); color:#17497f; }
+#currentBadge.is-blue .dot{ background:var(--blue); }
+
+/* Contadores de barreira */
+.wall-row{ display:flex; gap:8px; }
+.wchip{
+  display:flex; align-items:center; gap:6px; background:#f4efe6;
+  border-radius:999px; padding:6px 12px; font-weight:800;
+  border:2px solid transparent; transition:.2s;
+}
+.wchip b{ font-size:15px; font-weight:800; min-width:1.2ch; text-align:center; display:inline-block; }
+.wchip.is-turn{ border-color:var(--ink); transform:translateY(-2px); box-shadow:0 6px 12px -6px rgba(0,0,0,.35); }
+.wchip b.pop{ animation:countPop .35s; }
+@keyframes countPop{ 50%{ transform:scale(1.5); } }
+
+/* Botões de ação */
+#resetBtn, #playAgainBtn{
+  border:0; color:#fff; font:inherit; font-weight:800; letter-spacing:.02em;
+  padding:10px 18px; border-radius:12px; cursor:pointer;
+  background:linear-gradient(180deg,var(--wood-1),var(--wood-3));
+  box-shadow:0 5px 12px -5px rgba(90,55,25,.7), inset 0 1px 1px rgba(255,255,255,.35);
+  transition:.16s; touch-action:manipulation;
+}
+#resetBtn:hover, #playAgainBtn:hover{ transform:translateY(-2px); filter:brightness(1.07); }
+#resetBtn:active, #playAgainBtn:active{ transform:scale(.95); }
+
+.kbd-hint{ text-align:center; font-size:11px; color:var(--ink-soft); display:none; }
+@media (hover:hover){ .kbd-hint{ display:block; } }
+
+/* ── Toast ────────────────────────────────────────────────────── */
+#toast{
+  position:fixed; top:70px; left:50%; transform:translate(-50%,-16px);
+  background:#33291f; color:#fff; padding:10px 20px; border-radius:999px;
+  font-weight:600; font-size:14px; opacity:0; pointer-events:none;
+  transition:.25s; z-index:80; box-shadow:0 10px 24px -10px rgba(0,0,0,.5);
+  max-width:88vw; text-align:center;
+}
+#toast.show{ opacity:1; transform:translate(-50%,0); }
+
+/* ── Painel de vitória ────────────────────────────────────────── */
+#overlay{
+  position:fixed; inset:0; z-index:70; display:grid; place-items:center;
+  background:rgba(40,30,20,.5); backdrop-filter:blur(4px);
+  transition:opacity .25s;
+}
+#overlay.hidden{ opacity:0; pointer-events:none; }
+#overlayCard{
+  background:#fff; border-radius:22px; padding:38px 52px 34px; text-align:center;
+  box-shadow:0 30px 70px -20px rgba(0,0,0,.6);
+  border-top:10px solid var(--ink);
+  transform:scale(1); transition:transform .38s cubic-bezier(.34,1.56,.64,1);
+}
+#overlay.hidden #overlayCard{ transform:scale(.6) translateY(30px); }
+#overlayCard.red { border-top-color:var(--red); }
+#overlayCard.blue{ border-top-color:var(--blue); }
+#winEmoji{ font-size:58px; line-height:1; }
+#winEmoji.bounce{ animation:bounceIn .6s cubic-bezier(.34,1.56,.64,1); }
+@keyframes bounceIn{ 0%{transform:scale(0) rotate(-15deg);} 100%{transform:scale(1) rotate(0);} }
+#winText{ font-family:var(--font-display); font-size:clamp(22px,5vmin,34px); margin:10px 0 22px; }
+
+/* ── Confete ──────────────────────────────────────────────────── */
+#confetti{ position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:75; }
+.conf{
+  position:absolute; top:-5vh; opacity:.95;
+  animation:confFall linear forwards;
+}
+@keyframes confFall{
+  to{ transform:translate3d(var(--dx), 112vh, 0) rotate(var(--rot)); opacity:.9; }
+}
+
+/* ── Telas pequenas / baixas ──────────────────────────────────── */
+@media (max-width:620px){
+  #topbar{ gap:8px; padding:8px 10px; }
+  .brand h1{ font-size:19px; }
+  .brand svg{ width:30px; height:30px; }
+  #turnPill{ padding:6px 12px; font-size:13px; }
+  .mode-btn{ padding:7px 9px; font-size:11.5px; gap:5px; }
+  .mode-btn svg{ width:16px; height:16px; }
+  .panel{ gap:8px 14px; padding:8px 10px; border-radius:14px; }
+}
+@media (max-height:600px){
+  #topbar{ padding:6px 14px; }
+  .brand small{ display:none; }
+  .goal-strip{ font-size:9px; padding:2px; }
+  .panel{ padding:8px 14px; gap:8px 16px; }
+  .kbd-hint{ display:none; }
+}

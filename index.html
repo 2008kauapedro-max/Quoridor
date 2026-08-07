@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#8a5a2e">
+<title>Quoridor · Duelo de Barreiras</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<noscript><p style="padding:20px;font-family:sans-serif">Este jogo precisa de JavaScript habilitado.</p></noscript>
+
+<div id="app">
+
+  <!-- ══════════ CABEÇALHO: marca, vez do jogador, som ══════════ -->
+  <header id="topbar">
+    <div class="brand">
+      <!-- Mini-tabuleiro como logotipo -->
+      <svg viewBox="0 0 36 36" aria-hidden="true">
+        <rect x="1" y="1" width="34" height="34" rx="8" fill="#8a5a2e"/>
+        <g fill="#f7efe2">
+          <rect x="4"  y="4"  width="8" height="8" rx="2"/><rect x="14" y="4"  width="8" height="8" rx="2"/><rect x="24" y="4"  width="8" height="8" rx="2"/>
+          <rect x="4"  y="14" width="8" height="8" rx="2"/><rect x="14" y="14" width="8" height="8" rx="2"/><rect x="24" y="14" width="8" height="8" rx="2"/>
+          <rect x="4"  y="24" width="8" height="8" rx="2"/><rect x="14" y="24" width="8" height="8" rx="2"/><rect x="24" y="24" width="8" height="8" rx="2"/>
+        </g>
+        <circle cx="18" cy="8"  r="3.4" fill="#2f7fd6"/>
+        <circle cx="18" cy="28" r="3.4" fill="#e0453a"/>
+      </svg>
+      <div class="brand-text">
+        <h1>QUORIDOR</h1>
+        <small>duelo de barreiras</small>
+      </div>
+    </div>
+
+    <!-- Indicador de turno -->
+    <div id="turnPill" class="is-red">
+      <span class="dot"></span>
+      <span id="turnText">Vez do Vermelho</span>
+    </div>
+
+    <button id="soundBtn" class="icon-btn" title="Ligar / desligar som" aria-label="Som">🔊</button>
+  </header>
+
+  <!-- ══════════ ÁREA DO JOGO ══════════ -->
+  <main>
+    <div id="stage">
+      <div class="goal-strip top"><span>🏁 meta do vermelho · topo</span></div>
+      <div id="boardFrame">
+        <div id="board" aria-label="Tabuleiro 9 por 9"></div>
+      </div>
+      <div class="goal-strip bottom"><span>🏁 meta do azul · base</span></div>
+    </div>
+  </main>
+
+  <!-- ══════════ CONTROLES (parte inferior) ══════════ -->
+  <footer id="controls">
+    <div class="panel">
+      <div class="group">
+        <span class="group-label">Ação do turno</span>
+        <div class="mode-row" role="group" aria-label="Escolha de ação">
+          <button id="modeMove" class="mode-btn active">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6.6" cy="12" r="3.4" fill="currentColor"/><path d="M13 12h7.5m-3.4-3.4L20.5 12l-3.4 3.4" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Mover
+          </button>
+          <button id="modeWallH" class="mode-btn">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="9.7" width="19" height="4.6" rx="2.3" fill="currentColor"/><g opacity=".3" fill="currentColor"><rect x="3" y="2.5" width="8.2" height="4.6" rx="1.2"/><rect x="12.8" y="2.5" width="8.2" height="4.6" rx="1.2"/><rect x="3" y="16.9" width="8.2" height="4.6" rx="1.2"/><rect x="12.8" y="16.9" width="8.2" height="4.6" rx="1.2"/></g></svg>
+            Barreira Horizontal
+          </button>
+          <button id="modeWallV" class="mode-btn">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9.7" y="2.5" width="4.6" height="19" rx="2.3" fill="currentColor"/><g opacity=".3" fill="currentColor"><rect x="2.5" y="3" width="4.6" height="8.2" rx="1.2"/><rect x="2.5" y="12.8" width="4.6" height="8.2" rx="1.2"/><rect x="16.9" y="3" width="4.6" height="8.2" rx="1.2"/><rect x="16.9" y="12.8" width="4.6" height="8.2" rx="1.2"/></g></svg>
+            Barreira Vertical
+          </button>
+        </div>
+      </div>
+
+      <div class="group">
+        <span class="group-label">Jogador atual</span>
+        <div id="currentBadge" class="is-red"><span class="dot"></span><span id="currentName">Vermelho</span></div>
+      </div>
+
+      <div class="group">
+        <span class="group-label">Barreiras restantes</span>
+        <div class="wall-row">
+          <span id="chipRed" class="wchip">🔴 <b id="wallsRed">10</b></span>
+          <span id="chipBlue" class="wchip">🔵 <b id="wallsBlue">10</b></span>
+        </div>
+      </div>
+
+      <div class="group">
+        <span class="group-label">&nbsp;</span>
+        <button id="resetBtn">↻ Reiniciar</button>
+      </div>
+    </div>
+
+    <p class="kbd-hint">⌨️ Setas movem · <b>1</b> mover · <b>2</b> barreira horizontal · <b>3</b> barreira vertical · <b>R</b> reinicia</p>
+  </footer>
+</div>
+
+<!-- Mensagens rápidas -->
+<div id="toast" role="status" aria-live="polite"></div>
+
+<!-- Painel de vitória -->
+<div id="overlay" class="hidden" role="dialog" aria-modal="true">
+  <div id="overlayCard">
+    <div id="winEmoji">🏆</div>
+    <h2 id="winText">Vermelho venceu!</h2>
+    <button id="playAgainBtn">▶ Jogar Novamente</button>
+  </div>
+</div>
+
+<!-- Confete -->
+<div id="confetti" aria-hidden="true"></div>
+
+<script src="script.js"></script>
+</body>
+</html>

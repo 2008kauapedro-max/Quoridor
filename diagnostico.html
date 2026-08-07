@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagnóstico — Quoridor Arena</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#14171c;color:#f2f4f8;margin:0;padding:24px}
+  h1{font-size:20px}
+  button{background:#2f7fd6;color:#fff;border:0;border-radius:12px;padding:14px 22px;font-size:16px;font-weight:700;cursor:pointer}
+  pre{background:#1e232b;border-radius:12px;padding:16px;white-space:pre-wrap;font-size:14px;line-height:1.7}
+</style>
+</head>
+<body>
+<h1>🔬 Diagnóstico Quoridor Arena</h1>
+<p>Toque no botão e me mande um print do resultado.</p>
+<button id="go">▶ Rodar diagnóstico</button>
+<pre id="out">Aguardando…</pre>
+<script type="module">
+const out = document.getElementById("out");
+const log = (t) => { out.textContent += t + "\n"; };
+document.getElementById("go").onclick = async () => {
+  out.textContent = "";
+  try {
+    const m = await import("/js/services/supabase.js");
+    log("1) configurado: " + m.isConfigured());
+    log("2) sbClient existe: " + !!m.sbClient);
+    log("3) logado: " + !!m.getSession());
+    if (!m.sbClient) { log("→ sbClient NÃO existe (falta o export no supabase.js)"); return; }
+    if (!m.getSession()) { log("→ NÃO ESTÁ LOGADO aqui! Abra o site, faça login e volte."); return; }
+    const uid = m.getSession().user.id;
+
+    const p = await m.sbClient.from("profiles").select("id,username").limit(5);
+    log("4) perfis no banco: " + (p.error ? "ERRO: " + p.error.message : JSON.stringify(p.data)));
+
+    const i = await m.sbClient.from("rooms").insert({ code: "RAIOX1", host_id: uid, is_public: true, status: "waiting" });
+    log("5) criar sala: " + (i.error ? "ERRO: " + i.error.message : "OK"));
+
+    const s = await m.sbClient.from("rooms").select("code,status").eq("code", "RAIOX1");
+    log("6) ler sala: " + (s.error ? "ERRO: " + s.error.message : JSON.stringify(s.data)));
+
+    await m.sbClient.from("rooms").delete().eq("code", "RAIOX1");
+
+    const f = await m.sbClient.from("friendships").select("id").limit(1);
+    log("7) ler amizades: " + (f.error ? "ERRO: " + f.error.message : "OK"));
+
+    log("\n✅ FIM — me manda o print disso!");
+  } catch (e) {
+    log("💥 EXCEÇÃO: " + e.message);
+  }
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+/* =============================================================
+   Quoridor Arena — theme.css
+   -------------------------------------------------------------
+   Variáveis de cores, temas (claro/escuro), skins e ligas.
+   REGRA DO PROJETO: nenhum outro arquivo CSS inventa cor;
+   todos usam as variáveis definidas aqui.
+   ============================================================= */
+
+/* ═══════════ TEMA CLARO (padrão) ═══════════ */
+:root{
+  /* fundo e superfícies */
+  --bg:#e9ebee;
+  --bg-glow-1:rgba(47,127,214,.10);   /* brilho azul ambiente   */
+  --bg-glow-2:rgba(224,69,58,.10);    /* brilho vermelho ambiente */
+  --card:#ffffff;
+  --card-glass:rgba(255,255,255,.72); /* glassmorphism */
+  --ink:#2c241b;                      /* texto principal */
+  --ink-soft:#6d6152;                 /* texto secundário */
+  --line:rgba(0,0,0,.08);             /* bordas discretas */
+
+  /* times */
+  --red:#e0453a;  --red-soft:#ffe3e0;  --red-deep:#992219;
+  --blue:#2f7fd6; --blue-soft:#dcebfb; --blue-deep:#184a80;
+
+  /* tabuleiro — skin CLÁSSICA (madeira) */
+  --wood-1:#b07a42; --wood-2:#8a5a2e; --wood-3:#6f4520;
+  --groove-1:#6a4322; --groove-2:#573517;
+  --cell-1:#fffdf6; --cell-2:#f3ecdc;
+  --cell-edge:rgba(146,114,72,.22);
+
+  /* feedback */
+  --ok:#38c96a;  --ok-deep:#1b924a;   /* ghost válido   */
+  --bad:#ec543c; --bad-deep:#be2d19;  /* ghost inválido */
+
+  /* UI */
+  --blur:10px;
+  --radius-s:10px; --radius-m:16px; --radius-l:22px;
+  --shadow-1:0 4px 14px -6px rgba(0,0,0,.25);
+  --shadow-2:0 22px 44px -20px rgba(70,45,20,.6);
+
+  /* tipografia */
+  --font-display:"Trebuchet MS","Segoe UI",Verdana,sans-serif;
+  --font-body:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
+
+  /* ligas (ranking) */
+  --lg-bronze:#cd7f32;  --lg-prata:#b9c0c9;  --lg-ouro:#f5c542;
+  --lg-platina:#5eead4; --lg-diamante:#38bdf8;
+  --lg-mestre:#a78bfa;  --lg-lendario:#f472b6;
+}
+
+/* ═══════════ TEMA ESCURO ═══════════ */
+html[data-theme="dark"]{
+  --bg:#14171c;
+  --bg-glow-1:rgba(47,127,214,.14);
+  --bg-glow-2:rgba(224,69,58,.12);
+  --card:#1e232b;
+  --card-glass:rgba(20,24,30,.72);
+  --ink:#f2f4f8;
+  --ink-soft:#9aa3af;
+  --line:rgba(255,255,255,.08);
+
+  --red-soft:#3a2320;
+  --blue-soft:#1c2a3d;
+
+  /* casas continuam claras p/ legibilidade do tabuleiro */
+  --cell-1:#f7f3e9; --cell-2:#e8e0cd;
+
+  --shadow-1:0 4px 14px -6px rgba(0,0,0,.6);
+  --shadow-2:0 22px 44px -20px rgba(0,0,0,.8);
+}
+
+/* ═══════════ SKINS DO TABULEIRO ═══════════
+   Trocadas em tempo real via <html data-skin="...">.
+   Para criar uma skin nova: copie um bloco e mude as variáveis. */
+
+/* — NEON (futurista, casas escuras) — */
+html[data-skin="neon"]{
+  --wood-1:#2b3242; --wood-2:#1d2330; --wood-3:#141926;
+  --groove-1:#10141d; --groove-2:#0a0d14;
+  --cell-1:#1b2130; --cell-2:#161b28;
+  --cell-edge:rgba(56,189,248,.25);
+  --red:#ff4d5e; --blue:#38bdf8;
+}
+
+/* — PASTEL (suave) — */
+html[data-skin="pastel"]{
+  --wood-1:#e8c9a0; --wood-2:#d9b183; --wood-3:#c69a6a;
+  --groove-1:#b98d5e; --groove-2:#a97e50;
+  --red:#f2766b; --blue:#6ba7e0;
+}
+
+/* ═══════════ BASE GLOBAL ═══════════ */
+::selection{ background:var(--blue); color:#fff; }
+
+:focus-visible{
+  outline:3px solid var(--wood-2);
+  outline-offset:2px;
+  border-radius:4px;
+}

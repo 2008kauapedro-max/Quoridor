@@ -1,0 +1,28 @@
+{
+  "name": "Quoridor Arena — Duelo de Barreiras",
+  "short_name": "Quoridor",
+  "description": "Jogo de estratégia 1v1: corra para o lado oposto enquanto bloqueia o rival com barreiras. Online, local ou contra a IA.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "lang": "pt-BR",
+  "background_color": "#e9ebee",
+  "theme_color": "#8a5a2e",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

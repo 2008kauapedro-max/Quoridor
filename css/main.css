@@ -1,0 +1,197 @@
+/* =============================================================
+   Quoridor Arena — main.css
+   -------------------------------------------------------------
+   Reset, layout e responsividade.
+   REGRA: este arquivo POSICIONA; quem "pinta" é components.css.
+   ============================================================= */
+
+/* ═══════════ RESET & BASE ═══════════ */
+*{ margin:0; padding:0; box-sizing:border-box; }
+html, body{ height:100%; }
+
+body{
+  font-family:var(--font-body);
+  color:var(--ink);
+  background:var(--bg);
+  overflow:hidden;                 /* NUNCA há scroll horizontal global */
+  -webkit-user-select:none; user-select:none;
+  -webkit-touch-callout:none;
+  touch-action:manipulation;       /* sem zoom por toque duplo */
+}
+
+img{ max-width:100%; display:block; }
+button{ font:inherit; color:inherit; background:none; border:0; cursor:pointer; }
+input, select{ font:inherit; color:inherit; }
+
+/* Fundo ambiente (brilhos suaves nas cores dos times) */
+body::before{
+  content:""; position:fixed; inset:-20%; z-index:-1;
+  background:
+    radial-gradient(620px 440px at 12% 6%,  var(--bg-glow-1), transparent 70%),
+    radial-gradient(660px 480px at 88% 94%, var(--bg-glow-2), transparent 70%),
+    radial-gradient(rgba(90,70,50,.07) 1px, transparent 1.4px);
+  background-size:auto, auto, 26px 26px;
+  animation:drift 26s ease-in-out infinite alternate; /* keyframes em animations.css */
+}
+
+.hidden{ display:none !important; }
+
+/* ═══════════ SISTEMA DE TELAS ═══════════ */
+.screen{
+  position:fixed; inset:0;
+  display:none; flex-direction:column;
+  overflow-y:auto; overflow-x:hidden;   /* scroll só vertical, dentro da tela */
+  padding:env(safe-area-inset-top) env(safe-area-inset-right)
+          env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.screen.active{ display:flex; animation:screenIn .28s ease both; }
+
+/* ═══════════ HOME ═══════════ */
+.home-hero{
+  display:flex; flex-direction:column; align-items:center;
+  gap:6px; padding:clamp(28px,7vh,72px) 16px 8px; text-align:center;
+}
+.home-menu{
+  display:flex; flex-direction:column; gap:10px;
+  width:min(92vw, 380px); margin:22px auto 10px;
+}
+.home-foot{
+  text-align:center; color:var(--ink-soft);
+  font-size:11px; letter-spacing:.18em; text-transform:uppercase;
+  padding:18px 0 22px;
+}
+
+/* ═══════════ CABEÇALHO DAS SUBTELAS ═══════════ */
+.screen-head{
+  display:grid; grid-template-columns:auto 1fr auto; align-items:center;
+  gap:10px; padding:12px 16px;
+  position:sticky; top:0; z-index:5;
+  backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
+  background:var(--card-glass);
+}
+.screen-head h2{ font-family:var(--font-display); letter-spacing:.04em; }
+
+/* Cartões de conteúdo (largura/posicionamento) */
+.card{ width:min(92vw, 560px); margin:14px auto; padding:18px; }
+
+/* ═══════════ AUTH ═══════════ */
+.auth-card{ display:flex; flex-direction:column; gap:12px; }
+
+/* ═══════════ COMO JOGAR (prosa) ═══════════ */
+.prose{ display:flex; flex-direction:column; gap:12px; line-height:1.55; }
+
+/* ═══════════ CONFIGURAÇÕES ═══════════ */
+.settings-card{ display:flex; flex-direction:column; gap:14px; }
+.set-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.set-row .input.slim{ width:150px; }
+.set-actions{ display:flex; flex-direction:column; gap:10px; margin-top:6px; }
+
+/* ═══════════ RANKING ═══════════ */
+.rank-tabs{ width:min(92vw,560px); margin:10px auto 0; }
+.rank-list{ list-style:none; display:flex; flex-direction:column; gap:8px; padding:14px; }
+
+/* ═══════════ PERFIL ═══════════ */
+.profile-top{ display:flex; align-items:center; gap:16px; margin-bottom:16px; }
+.profile-top > div:last-child{ flex:1; min-width:0; }
+.stats-grid{
+  display:grid; grid-template-columns:repeat(auto-fit, minmax(105px, 1fr));
+  gap:10px;
+}
+.section-title{
+  width:min(92vw,560px); margin:18px auto 8px;
+  font-family:var(--font-display); letter-spacing:.05em;
+}
+.ach-list{
+  width:min(92vw,560px); margin:0 auto;
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(84px, 1fr)); gap:10px;
+}
+.skins-row{
+  width:min(92vw,560px); margin:0 auto;
+  display:flex; gap:10px; overflow-x:auto; padding:4px 2px 10px;
+}
+.friends-search{ display:flex; gap:8px; margin-bottom:12px; }
+.friends-list{ display:flex; flex-direction:column; gap:8px; }
+
+/* ═══════════ LOBBY ═══════════ */
+.lobby-card{ display:flex; flex-direction:column; gap:12px; align-items:center; }
+.room-join{ display:flex; gap:8px; width:100%; }
+.room-join .input{ flex:1; text-transform:uppercase; }
+.hint{ font-size:12px; color:var(--ink-soft); text-align:center; }
+
+/* ═══════════ TELA DE JOGO (sem scroll: tudo fixo) ═══════════ */
+[data-screen="game"]{ overflow:hidden; }
+
+.game-top{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:10px; padding:10px 12px;
+}
+.top-right{ display:flex; align-items:center; gap:8px; }
+
+/* Banner "🔴 Vermelho começa" flutua sobre o tabuleiro */
+#turnBanner{
+  position:absolute; top:64px; left:50%; transform:translateX(-50%);
+  z-index:30; white-space:nowrap;
+}
+
+/* Palco: ocupa o meio e centraliza o tabuleiro */
+#stage{
+  flex:1; min-height:0; width:100%;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:6px; padding:2px 12px;
+}
+#boardFrame{
+  width:min(94vw, 520px);      /* fallback; board.js ajusta fino via JS */
+  max-height:100%;
+  aspect-ratio:1;
+  flex:0 1 auto;
+}
+#board, #replayBoard{ position:relative; width:100%; height:100%; touch-action:none; }
+
+.game-controls{
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  padding:8px 12px calc(10px + env(safe-area-inset-bottom));
+}
+.hud-row{ display:flex; align-items:center; gap:10px; }
+
+/* Chat: feed flutuante + barra fixa embaixo */
+.chat-feed{
+  position:absolute; left:12px; bottom:118px; z-index:25;
+  display:flex; flex-direction:column; gap:6px; pointer-events:none;
+  max-width:70vw;
+}
+.chat-bar{
+  position:absolute; left:0; right:0; bottom:0; z-index:26;
+  display:flex; gap:8px; overflow-x:auto; padding:10px 12px
+             calc(10px + env(safe-area-inset-bottom));
+}
+
+/* ═══════════ REPLAY ═══════════ */
+#replayStage{ flex:1; min-height:0; display:grid; place-items:center; padding:8px 12px; }
+#replayFrame{ width:min(94vw, 460px); max-height:100%; aspect-ratio:1; }
+.replay-controls{ display:flex; flex-direction:column; gap:12px; margin-bottom:20px; }
+.transport{ display:flex; align-items:center; gap:8px; justify-content:center; }
+
+/* ═══════════ RESPONSIVO ═══════════ */
+
+/* Celulares estreitos */
+@media (max-width:480px){
+  .card{ padding:14px; }
+  .profile-top{ gap:12px; }
+  .set-row .input.slim{ width:120px; }
+}
+
+/* Telas baixas (paisagem / Chromebook pequeno) */
+@media (max-height:600px){
+  .home-hero{ padding-top:16px; }
+  .home-foot{ display:none; }
+  .card{ margin:8px auto; }
+}
+
+/* Desktop / tablet largo: menu da home em grade 2 colunas */
+@media (min-width:760px){
+  .home-menu{
+    display:grid; grid-template-columns:1fr 1fr; width:min(92vw, 560px);
+  }
+  .home-menu .primary{ grid-column:1 / -1; }
+  .home-menu .ghost{ grid-column:1 / -1; }
+}

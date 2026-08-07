@@ -1,89 +1,68 @@
 /* ═══════════════════════════════════════════════════════════════════
-   QUORIDOR — lógica completa em JavaScript puro
-   ─────────────────────────────────────────────────────────────────
-   • Tabuleiro 9x9 · Vermelho (baixo) → topo · Azul (cima) → base.
-   • Cada turno: mover 1 casa OU colocar 1 barreira (ocupa 2 arestas).
-   • Barreiras nunca podem fechar TODOS os caminhos — validado via BFS
-     para os dois jogadores antes de cada colocação.
-   • Entrada unificada (mouse / touch / caneta) via Pointer Events.
+   QUORIDOR — lógica completa em JavaScript puro (versão final)
    ═══════════════════════════════════════════════════════════════════ */
 "use strict";
 
 /* ═══════════════ 1. CONSTANTES E GEOMETRIA ═══════════════ */
-
-const SIZE = 9;                  // lado do tabuleiro
-const WALLS_PER_PLAYER = 10;     // barreiras por jogador
-const G = 0.19;                  // largura do vão entre casas (em unidades de casa)
-const T = SIZE + (SIZE - 1) * G; // tamanho total do tabuleiro, na mesma unidade
+const SIZE = 9;
+const WALLS_PER_PLAYER = 10;
+const G = 0.19;
+const T = SIZE + (SIZE - 1) * G;
 
 const NAMES = { red: "Vermelho", blue: "Azul" };
-const GOAL  = { red: 0, blue: SIZE - 1 }; // linha-objetivo de cada jogador
+const GOAL  = { red: 0, blue: SIZE - 1 };
 
-/* Converte unidades internas em porcentagem do tabuleiro */
 const uPct  = u => (u / T) * 100;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-/* Posição/tamanho de uma casa, em % */
 function cellGeom(r, c){
   return { left: uPct(c * (1 + G)), top: uPct(r * (1 + G)), size: uPct(1) };
 }
-
-/* Retângulo de uma barreira (horizontal ou vertical), em % */
 function wallRect(type, r, c){
-  if (type === "h") // entre as linhas r e r+1, cobrindo colunas c e c+1
+  if (type === "h")
     return { left: uPct(c * (1 + G)), top: uPct(r * (1 + G) + 1), width: uPct(2 + G), height: uPct(G) };
   return { left: uPct(c * (1 + G) + 1), top: uPct(r * (1 + G)), width: uPct(G), height: uPct(2 + G) };
 }
 
-/* ═══════════════ 2. ESTADO DO JOGO ═══════════════
-   hWall/vWall[r][c] : âncora de barreira (8×8 possíveis, r,c = 0..7)
-   hSeg[r][c]        : aresta horizontal bloqueada (8×9) — entre (r,c) e (r+1,c)
-   vSeg[r][c]        : aresta vertical bloqueada   (9×8) — entre (r,c) e (r,c+1)
-*/
+/* ═══════════════ 2. ESTADO ═══════════════ */
 function grid(rows, cols, v){
   return Array.from({ length: rows }, () => Array(cols).fill(v));
 }
-
 function freshState(){
   return {
     players: {
-      red : { r: SIZE - 1, c: 4, walls: WALLS_PER_PLAYER }, // baixo, centro
-      blue: { r: 0,        c: 4, walls: WALLS_PER_PLAYER }, // cima, centro
+      red : { r: SIZE - 1, c: 4, walls: WALLS_PER_PLAYER },
+      blue: { r: 0,        c: 4, walls: WALLS_PER_PLAYER },
     },
     turn: "red",
-    mode: "move",                 // "move" | "h" | "v"
-    walls: [],                    // barreiras colocadas {type, r, c, owner}
+    mode: "move",
+    walls: [],
     hWall: grid(SIZE - 1, SIZE - 1, false),
     vWall: grid(SIZE - 1, SIZE - 1, false),
     hSeg : grid(SIZE - 1, SIZE, false),
     vSeg : grid(SIZE, SIZE - 1, false),
     lastMove: null,
     over: false, winner: null,
-    busy: false,                  // trava curta durante a animação de movimento
+    busy: false,
   };
 }
-
 let state = null;
 
-/* Referências de DOM */
+/* DOM */
 let boardEl, wallLayer, ghostEl;
 let cellEls = [], pieceEls = {};
 let turnPillEl, turnTextEl, currentBadgeEl, currentNameEl,
     wallsRedEl, wallsBlueEl, chipRedEl, chipBlueEl,
     btnMove, btnWallH, btnWallV, resetBtn, soundBtn,
     overlayEl, overlayCardEl, winTextEl, winEmojiEl, playAgainBtn,
-    toastEl, confettiEl;
+    toastEl, confettiEl, mainEl, stageEl;
 
-/* Controle de ponteiro */
 let dragging = false, activePointer = null, currentSlot = null, lastSlotKey = null;
 
 /* ═══════════════ 3. CRIAÇÃO E RENDERIZAÇÃO ═══════════════ */
-
-/* Constrói o tabuleiro no DOM: 81 casas + camadas de barreira/fantasma/peças */
 function createBoard(){
   boardEl.innerHTML = "";
   cellEls = [];
-
   for (let r = 0; r < SIZE; r++){
     cellEls[r] = [];
     for (let c = 0; c < SIZE; c++){
@@ -96,7 +75,6 @@ function createBoard(){
       cellEls[r][c] = cell;
     }
   }
-
   wallLayer = document.createElement("div");
   wallLayer.id = "wallLayer";
   boardEl.appendChild(wallLayer);
@@ -115,7 +93,6 @@ function createBoard(){
   }
 }
 
-/* Sincroniza tudo com o estado (usado no início e após reiniciar) */
 function renderBoard(){
   positionPiece("red");
   positionPiece("blue");
@@ -125,14 +102,12 @@ function renderBoard(){
   updateHUD();
 }
 
-/* Posiciona a bolinha na casa atual (a transição CSS anima o deslocamento) */
 function positionPiece(id){
   const p = state.players[id], g = cellGeom(p.r, p.c), el = pieceEls[id];
   el.style.left = g.left + "%"; el.style.top = g.top + "%";
   el.style.width = g.size + "%"; el.style.height = g.size + "%";
 }
 
-/* Cria o elemento visual de uma barreira já colocada */
 function makeWallEl(w, animate){
   const el = document.createElement("div");
   el.className = "wall " + (w.type === "h" ? "wh" : "wv") + " by-" + w.owner + (animate ? "" : " no-anim");
@@ -141,7 +116,6 @@ function makeWallEl(w, animate){
   return el;
 }
 
-/* Marca (ou desmarca) as casas para onde o jogador da vez pode andar */
 function updateTargets(){
   for (let r = 0; r < SIZE; r++)
     for (let c = 0; c < SIZE; c++)
@@ -159,10 +133,8 @@ function updateTargets(){
     cellEls[state.lastMove.r][state.lastMove.c].classList.add("last");
 }
 
-/* Atualiza todos os elementos de interface (turno, contadores, modos…) */
 function updateHUD(){
   const cur = state.turn;
-
   turnTextEl.textContent = "Vez do " + NAMES[cur];
   turnPillEl.classList.toggle("is-red",  cur === "red");
   turnPillEl.classList.toggle("is-blue", cur === "blue");
@@ -192,35 +164,27 @@ function updateHUD(){
 }
 
 /* ═══════════════ 4. MOVIMENTAÇÃO ═══════════════ */
-
-/* Verifica se o jogador da vez pode ir de (r,c) até (nr,nc) */
 function canMoveTo(r, c, nr, nc){
-  if (nr < 0 || nc < 0 || nr >= SIZE || nc >= SIZE) return false; // fora do tabuleiro
+  if (nr < 0 || nc < 0 || nr >= SIZE || nc >= SIZE) return false;
   const dr = nr - r, dc = nc - c;
-  if (Math.abs(dr) + Math.abs(dc) !== 1) return false;            // só 1 casa ortogonal
-
-  if (dr === -1 && state.hSeg[r - 1][c]) return false;            // barreira acima
-  if (dr ===  1 && state.hSeg[r][c])     return false;            // barreira abaixo
-  if (dc === -1 && state.vSeg[r][c - 1]) return false;            // barreira à esquerda
-  if (dc ===  1 && state.vSeg[r][c])     return false;            // barreira à direita
-
+  if (Math.abs(dr) + Math.abs(dc) !== 1) return false;
+  if (dr === -1 && state.hSeg[r - 1][c]) return false;
+  if (dr ===  1 && state.hSeg[r][c])     return false;
+  if (dc === -1 && state.vSeg[r][c - 1]) return false;
+  if (dc ===  1 && state.vSeg[r][c])     return false;
   const foe = state.turn === "red" ? "blue" : "red";
-  if (state.players[foe].r === nr && state.players[foe].c === nc) return false; // casa ocupada
-
+  if (state.players[foe].r === nr && state.players[foe].c === nc) return false;
   return true;
 }
 
-/* Executa o movimento do jogador da vez para a casa (r,c) */
 function movePlayer(r, c){
   if (state.over || state.busy) return;
   const p = state.players[state.turn];
-
   if (!canMoveTo(p.r, p.c, r, c)){
     denyCell(r, c);
     SFX.deny();
     return;
   }
-
   state.busy = true;
   p.r = r; p.c = c;
   state.lastMove = { r, c };
@@ -229,14 +193,13 @@ function movePlayer(r, c){
 
   if (checkVictory()){
     updateHUD(); updateTargets();
-    setTimeout(showWin, 420); // espera a bolinha chegar antes do painel
+    setTimeout(showWin, 420);
     return;
   }
   switchTurn();
   setTimeout(() => { state.busy = false; }, 300);
 }
 
-/* Feedback visual de movimento negado */
 function denyCell(r, c){
   const el = cellEls[r][c];
   el.classList.remove("deny"); void el.offsetWidth;
@@ -245,20 +208,11 @@ function denyCell(r, c){
 }
 
 /* ═══════════════ 5. BARREIRAS ═══════════════ */
-
-/* Liga/desliga as duas arestas ocupadas por uma barreira */
 function setWallSegments(type, r, c, on){
   if (type === "h"){ state.hSeg[r][c] = on; state.hSeg[r][c + 1] = on; }
   else             { state.vSeg[r][c] = on; state.vSeg[r + 1][c] = on; }
 }
 
-/*
-   Valida a colocação de uma barreira:
-   1) dentro do tabuleiro (r,c ∈ 0..7);
-   2) sem sobreposição com barreiras paralelas vizinhas
-      e sem cruzar uma barreira perpendicular;
-   3) simula a colocação e exige caminho (BFS) para OS DOIS jogadores.
-*/
 function validateWall(type, r, c){
   if (r < 0 || c < 0 || r > SIZE - 2 || c > SIZE - 2)
     return { ok: false, reason: "fora" };
@@ -267,7 +221,7 @@ function validateWall(type, r, c){
     const overlap = state.hWall[r][c] ||
                     (c > 0        && state.hWall[r][c - 1]) ||
                     (c < SIZE - 2 && state.hWall[r][c + 1]);
-    const cross   = state.vWall[r][c];        // cruzamento exato no centro
+    const cross   = state.vWall[r][c];
     if (overlap || cross) return { ok: false, reason: "sobreposicao" };
   } else {
     const overlap = state.vWall[r][c] ||
@@ -277,7 +231,6 @@ function validateWall(type, r, c){
     if (overlap || cross) return { ok: false, reason: "sobreposicao" };
   }
 
-  // Simulação: nenhum jogador pode perder todos os caminhos
   setWallSegments(type, r, c, true);
   const redOk  = findPathBFS(state.players.red.r,  state.players.red.c,  GOAL.red);
   const blueOk = findPathBFS(state.players.blue.r, state.players.blue.c, GOAL.blue);
@@ -287,7 +240,6 @@ function validateWall(type, r, c){
   return { ok: true };
 }
 
-/* Coloca de fato a barreira (chamado após o "soltar" do dedo/mouse) */
 function placeWall(type, r, c){
   const v = validateWall(type, r, c);
   if (!v.ok){
@@ -301,14 +253,13 @@ function placeWall(type, r, c){
     SFX.deny();
     return false;
   }
-
   const owner = state.turn;
   if (type === "h") state.hWall[r][c] = true; else state.vWall[r][c] = true;
   setWallSegments(type, r, c, true);
   state.walls.push({ type, r, c, owner });
   state.players[owner].walls--;
 
-  wallLayer.appendChild(makeWallEl({ type, r, c, owner }, true)); // animação de "pop"
+  wallLayer.appendChild(makeWallEl({ type, r, c, owner }, true));
   popCount(owner === "red" ? wallsRedEl : wallsBlueEl);
   SFX.wall();
   hideGhost();
@@ -316,23 +267,15 @@ function placeWall(type, r, c){
   return true;
 }
 
-/* ═══════════════ 6. BFS — EXISTE CAMINHO? ═══════════════ */
-
-/*
-   Busca em largura a partir de (startR,startC).
-   Retorna true se alguma casa da linha goalRow for alcançável,
-   respeitando as arestas bloqueadas (hSeg/vSeg).
-*/
+/* ═══════════════ 6. BFS ═══════════════ */
 function findPathBFS(startR, startC, goalRow){
   const seen = grid(SIZE, SIZE, false);
   const queue = [[startR, startC]];
   seen[startR][startC] = true;
   let head = 0;
-
   while (head < queue.length){
     const [r, c] = queue[head++];
     if (r === goalRow) return true;
-
     if (r > 0        && !state.hSeg[r - 1][c] && !seen[r - 1][c]){ seen[r - 1][c] = true; queue.push([r - 1, c]); }
     if (r < SIZE - 1 && !state.hSeg[r][c]     && !seen[r + 1][c]){ seen[r + 1][c] = true; queue.push([r + 1, c]); }
     if (c > 0        && !state.vSeg[r][c - 1] && !seen[r][c - 1]){ seen[r][c - 1] = true; queue.push([r, c - 1]); }
@@ -342,10 +285,8 @@ function findPathBFS(startR, startC, goalRow){
 }
 
 /* ═══════════════ 7. TURNOS E VITÓRIA ═══════════════ */
-
 function switchTurn(){
   state.turn = state.turn === "red" ? "blue" : "red";
-  // Se o próximo jogador ficou sem barreiras, volta ao modo mover
   if (state.players[state.turn].walls <= 0 && state.mode !== "move") state.mode = "move";
   hideGhost();
   updateTargets();
@@ -370,33 +311,29 @@ function showWin(){
   SFX.win();
 }
 
-/* ═══════════════ 8. FANTASMA + POINTER EVENTS ═══════════════ */
-
-/* Converte a posição do ponteiro no slot de barreira mais próximo */
+/* ═══════════════ 8. FANTASMA + PONTEIROS ═══════════════ */
 function slotFromEvent(e){
   const rect = boardEl.getBoundingClientRect();
   const x = ((e.clientX - rect.left) / rect.width)  * T;
   const y = ((e.clientY - rect.top)  / rect.height) * T;
   let r, c;
   if (state.mode === "h"){
-    r = Math.round((y - 1 - G / 2) / (1 + G)); // vão horizontal mais próximo
-    c = Math.round(x - 1);                     // barreira centrada em c+1
+    r = Math.round((y - 1 - G / 2) / (1 + G));
+    c = Math.round(x - 1);
   } else {
     r = Math.round(y - 1);
-    c = Math.round((x - 1 - G / 2) / (1 + G)); // vão vertical mais próximo
+    c = Math.round((x - 1 - G / 2) / (1 + G));
   }
   const inBoard = r >= 0 && r <= SIZE - 2 && c >= 0 && c <= SIZE - 2;
   return { type: state.mode, r: clamp(r, 0, SIZE - 2), c: clamp(c, 0, SIZE - 2), inBoard };
 }
 
-/* Move o fantasma até o slot sob o dedo/mouse e pinta verde (válido) ou vermelho */
 function updateGhost(e){
   if (state.over || state.busy || state.mode === "move"){ hideGhost(); return; }
   const s = slotFromEvent(e);
   currentSlot = s;
-
   const key = s.type + "," + s.r + "," + s.c + "," + s.inBoard;
-  if (key !== lastSlotKey){ // só revalida quando o slot muda
+  if (key !== lastSlotKey){
     lastSlotKey = key;
     const v = s.inBoard ? validateWall(s.type, s.r, s.c) : { ok: false };
     ghostEl.classList.toggle("invalid", !v.ok);
@@ -411,33 +348,29 @@ function hideGhost(){
   currentSlot = null; lastSlotKey = null;
 }
 
-/* Animação de "voltar" quando a posição é inválida */
 function ghostFail(){
   ghostEl.classList.remove("shake"); void ghostEl.offsetWidth;
   ghostEl.classList.add("shake");
   setTimeout(() => ghostEl.classList.remove("shake"), 330);
 }
 
-/* Liga todos os eventos de ponteiro do tabuleiro */
 function bindBoardEvents(){
   boardEl.addEventListener("pointerdown", e => {
     e.preventDefault();
     initAudio();
     if (state.over || state.busy) return;
-
     if (state.mode === "move"){
       const cell = e.target.closest(".cell");
       if (cell) movePlayer(+cell.dataset.r, +cell.dataset.c);
       return;
     }
-    if (activePointer !== null) return;      // ignora segundo dedo
+    if (activePointer !== null) return;
     activePointer = e.pointerId;
     dragging = true;
     try { boardEl.setPointerCapture(e.pointerId); } catch (_) {}
     updateGhost(e);
   });
 
-  // Mouse: fantasma segue o cursor mesmo sem pressionar · Touch: segue o arrasto
   boardEl.addEventListener("pointermove", e => {
     if (state.mode === "move") return;
     if (dragging || e.pointerType === "mouse") updateGhost(e);
@@ -454,7 +387,7 @@ function bindBoardEvents(){
       }
     }
     dragging = false; activePointer = null;
-    if (e.pointerType !== "mouse") hideGhost(); // no touch, o fantasma some ao soltar
+    if (e.pointerType !== "mouse") hideGhost();
   });
 
   boardEl.addEventListener("pointerleave", e => {
@@ -464,8 +397,7 @@ function bindBoardEvents(){
   boardEl.addEventListener("contextmenu", e => e.preventDefault());
 }
 
-/* ═══════════════ 9. MODOS, BOTÕES E TECLADO ═══════════════ */
-
+/* ═══════════════ 9. MODOS, BOTÕES, TECLADO ═══════════════ */
 function setMode(mode){
   if (state.over) return;
   if (mode !== "move" && state.players[state.turn].walls <= 0){
@@ -492,7 +424,6 @@ function bindUI(){
     if (soundOn){ initAudio(); SFX.select(); }
   });
 
-  // Teclado (ótimo para Chromebook): setas movem, 1/2/3 trocam o modo, R reinicia
   window.addEventListener("keydown", e => {
     initAudio();
     if (!overlayEl.classList.contains("hidden")){
@@ -521,7 +452,6 @@ function bindUI(){
 }
 
 /* ═══════════════ 10. REINÍCIO ═══════════════ */
-
 function resetGame(){
   state = freshState();
   dragging = false; activePointer = null; currentSlot = null; lastSlotKey = null;
@@ -529,23 +459,20 @@ function resetGame(){
   confettiEl.innerHTML = "";
   createBoard();
   renderBoard();
+  fitBoard();
   showToast("Novo jogo! Vez do Vermelho.");
   SFX.select();
 }
 
-/* ═══════════════ 11. EFEITOS: SOM, TOAST, CONFETE ═══════════════ */
-
+/* ═══════════════ 11. EFEITOS ═══════════════ */
 let audioCtx = null, soundOn = true;
 
-/* Cria/retoma o contexto de áudio no primeiro gesto do usuário */
 function initAudio(){
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === "suspended") audioCtx.resume();
-  } catch (_) { /* sem áudio disponível — o jogo segue mudo */ }
+  } catch (_) {}
 }
-
-/* Um bipe sintetizado (sem nenhum arquivo externo) */
 function tone(freq, dur = 0.09, type = "sine", vol = 0.12, when = 0){
   if (!soundOn || !audioCtx) return;
   const t = audioCtx.currentTime + when;
@@ -557,7 +484,6 @@ function tone(freq, dur = 0.09, type = "sine", vol = 0.12, when = 0){
   o.connect(g).connect(audioCtx.destination);
   o.start(t); o.stop(t + dur + 0.03);
 }
-
 const SFX = {
   move  () { tone(560, .08, "triangle", .12); },
   wall  () { tone(190, .12, "square", .08); tone(330, .06, "triangle", .07, .04); },
@@ -573,11 +499,9 @@ function showToast(msg){
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2400);
 }
-
 function popCount(el){
   el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop");
 }
-
 function launchConfetti(winner){
   const palette = winner === "red"
     ? ["#e0453a", "#ff8a7a", "#ffd166", "#ffffff"]
@@ -601,32 +525,42 @@ function launchConfetti(winner){
   setTimeout(() => { confettiEl.innerHTML = ""; }, 5200);
 }
 
-/* ═══════════════ 12. INICIALIZAÇÃO ═══════════════ */
+/* ═══════════════ 12. TAMANHO RESPONSIVO (anti-overlap) ═══════════════ */
+/* Mede o espaço REAL que sobra no <main> e dimensiona o palco do jogo.
+   Como <main> é flex:1, clientHeight já desconta header + controles reais. */
+function fitBoard(){
+  if (!mainEl || !stageEl) return;
+  const availW = mainEl.clientWidth  - 24;  // paddings laterais
+  const availH = mainEl.clientHeight - 64;  // faixas de meta + folgas
+  const size = Math.max(140, Math.min(availW, availH, 680));
+  stageEl.style.width = size + "px";
+}
 
+/* ═══════════════ 13. INICIALIZAÇÃO ═══════════════ */
 function init(){
-    mainEl  = document.querySelector("main");
-stageEl = document.getElementById("stage");
-  boardEl      = document.getElementById("board");
-  turnPillEl   = document.getElementById("turnPill");
-  turnTextEl   = document.getElementById("turnText");
+  boardEl        = document.getElementById("board");
+  turnPillEl     = document.getElementById("turnPill");
+  turnTextEl     = document.getElementById("turnText");
   currentBadgeEl = document.getElementById("currentBadge");
   currentNameEl  = document.getElementById("currentName");
-  wallsRedEl   = document.getElementById("wallsRed");
-  wallsBlueEl  = document.getElementById("wallsBlue");
-  chipRedEl    = document.getElementById("chipRed");
-  chipBlueEl   = document.getElementById("chipBlue");
-  btnMove      = document.getElementById("modeMove");
-  btnWallH     = document.getElementById("modeWallH");
-  btnWallV     = document.getElementById("modeWallV");
-  resetBtn     = document.getElementById("resetBtn");
-  soundBtn     = document.getElementById("soundBtn");
-  overlayEl    = document.getElementById("overlay");
-  overlayCardEl= document.getElementById("overlayCard");
-  winTextEl    = document.getElementById("winText");
-  winEmojiEl   = document.getElementById("winEmoji");
-  playAgainBtn = document.getElementById("playAgainBtn");
-  toastEl      = document.getElementById("toast");
-  confettiEl   = document.getElementById("confetti");
+  wallsRedEl     = document.getElementById("wallsRed");
+  wallsBlueEl    = document.getElementById("wallsBlue");
+  chipRedEl      = document.getElementById("chipRed");
+  chipBlueEl     = document.getElementById("chipBlue");
+  btnMove        = document.getElementById("modeMove");
+  btnWallH       = document.getElementById("modeWallH");
+  btnWallV       = document.getElementById("modeWallV");
+  resetBtn       = document.getElementById("resetBtn");
+  soundBtn       = document.getElementById("soundBtn");
+  overlayEl      = document.getElementById("overlay");
+  overlayCardEl  = document.getElementById("overlayCard");
+  winTextEl      = document.getElementById("winText");
+  winEmojiEl     = document.getElementById("winEmoji");
+  playAgainBtn   = document.getElementById("playAgainBtn");
+  toastEl        = document.getElementById("toast");
+  confettiEl     = document.getElementById("confetti");
+  mainEl         = document.querySelector("main");
+  stageEl        = document.getElementById("stage");
 
   bindUI();
   bindBoardEvents();
@@ -635,21 +569,12 @@ stageEl = document.getElementById("stage");
   createBoard();
   renderBoard();
   fitBoard();
-window.addEventListener("resize", fitBoard);           // gira a tela / barra do navegador
-window.addEventListener("orientationchange", fitBoard);
+
+  window.addEventListener("resize", fitBoard);
+  window.addEventListener("orientationchange", fitBoard);
+  window.addEventListener("load", fitBoard);
+
   showToast("🔴 começa! Toque numa casa marcada para mover.");
 }
 
 init();
-
-/* ═══════════ 13. AJUSTE DE TAMANHO (anti-overlap) ═══════════ */
-let mainEl, stageEl;
-
-/* Mede o espaço que sobra de verdade e dimensiona o tabuleiro.
-   Como o <main> é flex:1, clientHeight já desconta header + controles reais. */
-function fitBoard(){
-  const availW = mainEl.clientWidth  - 24;  // padding lateral
-  const availH = mainEl.clientHeight - 64;  // faixas de meta + folgas
-  const size = Math.max(140, Math.min(availW, availH, 680));
-  stageEl.style.width = size + "px";
-}

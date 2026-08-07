@@ -1,0 +1,586 @@
+/* =============================================================
+   Quoridor Arena — ui/screens.js
+   -------------------------------------------------------------
+   • Navegação entre telas + i18n + tema/skins + modal.
+   • Controller da partida: local · IA · online.
+   • Replay com controles e código compartilhável.
+   ============================================================= */
+import {
+  TEXTS, NAMES, AI_LEVELS, SKINS, ACHIEVEMENTS,
+  levelFromXp, xpForLevel, leagueOf, ELO_START
+} from "../core/constants.js";
+import {
+  newGame, applyMove, applyWall, validateWall, randomFirstTurn, applyEvent
+} from "../core/rules.js";
+import { chooseAiAction } from "../core/ai.js";
+import { createBoard } from "./board.js";
+import { SFX, toast, confetti } from "./effects.js";
+import {
+  getSettings, setSettings, getStats, recordMatch, getUnlocked,
+  getSnapshot, setSnapshot, clearSnapshot, setLastReplay
+} from "../services/storage.js";
+import {
+  isConfigured, getSession, onAuthChange,
+  loginEmail, registerEmail, loginGoogle, logout, resetPassword,
+  getProfile, uploadAvatar, getRanking, searchPlayers, getFriends
+} from "../services/supabase.js";
+import { net } from "../services/realtime.js";
+
+const $ = (id) => document.getElementById(id);
+let current = "loading";
+
+/* ═══════════ NAVEGAÇÃO ═══════════ */
+export function showScreen(name){
+  document.querySelectorAll(".screen").forEach((s) =>
+    s.classList.toggle("active", s.dataset.screen === name));
+  current = name;
+  if (name === "ranking") refreshRanking("global");
+  if (name === "profile") refreshProfile();
+}
+
+/* ═══════════ i18n & CONFIGURAÇÕES ═══════════ */
+export function applySettings(s){
+  const html = document.documentElement;
+  let theme = s.theme;
+  if (theme === "auto")
+    theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  html.dataset.theme = theme;
+  html.dataset.skin = s.skin;
+  html.dataset.quality = s.quality;
+  html.dataset.animations = s.animations ? "on" : "off";
+  html.lang = s.lang;
+  import("./effects.js").then((fx) => {
+    fx.setVolume(s.volume / 100);
+    fx.setEnabled(s.sound !== false);
+    fx.setMusic(!!s.music);
+  });
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const t = TEXTS[s.lang]?.[el.dataset.i18n];
+    if (t) el.textContent = t;
+  });
+}
+
+/* ═══════════ MODAL GENÉRICO ═══════════ */
+export function openModal(title, choices, bodyHTML = ""){
+  $("modalTitle").textContent = title;
+  $("modalBody").innerHTML = bodyHTML;
+  const box = $("modalActions");
+  box.innerHTML = "";
+  for (const ch of choices){
+    const b = document.createElement("button");
+    b.className = "choice-btn";
+    b.textContent = ch.label;
+    b.onclick = () => { closeModal(); ch.onClick?.(); };
+    box.appendChild(b);
+  }
+  $("modal").classList.remove("hidden");
+}
+export function closeModal(){ $("modal").classList.add("hidden"); }
+
+/* ═══════════ SESSÃO DE JOGO ═══════════ */
+let S = null;          // sessão ativa
+let board = null;      // renderer do board.js
+let replayBoard = null;
+
+function freshSession(mode, level){
+  return {
+    mode, level: level || "medium",
+    state: newGame(),
+    uiMode: "move",
+    locked: true,            // trava até o banner "X começa"
+    seconds: 0, timerId: null, aiTimer: null,
+    myColor: null            // online
+  };
+}
+
+const myTurn = () => {
+  if (!S || S.state.over) return false;
+  if (S.mode === "local") return true;
+  if (S.mode === "ai")    return S.state.turn === "red";
+  return S.state.turn === S.myColor;                 // online
+};
+
+export function startGame(opts){
+  endSession(false);
+  S = freshSession(opts.mode, opts.level);
+  if (opts.state){ S.state = opts.state; S.seconds = opts.seconds || 0; }
+  if (opts.myColor) S.myColor = opts.myColor;
+  if (opts.firstTurn) S.state.turn = opts.firstTurn;
+  else if (!opts.state) S.state.turn = randomFirstTurn();
+
+  board = createBoard($("board"), controller);
+  board.fit($("stage"), $("boardFrame"));
+  showScreen("game");
+  updateHUD();
+  board.sync(S.state);
+  startTimer();
+
+  /* banner 2s: "🔴 Vermelho começa" */
+  const first = S.state.turn;
+  const banner = $("turnBanner");
+  banner.textContent = (first === "red" ? "🔴 " : "🔵 ") + NAMES[first] + " começa";
+  banner.classList.remove("hidden");
+  setTimeout(() => {
+    banner.classList.add("hidden");
+    if (S){ S.locked = false; maybeAI(); }
+  }, 2000);
+}
+
+function startTimer(){
+  stopTimer();
+  S.timerId = setInterval(() => {
+    S.seconds++;
+    $("timerText").textContent = fmt(S.seconds);
+  }, 1000);
+}
+function stopTimer(){ if (S?.timerId) clearInterval(S.timerId); }
+const fmt = (s) => String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+
+/* ---------- controller entregue ao board.js ---------- */
+const controller = {
+  canPlaceWall(o, r, c){
+    return S && !S.locked && myTurn() &&
+           S.state.players[S.state.turn].walls > 0 &&
+           validateWall(S.state, o, r, c).ok;
+  },
+  handleMove(r, c){
+    if (!S || S.locked || !myTurn()) return;
+    const ev = applyMove(S.state, r, c);
+    if (!ev){ board.deny(r, c); SFX.deny(); return; }
+    afterAction(ev, "move");
+  },
+  handleWall(o, r, c){
+    if (!S || S.locked || !myTurn()) return false;
+    const ev = applyWall(S.state, o, r, c);
+    if (!ev){
+      const v = validateWall(S.state, o, r, c);
+      toast(v.reason === "caminho"
+        ? "Você não pode bloquear completamente o caminho."
+        : "Posição inválida para barreira.");
+      return false;
+    }
+    afterAction(ev, "wall");
+    return true;
+  }
+};
+
+function afterAction(ev, kind){
+  kind === "move" ? SFX.move() : SFX.wall();
+  board.sync(S.state);
+  updateHUD();
+  if (S.mode !== "online") setSnapshot({ mode: S.mode, level: S.level, state: S.state, seconds: S.seconds });
+  else net.sendAction(ev);
+  if (S.state.over) return endGame();
+  maybeAI();
+}
+
+function maybeAI(){
+  if (!S || S.mode !== "ai" || S.state.turn !== "blue" || S.state.over) return;
+  S.aiTimer = setTimeout(() => {
+    if (!S) return;
+    const a = chooseAiAction(S.state, S.level);
+    if (!a) return;
+    const ev = a.type === "move"
+      ? applyMove(S.state, a.r, a.c)
+      : applyWall(S.state, a.o, a.r, cOf(a));
+    if (ev) afterAction(ev, ev.t === "m" ? "move" : "wall");
+  }, 700);
+}
+const cOf = (a) => a.c;
+
+/* ---------- eventos remotos (online) ---------- */
+export function handleRemoteEvent(ev){
+  if (!S || S.mode !== "online") return;
+  const applied = applyEvent(S.state, ev);
+  if (!applied){ toast("Jogada inválida recebida — ignorada."); return; }
+  (applied.t === "m" ? SFX.move() : SFX.wall());
+  board.sync(S.state);
+  updateHUD();
+  if (S.state.over) endGame();
+}
+
+/* ---------- HUD ---------- */
+function updateHUD(){
+  if (!S) return;
+  const cur = S.state.turn;
+  $("turnText").textContent = "Vez do " + NAMES[cur];
+  $("turnPill").classList.toggle("is-red",  cur === "red");
+  $("turnPill").classList.toggle("is-blue", cur === "blue");
+  $("wallsRed").textContent  = S.state.players.red.walls;
+  $("wallsBlue").textContent = S.state.players.blue.walls;
+  $("chipRed").classList.toggle("is-turn",  cur === "red");
+  $("chipBlue").classList.toggle("is-turn", cur === "blue");
+  const noWalls = S.state.players[cur].walls <= 0;
+  $("modeWallH").disabled = noWalls;
+  $("modeWallV").disabled = noWalls;
+}
+
+function setUiMode(m){
+  if (!S) return;
+  S.uiMode = m;
+  board.setMode(m);
+  $("modeMove").classList.toggle("active",  m === "move");
+  $("modeWallH").classList.toggle("active", m === "h");
+  $("modeWallV").classList.toggle("active", m === "v");
+  board.sync(S.state);
+}
+
+/* ---------- fim de jogo ---------- */
+function endGame(){
+  stopTimer();
+  const w = S.state.winner;
+  confetti(w);
+  SFX.win();
+  setLastReplay(S.state.replay);
+
+  const humanColor = S.mode === "ai" ? "red" : (S.mode === "online" ? S.myColor : w);
+  const res = recordMatch({
+    mode: S.mode, winner: w, myColor: humanColor,
+    durationSec: S.seconds,
+    wallsUsed: S.state.stats.walls[humanColor],
+        movesUsed: S.state.stats.moves[humanColor],
+    wasBehind: S.state.stats.wasBehind[humanColor]
+  });
+  $("winText").textContent = NAMES[w] + " venceu!";
+  $("winSub").textContent = `+${res.xp} XP` + (res.eloDelta ? ` · ${res.eloDelta > 0 ? "+" : ""}${res.eloDelta} Elo` : "");
+  for (const key of res.unlocked) toast("🏅 Conquista: " + ACHIEVEMENTS.find((a) => a.key === key)?.name);
+  $("overlayCard").className = "overlay-card " + w;
+  $("winEmoji").classList.remove("bounce"); void $("winEmoji").offsetWidth;
+  $("winEmoji").classList.add("bounce");
+  $("btnRematch").classList.toggle("hidden", S.mode === "online");
+  $("overlay").classList.remove("hidden");
+  clearSnapshot();
+}
+
+export function endSession(goHome = true){
+  stopTimer();
+  if (S?.aiTimer) clearTimeout(S.aiTimer);
+  if (S?.mode === "online") net.leaveRoom();
+  if (board){ board.destroy(); board = null; }
+  S = null;
+  $("overlay").classList.add("hidden");
+  if (goHome) showScreen("home");
+}
+
+/* ═══════════ REPLAY ═══════════ */
+const RP = { events: [], idx: 0, playing: false, timer: null, state: null };
+
+export function openReplay(events){
+  if (!events?.length){ toast("Nenhum replay disponível."); return; }
+  RP.events = events; RP.idx = 0; RP.playing = false; RP.state = newGame();
+  if (replayBoard) replayBoard.destroy();
+  replayBoard = createBoard($("replayBoard"));   // sem controller = só assiste
+  replayBoard.sync(RP.state);
+  $("btnReplayPlay").textContent = "▶";
+  showScreen("replay");
+}
+function rpStep(dir){
+  const next = RP.idx + dir;
+  if (next < 0 || next >= RP.events.length) return rpPause();
+  if (dir > 0){ applyEvent(RP.state, RP.events[RP.idx]); RP.idx++; }
+  else { // voltar: reconstrói do zero até idx-1
+    RP.idx = next;
+    RP.state = newGame();
+    for (let i = 0; i < RP.idx; i++) applyEvent(RP.state, RP.events[i]);
+  }
+  replayBoard.sync(RP.state);
+}
+function rpPlay(){
+  RP.playing = true;
+  $("btnReplayPlay").textContent = "⏸";
+  const speed = parseFloat($("replaySpeed").value) || 1;
+  RP.timer = setInterval(() => rpStep(1), 900 / speed);
+}
+function rpPause(){
+  RP.playing = false;
+  $("btnReplayPlay").textContent = "▶";
+  if (RP.timer) clearInterval(RP.timer);
+}
+const replayCode = () => btoa(unescape(encodeURIComponent(JSON.stringify(RP.events.length ? RP.events : S?.state.replay || []))));
+
+/* ═══════════ PERFIL / RANKING / AMIGOS ═══════════ */
+async function refreshRanking(period){
+  const list = $("rankingList");
+  list.innerHTML = '<li class="queue-status"><span class="spinner"></span> carregando…</li>';
+  const rows = await getRanking(period);
+  if (!rows?.length){
+    list.innerHTML = '<li class="hint">Sem partidas ranqueadas ainda — jogue online! 🌐</li>';
+    return;
+  }
+  const me = getSession()?.user?.id;
+  list.innerHTML = rows.map((r, i) => `
+    <li class="rank-item ${r.id === me ? "me" : ""}">
+      <span class="rank-pos">${i + 1}</span>
+      <img class="rank-avatar" src="${r.avatar_url || "icons/icon.svg"}" alt="">
+      <span class="rank-name">${escapeHtml(r.username)}</span>
+      <span class="rank-elo">${r.elo ?? ELO_START}</span>
+    </li>`).join("");
+}
+
+async function refreshProfile(){
+  const st = getStats();
+  const lvl = levelFromXp(st.xp);
+  const base = xpForLevel(lvl), next = xpForLevel(lvl + 1);
+  $("xpFill").style.width = Math.min(100, ((st.xp - base) / (next - base)) * 100) + "%";
+  $("xpLabel").textContent = `Nível ${lvl} · ${st.xp - base}/${next - base} XP`;
+  $("profileName").textContent = getSession()?.user?.user_metadata?.name || "Jogador local";
+  $("profileLeague").textContent = `${leagueOf(st.elo).icon} ${leagueOf(st.elo).name} · Elo ${st.elo}`;
+
+  const winrate = st.games ? Math.round((st.wins / st.games) * 100) : 0;
+  $("profileStats").innerHTML = [
+    [st.wins, "vitórias"], [st.losses, "derrotas"], [st.draws, "empates"],
+    [winrate + "%", "taxa vitória"], [fmt(st.timeSec), "tempo"],
+    [st.moves, "movimentos"], [st.walls, "barreiras"], [st.bestWinStreak, "sequência"]
+  ].map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join("");
+
+  const unlocked = getUnlocked();
+  $("achievementsList").innerHTML = ACHIEVEMENTS.map((a) => `
+    <div class="ach ${unlocked.includes(a.key) ? "" : "locked"}" title="${a.desc}">
+      <span class="ach-icon">${a.icon}</span>${a.name}
+    </div>`).join("");
+
+  $("skinsRow").innerHTML = SKINS.map((sk) => `
+    <button class="skin-chip ${getSettings().skin === sk.key ? "active" : ""}"
+            data-skin="${sk.key}"
+            style="background:linear-gradient(135deg, ${sk.swatch[0]} 50%, ${sk.swatch[1]} 50%)">
+      <span>${sk.name}</span>
+    </button>`).join("");
+
+  const friends = await getFriends();
+  $("friendsList").innerHTML = friends?.length
+    ? friends.map((f) => `
+        <div class="friend-row">
+          <span class="f-status ${f.online ? "on" : ""}"></span>
+          <img class="rank-avatar" src="${f.avatar_url || "icons/icon.svg"}" alt="">
+          <span class="rank-name">${escapeHtml(f.username)}</span>
+          <button class="mini-btn" data-invite="${f.id}">Convidar</button>
+        </div>`).join("")
+    : '<p class="hint">Busque jogadores pelo nome e monte sua lista. 🔎</p>';
+}
+
+const escapeHtml = (s) => String(s ?? "").replace(/[<>&"]/g, (c) =>
+  ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
+
+/* ═══════════ INICIALIZAÇÃO DA CAMADA UI ═══════════ */
+export function initScreens(){
+  applySettings(getSettings());
+
+  /* botões "voltar" */
+  document.querySelectorAll("[data-back]").forEach((b) =>
+    b.addEventListener("click", () => { SFX.click(); showScreen(b.dataset.back); }));
+
+  /* HOME */
+  $("btnLocal").onclick = () => { SFX.click(); startGame({ mode: "local" }); };
+  $("btnAI").onclick = () => {
+    SFX.click();
+    openModal("Escolha o nível da IA", AI_LEVELS.map((l) => ({
+      label: `${l.icon} ${l.name}`, onClick: () => startGame({ mode: "ai", level: l.key })
+    })));
+  };
+  $("btnOnline").onclick = () => {
+    SFX.click();
+    if (!isConfigured()){ toast("Configure o Supabase em js/config.js para jogar online."); return; }
+    if (!getSession()){ toast("Entre na sua conta para jogar online."); showScreen("auth"); return; }
+    showScreen("lobby");
+  };
+  $("btnRanking").onclick  = () => { SFX.click(); showScreen("ranking"); };
+  $("btnProfile").onclick  = () => { SFX.click(); showScreen("profile"); };
+  $("btnHowTo").onclick    = () => { SFX.click(); showScreen("howto"); };
+  $("btnSettings").onclick = () => { SFX.click(); showScreen("settings"); };
+  $("btnLogin").onclick    = () => { SFX.click(); showScreen("auth"); };
+
+  /* AUTH */
+  const setTab = (login) => {
+    $("tabLogin").classList.toggle("active", login);
+    $("tabRegister").classList.toggle("active", !login);
+    $("authName").classList.toggle("hidden", login);
+    $("btnForgot").classList.toggle("hidden", !login);
+    $("btnAuthSubmit").textContent = login ? "Entrar" : "Criar conta";
+    $("btnAuthSubmit").dataset.login = login ? "1" : "";
+  };
+  $("tabLogin").onclick    = () => setTab(true);
+  $("tabRegister").onclick = () => setTab(false);
+  setTab(true);
+  $("btnAuthSubmit").onclick = async () => {
+    const email = $("authEmail").value.trim(), pass = $("authPassword").value;
+    const err = $("authError"); err.classList.add("hidden");
+    const isLogin = $("btnAuthSubmit").dataset.login === "1";
+    const r = isLogin ? await loginEmail(email, pass)
+                      : await registerEmail($("authName").value.trim(), email, pass);
+    if (r.error){ err.textContent = r.error; err.classList.remove("hidden"); return; }
+    toast(isLogin ? "Bem-vindo de volta! 👋" : "Conta criada! Confira seu e-mail. 📬");
+    showScreen("home");
+  };
+  $("btnGoogle").onclick = async () => { const r = await loginGoogle(); if (r?.error) toast(r.error); };
+  $("btnForgot").onclick = async () => {
+    const r = await resetPassword($("authEmail").value.trim());
+    toast(r.error ? r.error : "E-mail de recuperação enviado. 📬");
+  };
+
+  /* CONFIGURAÇÕES */
+  const bindSet = (id, key, transform = (v) => v) => {
+    $(id).addEventListener("change", (e) => {
+      const s = getSettings();
+      s[key] = transform(e.target.type === "checkbox" ? e.target.checked : e.target.value);
+      setSettings(s);
+      applySettings(s);
+      SFX.click();
+    });
+  };
+  const s0 = getSettings();
+  $("setTheme").value = s0.theme; $("setLang").value = s0.lang;
+  $("setVolume").value = s0.volume; $("setMusic").checked = !!s0.music;
+  $("setAnimations").checked = s0.animations !== false; $("setQuality").value = s0.quality;
+  bindSet("setTheme", "theme"); bindSet("setLang", "lang");
+  bindSet("setVolume", "volume", (v) => +v);
+  bindSet("setMusic", "music"); bindSet("setAnimations", "animations");
+  bindSet("setQuality", "quality");
+  $("btnLogout").onclick = async () => { await logout(); toast("Até logo! 👋"); showScreen("home"); };
+
+  /* RANKING tabs */
+  document.querySelectorAll(".rank-tabs .tab").forEach((t) =>
+    t.addEventListener("click", () => {
+      document.querySelectorAll(".rank-tabs .tab").forEach((x) => x.classList.remove("active"));
+      t.classList.add("active");
+      refreshRanking(t.dataset.period);
+    }));
+
+  /* PERFIL: skins / amigos / avatar */
+  $("skinsRow").addEventListener("click", (e) => {
+    const chip = e.target.closest(".skin-chip");
+    if (!chip) return;
+    const s = getSettings(); s.skin = chip.dataset.skin;
+    setSettings(s); applySettings(s); refreshProfile(); SFX.click();
+  });
+  $("btnAvatar").onclick = () => $("avatarInput").click();
+  $("avatarInput").addEventListener("change", async (e) => {
+    const f = e.target.files?.[0];
+    if (f){ const r = await uploadAvatar(f); if (r?.error) toast(r.error); else toast("Foto atualizada! 📷"); }
+  });
+  $("btnFriendSearch").onclick = async () => {
+    const rows = await searchPlayers($("friendSearch").value.trim());
+    $("friendsList").innerHTML = rows?.length
+      ? rows.map((p) => `
+          <div class="friend-row">
+            <img class="rank-avatar" src="${p.avatar_url || "icons/icon.svg"}" alt="">
+            <span class="rank-name">${escapeHtml(p.username)}</span>
+            <button class="mini-btn" data-add="${p.id}">Add</button>
+          </div>`).join("")
+      : '<p class="hint">Ninguém encontrado com esse nome.</p>';
+  };
+  $("friendsList").addEventListener("click", (e) => {
+    const inv = e.target.dataset.invite, add = e.target.dataset.add;
+    if (inv) net.inviteFriend(inv);
+    if (add) import("../services/supabase.js").then((m) => m.sendFriendRequest(add));
+  });
+
+  /* LOBBY */
+  $("btnQueue").onclick = () => net.startQueue((info) => startGame({ mode: "online", ...info }));
+  $("btnCancelQueue").onclick = () => net.cancelQueue();
+  $("btnCreateRoom").onclick = async () => {
+    const code = await net.createRoom(false);
+    $("roomCodeDisplay").classList.remove("hidden");
+    $("roomCodeDisplay").querySelector("b").textContent = code;
+    toast("Sala criada! Compartilhe o código.");
+  };
+  $("btnJoinRoom").onclick = () =>
+    net.joinRoom($("roomCodeInput").value.trim().toUpperCase(),
+      (info) => startGame({ mode: "online", ...info }));
+
+  /* JOGO: modos, reiniciar, menu, chat */
+  $("modeMove").onclick  = () => setUiMode("move");
+  $("modeWallH").onclick = () => setUiMode("h");
+  $("modeWallV").onclick = () => setUiMode("v");
+  $("btnRestart").onclick = () => openModal("Reiniciar partida?", [
+    { label: "↻ Reiniciar", onClick: () => startGame({ mode: S.mode, level: S.level }) },
+    { label: "Cancelar", onClick: null }
+  ]);
+  $("btnMenu").onclick = () => openModal("Sair da partida?", [
+    { label: "🏠 Sair", onClick: () => endSession(true) },
+    { label: "Continuar", onClick: null }
+  ]);
+  $("btnChat").onclick = () => {
+    $("chatBar").classList.toggle("hidden");
+    $("chatFeed").classList.remove("hidden");
+  };
+  $("chatBar").addEventListener("click", (e) => {
+    const btn = e.target.closest(".chat-btn");
+    if (!btn) return;
+    feedBubble(btn.dataset.msg, true);
+    if (S?.mode === "online") net.sendChat(btn.dataset.msg);
+    SFX.chat();
+  });
+
+  /* OVERLAY de vitória */
+  $("btnRematch").onclick     = () => startGame({ mode: S?.mode || "local", level: S?.level });
+  $("btnReplayWatch").onclick = () => { $("overlay").classList.add("hidden"); openReplay(S?.state.replay); };
+  $("btnExitToHome").onclick  = () => endSession(true);
+
+  /* REPLAY */
+  $("btnReplayPlay").onclick = () => (RP.playing ? rpPause() : rpPlay());
+  $("btnReplayBack").onclick = () => { rpPause(); rpStep(-1); };
+  $("btnReplayFwd").onclick  = () => { rpPause(); rpStep(1); };
+  $("btnReplayShare").onclick = async () => {
+    try { await navigator.clipboard.writeText(replayCode()); toast("Código do replay copiado! 📤"); }
+    catch (_) { toast(replayCode()); }
+  };
+  $("btnReplayLoad").onclick = () => {
+    try {
+      const ev = JSON.parse(decodeURIComponent(escape(atob($("replayCodeInput").value.trim()))));
+      openReplay(ev);
+    } catch (_) { toast("Código de replay inválido."); }
+  };
+
+  /* teclado (atalhos do Como Jogar) */
+  window.addEventListener("keydown", (e) => {
+    if (current !== "game" || !S) return;
+    const dirs = { ArrowUp: [-1,0], ArrowDown: [1,0], ArrowLeft: [0,-1], ArrowRight: [0,1] };
+    if (dirs[e.key]){
+      e.preventDefault();
+      setUiMode("move");
+      const p = S.state.players[S.state.turn];
+      controller.handleMove(p.r + dirs[e.key][0], p.c + dirs[e.key][1]);
+    }
+    if (e.key === "1") setUiMode("move");
+    if (e.key === "2") setUiMode("h");
+    if (e.key === "3") setUiMode("v");
+  });
+
+  /* redimensionou → reajusta tabuleiro (anti-overlap) */
+  const refit = () => { if (S && board) board.fit($("stage"), $("boardFrame")); };
+  window.addEventListener("resize", refit);
+  window.addEventListener("orientationchange", refit);
+
+  /* auth → chip da home */
+  onAuthChange((session) => {
+    const logged = !!session;
+    $("btnLogin").classList.toggle("hidden", logged);
+    $("homeUserChip").classList.toggle("hidden", !logged);
+    $("btnLogout").classList.toggle("hidden", !logged);
+    if (logged){
+      $("homeUserName").textContent = session.user.user_metadata?.name || "Jogador";
+      getProfile().then((p) => {
+        if (p?.avatar_url) $("homeUserAvatar").src = p.avatar_url;
+      });
+    }
+  });
+
+  /* rede: status + eventos */
+  net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
+  net.onEvent((msg) => {
+    if (msg.kind === "action") handleRemoteEvent(msg.ev);
+    if (msg.kind === "chat")   feedBubble(msg.text, false);
+  });
+}
+
+/* bolha no feed do chat */
+function feedBubble(text, me){
+  const feed = $("chatFeed");
+  feed.classList.remove("hidden");
+  const b = document.createElement("div");
+  b.className = "bubble" + (me ? " me" : "");
+  b.textContent = text;
+  feed.appendChild(b);
+  while (feed.children.length > 4) feed.removeChild(feed.firstChild);
+  setTimeout(() => b.remove(), 4000);
+}

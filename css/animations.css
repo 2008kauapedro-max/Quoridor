@@ -1,0 +1,132 @@
+/* =============================================================
+   Quoridor Arena — animations.css
+   -------------------------------------------------------------
+   • Todos os @keyframes do projeto (os outros CSS só CHAMAM).
+   • Confete.
+   • Modos de performance / acessibilidade.
+   ============================================================= */
+
+/* ═══════════ KEYFRAMES ═══════════ */
+
+/* Fundo ambiente derivando devagar */
+@keyframes drift{
+  from{ transform:translate3d(-1.5%, -1%, 0) scale(1); }
+  to  { transform:translate3d( 1.5%,  1%, 0) scale(1.04); }
+}
+
+/* Troca de tela */
+@keyframes screenIn{
+  from{ opacity:0; transform:translateY(14px); }
+  to  { opacity:1; transform:translateY(0); }
+}
+
+/* Logo do splash flutuando */
+@keyframes logoFloat{
+  0%,100%{ transform:translateY(0); }
+  50%    { transform:translateY(-7px); }
+}
+
+/* Barrinha de carregamento */
+@keyframes loadBar{
+  0%  { transform:translateX(-100%); }
+  100%{ transform:translateX(450%); }
+}
+
+/* Anel pulsando no dot da pílula de turno */
+@keyframes dotPulse{
+  0%  { transform:scale(1);   opacity:.6; }
+  100%{ transform:scale(2.5); opacity:0; }
+}
+
+/* Banner "🔴 Vermelho começa" */
+@keyframes bannerPop{
+  0%  { transform:translateX(-50%) scale(.6); opacity:0; }
+  100%{ transform:translateX(-50%) scale(1);  opacity:1; }
+}
+
+/* Casa negada (movimento inválido) */
+@keyframes denyShake{
+  25%{ transform:translateX(-5%); }
+  75%{ transform:translateX(5%); }
+}
+
+/* Parede encaixando com "pop" */
+@keyframes wallPop{
+  0%  { transform:scale(.35); opacity:0; }
+  65% { transform:scale(1.07); opacity:1; }
+  100%{ transform:scale(1); }
+}
+
+/* Ghost tremendo quando a posição é inválida */
+@keyframes ghostShake{
+  20%{ transform:translateX(-4%); }
+  40%{ transform:translateX(4%); }
+  60%{ transform:translateX(-3%); }
+  80%{ transform:translateX(2%); }
+}
+
+/* Anel em volta da bolinha da vez */
+@keyframes ringPulse{
+  0%  { transform:scale(.85); opacity:.85; }
+  100%{ transform:scale(1.25); opacity:0; }
+}
+
+/* Contador de paredes pulsando ao gastar */
+@keyframes countPop{
+  50%{ transform:scale(1.5); }
+}
+
+/* Bolha de chat entrando */
+@keyframes bubbleIn{
+  from{ opacity:0; transform:translateY(8px) scale(.9); }
+  to  { opacity:1; transform:translateY(0)   scale(1); }
+}
+
+/* Spinner genérico */
+@keyframes spin{
+  to{ transform:rotate(360deg); }
+}
+
+/* Troféu quicando na vitória */
+@keyframes bounceIn{
+  0%  { transform:scale(0) rotate(-15deg); }
+  100%{ transform:scale(1) rotate(0); }
+}
+
+/* ═══════════ CONFETE ═══════════ */
+.conf{
+  position:absolute; top:-5vh; opacity:.95;
+  animation:confFall linear forwards;
+}
+@keyframes confFall{
+  to{ transform:translate3d(var(--dx), 112vh, 0) rotate(var(--rot)); opacity:.9; }
+}
+
+/* ═══════════ PERFORMANCE & ACESSIBILIDADE ═══════════ */
+
+/* Configurações → Animações: DESLIGADO (aparelhos fracos) */
+html[data-animations="off"] *,
+html[data-animations="off"] *::before,
+html[data-animations="off"] *::after{
+  animation:none !important;
+  transition:none !important;
+}
+
+/* Configurações → Qualidade: BAIXA (sem blur/sombras pesadas) */
+html[data-quality="low"] *,
+html[data-quality="low"] *::before,
+html[data-quality="low"] *::after{
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  box-shadow:none !important;
+}
+html[data-quality="low"] body::before{ animation:none !important; }
+
+/* Sistema operacional pediu menos movimento → obedecemos */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+  }
+}

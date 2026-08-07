@@ -1,116 +1,332 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#8a5a2e">
-<title>Quoridor · Duelo de Barreiras</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#8a5a2e">
+  <meta name="description" content="Quoridor Arena — jogo de estratégia 1v1 com barreiras. Jogue online, local ou contra a IA.">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/icon.svg">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <title>Quoridor Arena · Duelo de Barreiras</title>
+
+  <!-- Estilos (ordem importa: tema → base → componentes → animações) -->
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/animations.css">
 </head>
 <body>
-<noscript><p style="padding:20px;font-family:sans-serif">Este jogo precisa de JavaScript habilitado.</p></noscript>
 
-<div id="app">
+  <!-- ════════════════ TELA: LOADING (splash) ════════════════ -->
+  <section class="screen active" data-screen="loading">
+    <div class="splash">
+      <div class="splash-logo" id="loadingLogo">▦</div>
+      <h1 class="splash-title">QUORIDOR <span>ARENA</span></h1>
+      <div class="splash-bar"><i></i></div>
+      <p class="splash-hint">carregando…</p>
+    </div>
+  </section>
 
-  <!-- ══════════ CABEÇALHO: marca, vez do jogador, som ══════════ -->
-  <header id="topbar">
-    <div class="brand">
-      <!-- Mini-tabuleiro como logotipo -->
-      <svg viewBox="0 0 36 36" aria-hidden="true">
-        <rect x="1" y="1" width="34" height="34" rx="8" fill="#8a5a2e"/>
-        <g fill="#f7efe2">
-          <rect x="4"  y="4"  width="8" height="8" rx="2"/><rect x="14" y="4"  width="8" height="8" rx="2"/><rect x="24" y="4"  width="8" height="8" rx="2"/>
-          <rect x="4"  y="14" width="8" height="8" rx="2"/><rect x="14" y="14" width="8" height="8" rx="2"/><rect x="24" y="14" width="8" height="8" rx="2"/>
-          <rect x="4"  y="24" width="8" height="8" rx="2"/><rect x="14" y="24" width="8" height="8" rx="2"/><rect x="24" y="24" width="8" height="8" rx="2"/>
-        </g>
-        <circle cx="18" cy="8"  r="3.4" fill="#2f7fd6"/>
-        <circle cx="18" cy="28" r="3.4" fill="#e0453a"/>
-      </svg>
-      <div class="brand-text">
-        <h1>QUORIDOR</h1>
-        <small>duelo de barreiras</small>
+  <!-- ════════════════ TELA: HOME ════════════════ -->
+  <section class="screen" data-screen="home">
+    <header class="home-hero">
+      <div class="hero-logo">▦</div>
+      <h1 class="hero-title">QUORIDOR <span>ARENA</span></h1>
+      <p class="hero-sub" data-i18n="heroSub">duelo de barreiras · estratégia pura</p>
+      <button id="homeUserChip" class="user-chip hidden">
+        <img id="homeUserAvatar" alt="avatar" class="chip-avatar">
+        <span id="homeUserName">Jogador</span>
+      </button>
+    </header>
+
+    <nav class="home-menu">
+      <button id="btnOnline"   class="menu-btn primary">🌐 <b data-i18n="playOnline">Jogar Online</b></button>
+      <button id="btnLocal"    class="menu-btn">👥 <b data-i18n="playLocal">Jogar Local</b></button>
+      <button id="btnAI"       class="menu-btn">🤖 <b data-i18n="playAI">Treinar contra IA</b></button>
+      <button id="btnRanking"  class="menu-btn">🏆 <b data-i18n="ranking">Ranking</b></button>
+      <button id="btnProfile"  class="menu-btn">👤 <b data-i18n="profile">Perfil</b></button>
+      <button id="btnHowTo"    class="menu-btn">📖 <b data-i18n="howto">Como Jogar</b></button>
+      <button id="btnSettings" class="menu-btn">⚙️ <b data-i18n="settings">Configurações</b></button>
+      <button id="btnLogin"    class="menu-btn ghost">🔑 <b data-i18n="login">Entrar</b></button>
+    </nav>
+    <p class="home-foot">v1.0 · 100% gratuito · PWA</p>
+  </section>
+
+  <!-- ════════════════ TELA: LOGIN / CADASTRO ════════════════ -->
+  <section class="screen" data-screen="auth">
+    <header class="screen-head">
+      <button class="icon-btn back" data-back="home">←</button>
+      <h2 data-i18n="authTitle">Sua conta</h2><span></span>
+    </header>
+
+    <div class="card auth-card">
+      <div class="tabs">
+        <button id="tabLogin"    class="tab active" data-i18n="tabLogin">Entrar</button>
+        <button id="tabRegister" class="tab" data-i18n="tabRegister">Criar conta</button>
+      </div>
+
+      <input id="authName"     class="input hidden" type="text"     placeholder="Nome de jogador" autocomplete="nickname" maxlength="20">
+      <input id="authEmail"    class="input"        type="email"    placeholder="E-mail"           autocomplete="email">
+      <input id="authPassword" class="input"        type="password" placeholder="Senha"            autocomplete="current-password">
+      <p id="authError" class="error hidden"></p>
+
+      <button id="btnAuthSubmit" class="menu-btn primary wide">Entrar</button>
+      <button id="btnForgot"     class="link-btn hidden" data-i18n="forgot">Esqueci minha senha</button>
+      <div class="divider"><span>ou</span></div>
+      <button id="btnGoogle" class="menu-btn google wide">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M23.5 12.3c0-.9-.1-1.5-.3-2.3H12v4.5h6.5c-.1 1.1-.8 2.7-2.4 3.8l3.7 2.9c2.2-2.1 3.7-5.1 3.7-8.9z"/><path fill="#34A853" d="M12 24c3.2 0 5.9-1.1 7.9-2.9l-3.7-2.9c-1 .7-2.4 1.2-4.2 1.2-3.2 0-5.9-2.1-6.9-5.1H1.3v3C3.3 21.3 7.3 24 12 24z"/><path fill="#FBBC05" d="M5.1 14.3c-.2-.7-.4-1.5-.4-2.3s.1-1.6.4-2.3v-3H1.3C.5 8.3 0 10.1 0 12s.5 3.7 1.3 5.3l3.8-3z"/><path fill="#EA4335" d="M12 4.7c1.8 0 3 .8 3.7 1.4l3.3-3.2C16.9 1 14.2 0 12 0 7.3 0 3.3 2.7 1.3 6.7l3.8 3c1-3 3.7-5 6.9-5z"/></svg>
+        <b>Continuar com Google</b>
+      </button>
+    </div>
+  </section>
+
+  <!-- ════════════════ TELA: COMO JOGAR ════════════════ -->
+  <section class="screen" data-screen="howto">
+    <header class="screen-head">
+      <button class="icon-btn back" data-back="home">←</button>
+      <h2 data-i18n="howto">Como Jogar</h2><span></span>
+    </header>
+    <div class="card prose">
+      <p>🎯 <b>Objetivo:</b> leve sua bolinha até a fileira oposta antes do rival.</p>
+      <p>🔴 Vermelho começa embaixo e sobe · 🔵 Azul começa em cima e desce.</p>
+      <p>👣 Por turno, faça <b>UMA</b> ação: andar 1 casa <i>ou</i> colocar 1 barreira.</p>
+      <p>🧱 Cada jogador tem <b>10 barreiras</b> (horizontais ou verticais). Arraste para posicionar — a silhueta fica <b class="ok">verde</b> se válida, <b class="bad">vermelha</b> se inválida.</p>
+      <p>🚫 Não pode: atravessar barreiras, sair do tabuleiro, sobrepor/cruzar barreiras, ou <b>trancar</b> o caminho de alguém (o jogo verifica com BFS).</p>
+      <p>🌐 <b>Online:</b> entre na fila e o matchmaking acha um rival do seu nível. Ou crie uma sala privada e mande o código.</p>
+      <p>🤖 <b>IA:</b> 4 níveis — Fácil, Médio, Difícil e Especialista.</p>
+      <p>⌨️ Atalhos: setas movem · <b>1/2/3</b> trocam ação · <b>R</b> reinicia.</p>
+    </div>
+  </section>
+
+  <!-- ════════════════ TELA: CONFIGURAÇÕES ════════════════ -->
+  <section class="screen" data-screen="settings">
+    <header class="screen-head">
+      <button class="icon-btn back" data-back="home">←</button>
+      <h2 data-i18n="settings">Configurações</h2><span></span>
+    </header>
+    <div class="card settings-card">
+      <label class="set-row"><span data-i18n="theme">Tema</span>
+        <select id="setTheme" class="input slim">
+          <option value="light">Claro</option><option value="dark">Escuro</option><option value="auto">Automático</option>
+        </select></label>
+      <label class="set-row"><span data-i18n="lang">Idioma</span>
+        <select id="setLang" class="input slim">
+          <option value="pt">Português</option><option value="en">English</option>
+        </select></label>
+      <label class="set-row"><span data-i18n="volume">Volume</span>
+        <input id="setVolume" type="range" min="0" max="100" value="80"></label>
+      <label class="set-row"><span data-i18n="music">Música ambiente</span>
+        <input id="setMusic" type="checkbox"></label>
+      <label class="set-row"><span data-i18n="animations">Animações</span>
+        <input id="setAnimations" type="checkbox" checked></label>
+      <label class="set-row"><span data-i18n="quality">Qualidade gráfica</span>
+        <select id="setQuality" class="input slim">
+          <option value="high">Alta</option><option value="low">Baixa (modo leve)</option>
+        </select></label>
+      <div class="set-actions">
+        <button id="btnInstall" class="menu-btn wide hidden">📲 <b data-i18n="install">Instalar aplicativo</b></button>
+        <button id="btnLogout"  class="menu-btn danger wide hidden">🚪 <b data-i18n="logout">Sair da conta</b></button>
       </div>
     </div>
+  </section>
 
-    <!-- Indicador de turno -->
-    <div id="turnPill" class="is-red">
-      <span class="dot"></span>
-      <span id="turnText">Vez do Vermelho</span>
+  <!-- ════════════════ TELA: RANKING ════════════════ -->
+  <section class="screen" data-screen="ranking">
+    <header class="screen-head">
+      <button class="icon-btn back" data-back="home">←</button>
+      <h2 data-i18n="ranking">Ranking</h2><span></span>
+    </header>
+    <div class="tabs rank-tabs">
+      <button class="tab active" data-period="global"  data-i18n="rankGlobal">Global</button>
+      <button class="tab" data-period="weekly"  data-i18n="rankWeekly">Semanal</button>
+      <button class="tab" data-period="monthly" data-i18n="rankMonthly">Mensal</button>
+    </div>
+    <ol id="rankingList" class="rank-list card"></ol>
+  </section>
+
+  <!-- ════════════════ TELA: PERFIL ════════════════ -->
+  <section class="screen" data-screen="profile">
+    <header class="screen-head">
+      <button class="icon-btn back" data-back="home">←</button>
+      <h2 data-i18n="profile">Perfil</h2><span></span>
+    </header>
+
+    <div class="card profile-card">
+      <div class="profile-top">
+        <div class="avatar-wrap" id="avatarWrap">
+          <img id="profileAvatar" class="avatar" alt="avatar">
+          <button id="btnAvatar" class="avatar-edit" title="Trocar foto">📷</button>
+          <input id="avatarInput" type="file" accept="image/*" class="hidden">
+        </div>
+        <div>
+          <h3 id="profileName">Jogador</h3>
+          <p id="profileLeague" class="league">🥉 Bronze · Elo 1000</p>
+          <div class="xp-bar"><i id="xpFill"></i></div>
+          <p id="xpLabel" class="xp-label">Nível 1 · 0/100 XP</p>
+        </div>
+      </div>
+      <div id="profileStats" class="stats-grid"></div>
     </div>
 
-    <button id="soundBtn" class="icon-btn" title="Ligar / desligar som" aria-label="Som">🔊</button>
-  </header>
+    <h3 class="section-title" data-i18n="achievements">Conquistas</h3>
+    <div id="achievementsList" class="ach-list"></div>
 
-  <!-- ══════════ ÁREA DO JOGO ══════════ -->
-  <main>
+    <h3 class="section-title" data-i18n="skins">Skins</h3>
+    <div id="skinsRow" class="skins-row"></div>
+
+    <h3 class="section-title" data-i18n="friends">Amigos</h3>
+    <div class="card friends-card">
+      <div class="friends-search">
+        <input id="friendSearch" class="input" placeholder="Buscar jogador…" maxlength="20">
+        <button id="btnFriendSearch" class="menu-btn">🔎</button>
+      </div>
+      <div id="friendsList" class="friends-list"></div>
+    </div>
+  </section>
+
+  <!-- ════════════════ TELA: LOBBY (online) ════════════════ -->
+  <section class="screen" data-screen="lobby">
+    <header class="screen-head">
+      <button class="icon-btn back" data-back="home">←</button>
+      <h2 data-i18n="lobby">Jogar Online</h2><span></span>
+    </header>
+
+    <div class="card lobby-card">
+      <button id="btnQueue" class="menu-btn primary wide">⚡ <b data-i18n="queue">Entrar na fila</b></button>
+      <p id="queueStatus" class="queue-status hidden"><span class="spinner"></span> <span id="queueStatusText">Procurando adversário…</span></p>
+      <button id="btnCancelQueue" class="link-btn hidden">Cancelar</button>
+
+      <div class="divider"><span>sala privada</span></div>
+      <button id="btnCreateRoom" class="menu-btn wide">🏠 <b data-i18n="createRoom">Criar sala</b></button>
+      <p id="roomCodeDisplay" class="room-code hidden">Código: <b>------</b></p>
+      <div class="room-join">
+        <input id="roomCodeInput" class="input" placeholder="CÓDIGO" maxlength="6" autocomplete="off">
+        <button id="btnJoinRoom" class="menu-btn" data-i18n="joinRoom">Entrar</button>
+      </div>
+      <p class="hint" data-i18n="lobbyHint">Convide amigos pelo perfil → lista de amigos.</p>
+    </div>
+  </section>
+
+  <!-- ════════════════ TELA: JOGO ════════════════ -->
+  <section class="screen" data-screen="game">
+    <header class="game-top">
+      <button id="btnMenu" class="icon-btn" title="Sair da partida">🏠</button>
+      <div id="turnPill" class="pill is-red">
+        <span class="dot"></span><span id="turnText">Vez do Vermelho</span>
+      </div>
+      <div class="top-right">
+        <span id="timerText" class="timer">00:00</span>
+        <button id="btnChat" class="icon-btn" title="Chat">💬</button>
+      </div>
+    </header>
+
+    <div id="turnBanner" class="turn-banner hidden">🔴 Vermelho começa</div>
+
     <div id="stage">
-      <div class="goal-strip top"><span>🏁 meta do vermelho · topo</span></div>
-      <div id="boardFrame">
-        <div id="board" aria-label="Tabuleiro 9 por 9"></div>
-      </div>
-      <div class="goal-strip bottom"><span>🏁 meta do azul · base</span></div>
-    </div>
-  </main>
-
-  <!-- ══════════ CONTROLES (parte inferior) ══════════ -->
-  <footer id="controls">
-    <div class="panel">
-      <div class="group">
-        <span class="group-label">Ação do turno</span>
-        <div class="mode-row" role="group" aria-label="Escolha de ação">
-          <button id="modeMove" class="mode-btn active">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6.6" cy="12" r="3.4" fill="currentColor"/><path d="M13 12h7.5m-3.4-3.4L20.5 12l-3.4 3.4" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Mover
-          </button>
-          <button id="modeWallH" class="mode-btn">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="9.7" width="19" height="4.6" rx="2.3" fill="currentColor"/><g opacity=".3" fill="currentColor"><rect x="3" y="2.5" width="8.2" height="4.6" rx="1.2"/><rect x="12.8" y="2.5" width="8.2" height="4.6" rx="1.2"/><rect x="3" y="16.9" width="8.2" height="4.6" rx="1.2"/><rect x="12.8" y="16.9" width="8.2" height="4.6" rx="1.2"/></g></svg>
-            Barreira Horizontal
-          </button>
-          <button id="modeWallV" class="mode-btn">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9.7" y="2.5" width="4.6" height="19" rx="2.3" fill="currentColor"/><g opacity=".3" fill="currentColor"><rect x="2.5" y="3" width="4.6" height="8.2" rx="1.2"/><rect x="2.5" y="12.8" width="4.6" height="8.2" rx="1.2"/><rect x="16.9" y="3" width="4.6" height="8.2" rx="1.2"/><rect x="16.9" y="12.8" width="4.6" height="8.2" rx="1.2"/></g></svg>
-            Barreira Vertical
-          </button>
-        </div>
-      </div>
-
-      <div class="group">
-        <span class="group-label">Jogador atual</span>
-        <div id="currentBadge" class="is-red"><span class="dot"></span><span id="currentName">Vermelho</span></div>
-      </div>
-
-      <div class="group">
-        <span class="group-label">Barreiras restantes</span>
-        <div class="wall-row">
-          <span id="chipRed" class="wchip">🔴 <b id="wallsRed">10</b></span>
-          <span id="chipBlue" class="wchip">🔵 <b id="wallsBlue">10</b></span>
-        </div>
-      </div>
-
-      <div class="group">
-        <span class="group-label">&nbsp;</span>
-        <button id="resetBtn">↻ Reiniciar</button>
-      </div>
+      <div class="goal-strip top"><span data-i18n="goalRed">🏁 meta do vermelho · topo</span></div>
+      <div id="boardFrame"><div id="board" aria-label="Tabuleiro 9 por 9"></div></div>
+      <div class="goal-strip bottom"><span data-i18n="goalBlue">🏁 meta do azul · base</span></div>
     </div>
 
-    <p class="kbd-hint">⌨️ Setas movem · <b>1</b> mover · <b>2</b> barreira horizontal · <b>3</b> barreira vertical · <b>R</b> reinicia</p>
-  </footer>
-</div>
+    <footer class="game-controls">
+      <div class="mode-row" role="group" aria-label="Ação do turno">
+        <button id="modeMove"  class="mode-btn active">➜ <b data-i18n="move">Mover</b></button>
+        <button id="modeWallH" class="mode-btn">▬ <b data-i18n="wallH">Barreira H</b></button>
+        <button id="modeWallV" class="mode-btn">▮ <b data-i18n="wallV">Barreira V</b></button>
+      </div>
+      <div class="hud-row">
+        <span id="chipRed"  class="wchip is-turn">🔴 <b id="wallsRed">10</b></span>
+        <span id="chipBlue" class="wchip">🔵 <b id="wallsBlue">10</b></span>
+        <button id="btnRestart" class="icon-btn" title="Reiniciar">↻</button>
+      </div>
+    </footer>
 
-<!-- Mensagens rápidas -->
-<div id="toast" role="status" aria-live="polite"></div>
+    <!-- Chat rápido -->
+    <div id="chatFeed" class="chat-feed hidden"></div>
+    <div id="chatBar" class="chat-bar hidden">
+      <button class="chat-btn" data-msg="👍">👍</button>
+      <button class="chat-btn" data-msg="😂">😂</button>
+      <button class="chat-btn" data-msg="😎">😎</button>
+      <button class="chat-btn" data-msg="Boa jogada!">Boa jogada!</button>
+      <button class="chat-btn" data-msg="GG!">GG!</button>
+      <button class="chat-btn" data-msg="Quase!">Quase!</button>
+      <button class="chat-btn" data-msg="Sua vez!">Sua vez!</button>
+      <button class="chat-btn" data-msg="Excelente!">Excelente!</button>
+    </div>
+  </section>
 
-<!-- Painel de vitória -->
-<div id="overlay" class="hidden" role="dialog" aria-modal="true">
-  <div id="overlayCard">
-    <div id="winEmoji">🏆</div>
-    <h2 id="winText">Vermelho venceu!</h2>
-    <button id="playAgainBtn">▶ Jogar Novamente</button>
+  <!-- ════════════════ TELA: REPLAY ════════════════ -->
+  <section class="screen" data-screen="replay">
+    <header class="screen-head">
+      <button class="icon-btn back" data-back="home">←</button>
+      <h2 data-i18n="replay">Replay</h2><span></span>
+    </header>
+
+    <div id="replayStage">
+      <div id="replayFrame"><div id="replayBoard"></div></div>
+    </div>
+
+    <div class="card replay-controls">
+      <div class="transport">
+        <button id="btnReplayBack"  class="icon-btn" title="Voltar">⏮</button>
+        <button id="btnReplayPlay"  class="icon-btn" title="Play/Pausar">▶</button>
+        <button id="btnReplayFwd"   class="icon-btn" title="Avançar">⏭</button>
+        <select id="replaySpeed" class="input slim">
+          <option value="0.5">0.5×</option><option value="1" selected>1×</option>
+          <option value="2">2×</option><option value="4">4×</option>
+        </select>
+      </div>
+      <div class="room-join">
+        <input id="replayCodeInput" class="input" placeholder="Colar código do replay">
+        <button id="btnReplayLoad" class="menu-btn">Carregar</button>
+      </div>
+      <button id="btnReplayShare" class="link-btn">📤 Compartilhar código</button>
+    </div>
+  </section>
+
+  <!-- ════════════════ OVERLAYS COMPARTILHADOS ════════════════ -->
+
+  <!-- Vitória -->
+  <div id="overlay" class="overlay hidden" role="dialog" aria-modal="true">
+    <div id="overlayCard" class="overlay-card">
+      <div id="winEmoji">🏆</div>
+      <h2 id="winText">Vermelho venceu!</h2>
+      <p id="winSub" class="win-sub">+25 Elo · +40 XP</p>
+      <div class="overlay-actions">
+        <button id="btnRematch" class="menu-btn primary">🔄 Revanche</button>
+        <button id="btnReplayWatch" class="menu-btn">🎬 Ver replay</button>
+        <button id="btnExitToHome" class="menu-btn">🏠 Início</button>
+      </div>
+    </div>
   </div>
-</div>
 
-<!-- Confete -->
-<div id="confetti" aria-hidden="true"></div>
+  <!-- Modal genérico (nível da IA, continuar partida, convites…) -->
+  <div id="modal" class="overlay hidden" role="dialog" aria-modal="true">
+    <div class="overlay-card small">
+      <h3 id="modalTitle">Título</h3>
+      <div id="modalBody"></div>
+      <div id="modalActions" class="overlay-actions"></div>
+    </div>
+  </div>
 
-<script src="script.js"></script>
+  <!-- Reconexão -->
+  <div id="reconnect" class="overlay hidden">
+    <div class="overlay-card small">
+      <span class="spinner big"></span>
+      <h3 data-i18n="reconnecting">Reconectando…</h3>
+    </div>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div id="confetti" aria-hidden="true"></div>
+
+  <!-- Boot do app (ES Modules) -->
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

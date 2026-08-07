@@ -1,7 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   QUORIDOR — folha de estilo
-   Visual: fundo cinza claro, tabuleiro de madeira, casas brancas,
-   bolinhas vermelha/azul, barreiras marrons, fantasma verde.
+   QUORIDOR — folha de estilo final
    ═══════════════════════════════════════════════════════════════ */
 
 :root{
@@ -11,28 +9,26 @@
   --blue:#2f7fd6;  --blue-soft:#dcebfb;
   --wood-1:#b07a42; --wood-2:#8a5a2e; --wood-3:#6f4520;
   --groove:#573517;
-  --wall:#7a4c24;
-  --chrome:272px; /* altura aprox. de cabeçalho + controles (p/ dimensionar o tabuleiro) */
+  --chrome:272px;
   --font-display:"Trebuchet MS","Segoe UI",Verdana,sans-serif;
   --font-body:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
 }
 @media (max-height:600px){ :root{ --chrome:190px; } }
 
-/* ── Reset & base ─────────────────────────────────────────────── */
 *{ margin:0; padding:0; box-sizing:border-box; }
 html,body{ height:100%; }
 body{
   font-family:var(--font-body);
   color:var(--ink);
-  background-color:#e9ebee;              /* fundo cinza claro */
+  background-color:#e9ebee;
   overflow:hidden;
   overscroll-behavior:none;
   -webkit-user-select:none; user-select:none;
   -webkit-touch-callout:none;
-  touch-action:manipulation;             /* elimina zoom por toque duplo */
+  touch-action:manipulation;
 }
 
-/* Textura ambiente: pontos sutis + brilhos suaves nas cores dos times */
+/* Textura ambiente */
 body::before{
   content:""; position:fixed; inset:-20%; z-index:-1;
   background:
@@ -58,7 +54,6 @@ body::before{
 .brand h1{ font-family:var(--font-display); font-size:clamp(20px,3.4vmin,30px); letter-spacing:.08em; line-height:1; }
 .brand small{ display:block; font-size:10px; letter-spacing:.34em; text-transform:uppercase; color:var(--ink-soft); margin-top:2px; }
 
-/* Pílula "Vez do X" */
 #turnPill{
   display:flex; align-items:center; gap:10px;
   padding:8px 18px; border-radius:999px; border:2px solid;
@@ -82,13 +77,14 @@ body::before{
 .icon-btn:active{ transform:scale(.92); }
 
 /* ── Palco do jogo ────────────────────────────────────────────── */
-main{ flex:1; min-height:0; display:grid; place-items:center; padding:2px 12px; }
+main{ flex:1; min-height:0; display:grid; place-items:center; padding:2px 12px; overflow:hidden; }
+
+/* Largura inicial (fallback) — o JS ajusta com fitBoard() */
 #stage{
-  width:max(240px, min(94vw, 680px, calc(100dvh - var(--chrome)))); /* fallback — o JS ajusta */
+  width:max(240px, min(94vw, 680px, calc(100dvh - var(--chrome))));
   display:flex; flex-direction:column; gap:5px;
 }
 
-/* Faixas de meta */
 .goal-strip{
   display:flex; justify-content:center; align-items:center;
   font-size:clamp(9px,1.5vmin,12px); font-weight:700; letter-spacing:.18em; text-transform:uppercase;
@@ -97,8 +93,9 @@ main{ flex:1; min-height:0; display:grid; place-items:center; padding:2px 12px; 
 .goal-strip.top   { background:linear-gradient(90deg,transparent, var(--red)  18%, var(--red)  82%, transparent); }
 .goal-strip.bottom{ background:linear-gradient(90deg,transparent, var(--blue) 18%, var(--blue) 82%, transparent); }
 
-/* Moldura de madeira */
+/* Moldura de madeira — SEMPRE quadrada */
 #boardFrame{
+  flex:0 0 auto;
   width:100%; aspect-ratio:1;
   padding:clamp(8px,1.6vmin,16px);
   border-radius:clamp(12px,2.4vmin,22px);
@@ -112,18 +109,16 @@ main{ flex:1; min-height:0; display:grid; place-items:center; padding:2px 12px; 
     0 22px 44px -20px rgba(70,45,20,.6);
 }
 
-/* Tabuleiro (os "sulcos" entre as casas) */
 #board{
   position:relative; width:100%; height:100%;
   border-radius:clamp(6px,1.2vmin,12px);
   background:linear-gradient(180deg,#6a4322,var(--groove));
   box-shadow:inset 0 3px 10px rgba(0,0,0,.55);
-  touch-action:none;               /* essencial p/ arrastar no touch sem rolar a página */
+  touch-action:none;
   cursor:default;
 }
 #board.mode-wall{ cursor:crosshair; }
 
-/* Cor do turno, usada nos alvos de movimento */
 #board.turn-red { --turn:var(--red);  --turn-soft:var(--red-soft); }
 #board.turn-blue{ --turn:var(--blue); --turn-soft:var(--blue-soft); }
 
@@ -136,7 +131,6 @@ main{ flex:1; min-height:0; display:grid; place-items:center; padding:2px 12px; 
 }
 #board.mode-wall .cell{ cursor:crosshair; }
 
-/* Casas para onde o jogador da vez pode andar */
 .cell.target{ cursor:pointer; }
 .cell.target::after{
   content:""; position:absolute; inset:33%; border-radius:50%;
@@ -150,14 +144,12 @@ main{ flex:1; min-height:0; display:grid; place-items:center; padding:2px 12px; 
 .cell.target:hover::after{ opacity:.75; transform:scale(1); }
 .cell.target:active{ transform:scale(.96); }
 
-/* Marca da última casa visitada */
 .cell.last::before{ content:""; position:absolute; inset:24%; border-radius:50%; border:2px dashed rgba(60,45,30,.22); }
 
-/* Movimento negado */
 .cell.deny{ animation:denyShake .2s 2; }
 @keyframes denyShake{ 25%{transform:translateX(-5%);} 75%{transform:translateX(5%);} }
 
-/* ── Barreiras ────────────────────────────────────────────────── */
+/* ── Barreiras (cor do dono) ──────────────────────────────────── */
 #wallLayer{ position:absolute; inset:0; z-index:3; pointer-events:none; }
 .wall{
   position:absolute; border-radius:999px;
@@ -165,26 +157,15 @@ main{ flex:1; min-height:0; display:grid; place-items:center; padding:2px 12px; 
   animation:wallPop .3s cubic-bezier(.34,1.56,.64,1);
 }
 .wall.no-anim{ animation:none; }
-
-/* 🔴 Barreiras do jogador Vermelho */
-.wall.by-red{
-  background:linear-gradient(180deg, #f0786c, var(--red) 45%, #992219);
-  box-shadow:0 2px 4px rgba(0,0,0,.4), inset 0 1px 1px rgba(255,255,255,.45), inset 0 -1px 2px rgba(0,0,0,.35);
-}
-
-/* 🔵 Barreiras do jogador Azul */
-.wall.by-blue{
-  background:linear-gradient(180deg, #6aa8e8, var(--blue) 45%, #184a80);
-  box-shadow:0 2px 4px rgba(0,0,0,.4), inset 0 1px 1px rgba(255,255,255,.45), inset 0 -1px 2px rgba(0,0,0,.35);
-}
-
+.wall.by-red { background:linear-gradient(180deg,#f0786c, var(--red)  45%, #992219); }
+.wall.by-blue{ background:linear-gradient(180deg,#6aa8e8, var(--blue) 45%, #184a80); }
 @keyframes wallPop{
   0%  { transform:scale(.35); opacity:0; }
   65% { transform:scale(1.07); opacity:1; }
   100%{ transform:scale(1); }
 }
 
-/* ── Silhueta (fantasma) da barreira ──────────────────────────── */
+/* ── Fantasma da barreira ─────────────────────────────────────── */
 #ghost{
   position:absolute; z-index:4; border-radius:999px; pointer-events:none; opacity:0;
   background:rgba(56,201,106,.5);
@@ -214,7 +195,6 @@ main{ flex:1; min-height:0; display:grid; place-items:center; padding:2px 12px; 
   background:radial-gradient(circle at 32% 26%, #b8dcff, #3d8ce0 42%, #17497f 100%);
   box-shadow:inset 0 -3px 6px rgba(0,0,0,.3), inset 0 2px 3px rgba(255,255,255,.35);
 }
-/* Anel pulsante na bolinha da vez */
 .piece.active::after{ content:""; position:absolute; inset:-8%; border-radius:50%; border:3px solid #fff; animation:ringPulse 1.5s ease-out infinite; }
 .piece.red.active::after { border-color:var(--red); }
 .piece.blue.active::after{ border-color:var(--blue); }
@@ -234,7 +214,6 @@ main{ flex:1; min-height:0; display:grid; place-items:center; padding:2px 12px; 
 .group{ display:flex; flex-direction:column; align-items:center; gap:5px; }
 .group-label{ font-size:9.5px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-soft); }
 
-/* Seletor de ação */
 .mode-row{ display:flex; gap:6px; background:#e8e2d8; padding:5px; border-radius:14px; flex-wrap:wrap; justify-content:center; }
 .mode-btn{
   display:flex; align-items:center; gap:7px; border:0; background:transparent;
@@ -247,7 +226,6 @@ main{ flex:1; min-height:0; display:grid; place-items:center; padding:2px 12px; 
 .mode-btn.active{ background:var(--ink); color:#fff; box-shadow:0 4px 10px -3px rgba(0,0,0,.4); }
 .mode-btn:disabled{ opacity:.4; cursor:not-allowed; }
 
-/* Jogador atual */
 #currentBadge{
   display:flex; align-items:center; gap:8px; font-weight:800;
   font-family:var(--font-display); font-size:clamp(13px,2vmin,17px);
@@ -259,7 +237,6 @@ main{ flex:1; min-height:0; display:grid; place-items:center; padding:2px 12px; 
 #currentBadge.is-blue{ background:var(--blue-soft); color:#17497f; }
 #currentBadge.is-blue .dot{ background:var(--blue); }
 
-/* Contadores de barreira */
 .wall-row{ display:flex; gap:8px; }
 .wchip{
   display:flex; align-items:center; gap:6px; background:#f4efe6;
@@ -271,7 +248,6 @@ main{ flex:1; min-height:0; display:grid; place-items:center; padding:2px 12px; 
 .wchip b.pop{ animation:countPop .35s; }
 @keyframes countPop{ 50%{ transform:scale(1.5); } }
 
-/* Botões de ação */
 #resetBtn, #playAgainBtn{
   border:0; color:#fff; font:inherit; font-weight:800; letter-spacing:.02em;
   padding:10px 18px; border-radius:12px; cursor:pointer;
@@ -295,7 +271,7 @@ main{ flex:1; min-height:0; display:grid; place-items:center; padding:2px 12px; 
 }
 #toast.show{ opacity:1; transform:translate(-50%,0); }
 
-/* ── Painel de vitória ────────────────────────────────────────── */
+/* ── Vitória ──────────────────────────────────────────────────── */
 #overlay{
   position:fixed; inset:0; z-index:70; display:grid; place-items:center;
   background:rgba(40,30,20,.5); backdrop-filter:blur(4px);
@@ -318,15 +294,10 @@ main{ flex:1; min-height:0; display:grid; place-items:center; padding:2px 12px; 
 
 /* ── Confete ──────────────────────────────────────────────────── */
 #confetti{ position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:75; }
-.conf{
-  position:absolute; top:-5vh; opacity:.95;
-  animation:confFall linear forwards;
-}
-@keyframes confFall{
-  to{ transform:translate3d(var(--dx), 112vh, 0) rotate(var(--rot)); opacity:.9; }
-}
+.conf{ position:absolute; top:-5vh; opacity:.95; animation:confFall linear forwards; }
+@keyframes confFall{ to{ transform:translate3d(var(--dx), 112vh, 0) rotate(var(--rot)); opacity:.9; } }
 
-/* ── Telas pequenas / baixas ──────────────────────────────────── */
+/* ── Telas pequenas ───────────────────────────────────────────── */
 @media (max-width:620px){
   #topbar{ gap:8px; padding:8px 10px; }
   .brand h1{ font-size:19px; }

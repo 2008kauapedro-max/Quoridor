@@ -1,17 +1,4 @@
-/* =============================================================
-   Quoridor Arena — js/config.js  (SEU arquivo de chaves)
-   -------------------------------------------------------------
-   Cole aqui as chaves do SEU projeto Supabase (plano gratuito):
-   supabase.com → seu projeto → Settings → API
-
-   Enquanto os valores estiverem vazios, o jogo funciona em modo
-   offline (Jogar Local, IA, Replay) e o online/login dorme. 😴
-   ============================================================= */
-
 export const CONFIG = {
-  /* Exemplo: "https://abc123xyz.supabase.co"  (sem barra no final) */
-  SUPABASE_URL: "",
-
-  /* Exemplo: "eyJhbGciOiJIUzI1NiIsInR5cCI6..."  (chave "anon public") */
-  SUPABASE_ANON_KEY: ""
+  SUPABASE_URL: "https://eyluwsfgrlytyyrwqynz.supabase.co",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5bHV3c2Zncmx5dHl5cndxeW56Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxMjMwNDYsImV4cCI6MjEwMTY5OTA0Nn0.OnN5nW00F_7iD58CHtcm-lLG1j_7vbV-YiVg96nDJGk"
 };

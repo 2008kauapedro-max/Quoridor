@@ -13,7 +13,7 @@
 </head>
 <body>
 <h1>🔬 Diagnóstico Quoridor Arena</h1>
-<p>Toque no botão e me mande um print do resultado.</p>
+<p><b>Antes:</b> confirme que está LOGADO no jogo neste mesmo navegador.</p>
 <button id="go">▶ Rodar diagnóstico</button>
 <pre id="out">Aguardando…</pre>
 <script type="module">
@@ -25,10 +25,14 @@ document.getElementById("go").onclick = async () => {
     const m = await import("/js/services/supabase.js");
     log("1) configurado: " + m.isConfigured());
     log("2) sbClient existe: " + !!m.sbClient);
-    log("3) logado: " + !!m.getSession());
-    if (!m.sbClient) { log("→ sbClient NÃO existe (falta o export no supabase.js)"); return; }
-    if (!m.getSession()) { log("→ NÃO ESTÁ LOGADO aqui! Abra o site, faça login e volte."); return; }
-    const uid = m.getSession().user.id;
+    if (!m.sbClient){ log("→ sbClient NÃO existe (falta o export no supabase.js)"); return; }
+
+    /* agora espera a sessão carregar de verdade (sem corrida) */
+    const { data } = await m.sbClient.auth.getSession();
+    const sess = data.session;
+    log("3) logado: " + !!sess);
+    if (!sess){ log("→ NÃO logado neste navegador. Abra o site, entre na conta e volte aqui."); return; }
+    const uid = sess.user.id;
 
     const p = await m.sbClient.from("profiles").select("id,username").limit(5);
     log("4) perfis no banco: " + (p.error ? "ERRO: " + p.error.message : JSON.stringify(p.data)));
@@ -44,7 +48,7 @@ document.getElementById("go").onclick = async () => {
     const f = await m.sbClient.from("friendships").select("id").limit(1);
     log("7) ler amizades: " + (f.error ? "ERRO: " + f.error.message : "OK"));
 
-    log("\n✅ FIM — me manda o print disso!");
+    log("\n✅ FIM — me manda o print!");
   } catch (e) {
     log("💥 EXCEÇÃO: " + e.message);
   }

@@ -7,9 +7,9 @@ import { unlockAudio, toast } from "./ui/effects.js";
 import { onAuthChange } from "./services/supabase.js";
 import { bindSession, joinRoom, net } from "./services/realtime.js";
 
-/* ═══════════ PWA ═══════════ */
-if ("serviceWorker" in navigator && location.protocol === "https:"){
-  navigator.serviceWorker.register("sw.js").catch(() => {});
+/* ═══════════ PWA (SW desligado p/ testes — sempre código fresco) ═══════════ */
+if ("serviceWorker" in navigator){
+  navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister()));
 }
 
 /* Botão instalar */

@@ -108,24 +108,10 @@ export function startGame(opts){
   if (opts.firstTurn) S.state.turn = opts.firstTurn;
   else if (!opts.state) S.state.turn = randomFirstTurn();
 
-    const myColor = opts.myColor || (opts.mode === "ai" ? "red" : "red");
-  const flipped = myColor === "blue";  // azul joga de baixo pra cima visualmente
-    
-  /* determina a cor do jogador local */
-  let myColor;
-  if (opts.myColor) {
-    myColor = opts.myColor;  // online: vem explicitamente
-  } else if (opts.mode === "local") {
-    myColor = "red";  // local: jogador 1 é vermelho
-  } else if (opts.mode === "ai") {
-    myColor = "red";  // ai: humano é vermelho
-  } else {
-    myColor = "red";  // fallback
-  }
-  
-  /* flip: azul vira o tabuleiro pra jogar de baixo pra cima */
-  const flipped = myColor === "blue";
-  
+  /* cor do jogador local → perspectiva do tabuleiro */
+  const myColor = opts.myColor || "red";   // online recebe a cor; local/IA = vermelho
+  const flipped = myColor === "blue";      // azul joga "de baixo pra cima"
+
   board = createBoard($("board"), controller, flipped);
   board.fit($("stage"), $("boardFrame"));
   showScreen("game");
@@ -143,8 +129,6 @@ export function startGame(opts){
     if (S){ S.locked = false; maybeAI(); }
   }, 2000);
 }
-
-function startTimer(){
   stopTimer();
   S.timerId = setInterval(() => {
     S.seconds++;

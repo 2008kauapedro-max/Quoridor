@@ -110,6 +110,22 @@ export function startGame(opts){
 
     const myColor = opts.myColor || (opts.mode === "ai" ? "red" : "red");
   const flipped = myColor === "blue";  // azul joga de baixo pra cima visualmente
+    
+  /* determina a cor do jogador local */
+  let myColor;
+  if (opts.myColor) {
+    myColor = opts.myColor;  // online: vem explicitamente
+  } else if (opts.mode === "local") {
+    myColor = "red";  // local: jogador 1 é vermelho
+  } else if (opts.mode === "ai") {
+    myColor = "red";  // ai: humano é vermelho
+  } else {
+    myColor = "red";  // fallback
+  }
+  
+  /* flip: azul vira o tabuleiro pra jogar de baixo pra cima */
+  const flipped = myColor === "blue";
+  
   board = createBoard($("board"), controller, flipped);
   board.fit($("stage"), $("boardFrame"));
   showScreen("game");
@@ -347,7 +363,10 @@ async function refreshProfile(){
             style="background:linear-gradient(135deg, ${sk.swatch[0]} 50%, ${sk.swatch[1]} 50%)">
       <span>${sk.name}</span>
     </button>`).join("");
-
+  /* atualiza a cor do jogador local na sessão (pra partidas futuras) */
+  if (S && S.mode === "online" && S.myColor) {
+    localStorage.setItem("qa_lastColor", S.myColor);
+  }
   const friends = await getFriends();
   $("friendsList").innerHTML = friends?.length
     ? friends.map((f) => `

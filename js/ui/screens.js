@@ -78,8 +78,8 @@ export function openModal(title, choices, bodyHTML = ""){
 export function closeModal(){ $("modal").classList.add("hidden"); }
 
 /* ═══════════ SESSÃO DE JOGO ═══════════ */
-let S = null;          // sessão ativa
-let board = null;      // renderer do board.js
+let S = null;
+let board = null;
 let replayBoard = null;
 
 function freshSession(mode, level){
@@ -87,9 +87,9 @@ function freshSession(mode, level){
     mode, level: level || "medium",
     state: newGame(),
     uiMode: "move",
-    locked: true,            // trava até o banner "X começa"
+    locked: true,
     seconds: 0, timerId: null, aiTimer: null,
-    myColor: null            // online
+    myColor: null
   };
 }
 
@@ -97,7 +97,7 @@ const myTurn = () => {
   if (!S || S.state.over) return false;
   if (S.mode === "local") return true;
   if (S.mode === "ai")    return S.state.turn === "red";
-  return S.state.turn === S.myColor;                 // online
+  return S.state.turn === S.myColor;
 };
 
 export function startGame(opts){
@@ -109,8 +109,8 @@ export function startGame(opts){
   else if (!opts.state) S.state.turn = randomFirstTurn();
 
   /* cor do jogador local → perspectiva do tabuleiro */
-  const myColor = opts.myColor || "red";   // online recebe a cor; local/IA = vermelho
-  const flipped = myColor === "blue";      // azul joga "de baixo pra cima"
+  const myColor = opts.myColor || "red";
+  const flipped = myColor === "blue";
 
   board = createBoard($("board"), controller, flipped);
   board.fit($("stage"), $("boardFrame"));
@@ -129,6 +129,8 @@ export function startGame(opts){
     if (S){ S.locked = false; maybeAI(); }
   }, 2000);
 }
+
+function startTimer(){
   stopTimer();
   S.timerId = setInterval(() => {
     S.seconds++;
@@ -184,11 +186,10 @@ function maybeAI(){
     if (!a) return;
     const ev = a.type === "move"
       ? applyMove(S.state, a.r, a.c)
-      : applyWall(S.state, a.o, a.r, cOf(a));
+      : applyWall(S.state, a.o, a.r, a.c);
     if (ev) afterAction(ev, ev.t === "m" ? "move" : "wall");
   }, 700);
 }
-const cOf = (a) => a.c;
 
 /* ---------- eventos remotos (online) ---------- */
 export function handleRemoteEvent(ev){
@@ -240,7 +241,7 @@ function endGame(){
     mode: S.mode, winner: w, myColor: humanColor,
     durationSec: S.seconds,
     wallsUsed: S.state.stats.walls[humanColor],
-        movesUsed: S.state.stats.moves[humanColor],
+    movesUsed: S.state.stats.moves[humanColor],
     wasBehind: S.state.stats.wasBehind[humanColor]
   });
   $("winText").textContent = NAMES[w] + " venceu!";
@@ -271,7 +272,7 @@ export function openReplay(events){
   if (!events?.length){ toast("Nenhum replay disponível."); return; }
   RP.events = events; RP.idx = 0; RP.playing = false; RP.state = newGame();
   if (replayBoard) replayBoard.destroy();
-    replayBoard = createBoard($("replayBoard"), null, false);  // replay sempre normal  // sem controller = só assiste
+  replayBoard = createBoard($("replayBoard"), null, false);
   replayBoard.sync(RP.state);
   $("btnReplayPlay").textContent = "▶";
   showScreen("replay");
@@ -280,7 +281,7 @@ function rpStep(dir){
   const next = RP.idx + dir;
   if (next < 0 || next >= RP.events.length) return rpPause();
   if (dir > 0){ applyEvent(RP.state, RP.events[RP.idx]); RP.idx++; }
-  else { // voltar: reconstrói do zero até idx-1
+  else {
     RP.idx = next;
     RP.state = newGame();
     for (let i = 0; i < RP.idx; i++) applyEvent(RP.state, RP.events[i]);
@@ -347,10 +348,11 @@ async function refreshProfile(){
             style="background:linear-gradient(135deg, ${sk.swatch[0]} 50%, ${sk.swatch[1]} 50%)">
       <span>${sk.name}</span>
     </button>`).join("");
-  /* atualiza a cor do jogador local na sessão (pra partidas futuras) */
+
   if (S && S.mode === "online" && S.myColor) {
     localStorage.setItem("qa_lastColor", S.myColor);
   }
+
   const friends = await getFriends();
   $("friendsList").innerHTML = friends?.length
     ? friends.map((f) => `
@@ -370,11 +372,9 @@ const escapeHtml = (s) => String(s ?? "").replace(/[<>&"]/g, (c) =>
 export function initScreens(){
   applySettings(getSettings());
 
-  /* botões "voltar" */
   document.querySelectorAll("[data-back]").forEach((b) =>
     b.addEventListener("click", () => { SFX.click(); showScreen(b.dataset.back); }));
 
-  /* HOME */
   $("btnLocal").onclick = () => { SFX.click(); startGame({ mode: "local" }); };
   $("btnAI").onclick = () => {
     SFX.click();
@@ -394,7 +394,6 @@ export function initScreens(){
   $("btnSettings").onclick = () => { SFX.click(); showScreen("settings"); };
   $("btnLogin").onclick    = () => { SFX.click(); showScreen("auth"); };
 
-  /* AUTH */
   const setTab = (login) => {
     $("tabLogin").classList.toggle("active", login);
     $("tabRegister").classList.toggle("active", !login);
@@ -422,7 +421,6 @@ export function initScreens(){
     toast(r.error ? r.error : "E-mail de recuperação enviado. 📬");
   };
 
-  /* CONFIGURAÇÕES */
   const bindSet = (id, key, transform = (v) => v) => {
     $(id).addEventListener("change", (e) => {
       const s = getSettings();
@@ -442,7 +440,6 @@ export function initScreens(){
   bindSet("setQuality", "quality");
   $("btnLogout").onclick = async () => { await logout(); toast("Até logo! 👋"); showScreen("home"); };
 
-  /* RANKING tabs */
   document.querySelectorAll(".rank-tabs .tab").forEach((t) =>
     t.addEventListener("click", () => {
       document.querySelectorAll(".rank-tabs .tab").forEach((x) => x.classList.remove("active"));
@@ -450,7 +447,6 @@ export function initScreens(){
       refreshRanking(t.dataset.period);
     }));
 
-  /* PERFIL: skins / amigos / avatar */
   $("skinsRow").addEventListener("click", (e) => {
     const chip = e.target.closest(".skin-chip");
     if (!chip) return;
@@ -479,8 +475,7 @@ export function initScreens(){
     if (add) import("../services/supabase.js").then((m) => m.sendFriendRequest(add));
   });
 
-  /* LOBBY */
-   $("btnQueue").onclick = () => {
+  $("btnQueue").onclick = () => {
     $("queueStatus").classList.remove("hidden");
     $("btnCancelQueue").classList.remove("hidden");
     $("btnQueue").classList.add("hidden");
@@ -502,7 +497,6 @@ export function initScreens(){
     net.joinRoom($("roomCodeInput").value.trim().toUpperCase(),
       (info) => startGame({ mode: "online", ...info }));
 
-  /* JOGO: modos, reiniciar, menu, chat */
   $("modeMove").onclick  = () => setUiMode("move");
   $("modeWallH").onclick = () => setUiMode("h");
   $("modeWallV").onclick = () => setUiMode("v");
@@ -526,12 +520,10 @@ export function initScreens(){
     SFX.chat();
   });
 
-  /* OVERLAY de vitória */
   $("btnRematch").onclick     = () => startGame({ mode: S?.mode || "local", level: S?.level });
   $("btnReplayWatch").onclick = () => { $("overlay").classList.add("hidden"); openReplay(S?.state.replay); };
   $("btnExitToHome").onclick  = () => endSession(true);
 
-  /* REPLAY */
   $("btnReplayPlay").onclick = () => (RP.playing ? rpPause() : rpPlay());
   $("btnReplayBack").onclick = () => { rpPause(); rpStep(-1); };
   $("btnReplayFwd").onclick  = () => { rpPause(); rpStep(1); };
@@ -546,7 +538,6 @@ export function initScreens(){
     } catch (_) { toast("Código de replay inválido."); }
   };
 
-  /* teclado (atalhos do Como Jogar) */
   window.addEventListener("keydown", (e) => {
     if (current !== "game" || !S) return;
     const dirs = { ArrowUp: [-1,0], ArrowDown: [1,0], ArrowLeft: [0,-1], ArrowRight: [0,1] };
@@ -561,12 +552,10 @@ export function initScreens(){
     if (e.key === "3") setUiMode("v");
   });
 
-  /* redimensionou → reajusta tabuleiro (anti-overlap) */
   const refit = () => { if (S && board) board.fit($("stage"), $("boardFrame")); };
   window.addEventListener("resize", refit);
   window.addEventListener("orientationchange", refit);
 
-  /* auth → chip da home */
   onAuthChange((session) => {
     const logged = !!session;
     $("btnLogin").classList.toggle("hidden", logged);
@@ -580,7 +569,6 @@ export function initScreens(){
     }
   });
 
-  /* rede: status + eventos */
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
   net.onEvent((msg) => {
     if (msg.kind === "action") handleRemoteEvent(msg.ev);
@@ -588,7 +576,6 @@ export function initScreens(){
   });
 }
 
-/* bolha no feed do chat */
 function feedBubble(text, me){
   const feed = $("chatFeed");
   feed.classList.remove("hidden");

@@ -8,7 +8,7 @@ import { initScreens, showScreen, openModal, startGame } from "./ui/screens.js";
 import { hasSnapshot, getSnapshot, clearSnapshot } from "./services/storage.js";
 import { unlockAudio, toast } from "./ui/effects.js";
 import { onAuthChange } from "./services/supabase.js";
-import { bindSession, joinRoom } from "./services/realtime.js";
+import { bindSession, joinRoom, net } from "./services/realtime.js";
 
 /* ═══════════ PWA (offline + instalável) ═══════════ */
 if ("serviceWorker" in navigator && location.protocol === "https:"){
@@ -48,6 +48,7 @@ onAuthChange((session) => {
 });
 
 /* ═══════════ BOOT ═══════════ */
+net.onMatch((info) => startGame({ mode: "online", ...info }));
 initScreens();
 
 setTimeout(() => {

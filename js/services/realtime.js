@@ -142,6 +142,9 @@ export async function leaveRoom(){
 }
 
 /* ═══════════ convites de amigos ═══════════ */
+let matchHandler = null;
+export function onMatch(cb){ matchHandler = cb; }
+
 export function inviteFriend(id){
   if (!sbClient) return;
   createRoom(false).then((code) => {
@@ -150,6 +153,7 @@ export function inviteFriend(id){
       ch.send({ type:"broadcast", event:"invite",
         payload:{ code, from: getSession()?.user?.user_metadata?.name || "Alguém" } });
     });
+    hostPoll(code, (info) => matchHandler?.(info));   // anfitrião vigia e inicia
     window.dispatchEvent(new CustomEvent("qa-toast", { detail: "Convite enviado! 📨" }));
   });
 }

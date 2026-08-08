@@ -60,6 +60,7 @@ export function createBoard(boardEl, controller = null){
   let dragging = false, activePointer = null;
   let currentSlot = null, lastKey = null;
   let drawnWalls = 0;
+  let fitCleanup = null;
 
   /* ---------- ghost ---------- */
   function slotFromEvent(e){
@@ -199,6 +200,7 @@ export function createBoard(boardEl, controller = null){
   }
 
   function destroy(){
+      fitCleanup?.();
     boardEl.removeEventListener("pointerdown", onDown);
     boardEl.removeEventListener("pointermove", onMove);
     boardEl.removeEventListener("pointerup", onUp);
@@ -210,13 +212,24 @@ export function createBoard(boardEl, controller = null){
 
   return { sync, setMode, deny, ghostFail, destroy, hideGhost,
     /* ajuste fino anti-overlap: mede o palco e dimensiona a moldura */
-    fit(stageEl, frameEl){
-      if (!stageEl || !frameEl) return;
-      const availW = stageEl.clientWidth  - 24;
-      const availH = stageEl.clientHeight - 64;
-      const size = Math.max(140, Math.min(availW, availH, 680));
-      frameEl.style.width  = size + "px";
-      frameEl.style.height = size + "px";
+        fit(stageEl, frameEl){
+      const doFit = () => {
+        if (!stageEl || !frameEl) return;
+        const availW = stageEl.clientWidth  - 24;
+        const availH = stageEl.clientHeight - 64;
+        const size = Math.max(140, Math.min(availW, availH, 680));
+        frameEl.style.width  = size + "px";
+        frameEl.style.height = size + "px";
+      };
+      doFit();
+      requestAnimationFrame(doFit);
+      setTimeout(doFit, 80);
+      window.addEventListener("resize", doFit);
+      window.addEventListener("orientationchange", doFit);
+      fitCleanup = () => {
+        window.removeEventListener("resize", doFit);
+        window.removeEventListener("orientationchange", doFit);
+      };
     }
   };
 }

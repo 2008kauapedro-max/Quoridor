@@ -164,12 +164,12 @@ export async function getFriends(){
    Chama a função SQL report_match() — RLS garante permissão. */
 export async function reportMatch(sum){
   if (!sb || !currentSession) return;
-  await sb.rpc("report_match", [{
+      await sb.rpc("report_match", { payload: {
     winner_color: sum.winner,
     my_color: sum.myColor,
     duration_sec: sum.durationSec || 0,
     moves_me: sum.movesUsed || 0,
     walls_me: sum.wallsUsed || 0,
     replay: sum.replay || []
-  }]).then(() => {}, () => {});   // silencioso: offline não trava o jogo
+  } }).then(() => {}, () => {});   // silencioso: offline não trava o jogo
 }

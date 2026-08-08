@@ -108,7 +108,9 @@ export function startGame(opts){
   if (opts.firstTurn) S.state.turn = opts.firstTurn;
   else if (!opts.state) S.state.turn = randomFirstTurn();
 
-  board = createBoard($("board"), controller);
+    const myColor = opts.myColor || (opts.mode === "ai" ? "red" : "red");
+  const flipped = myColor === "blue";  // azul joga de baixo pra cima visualmente
+  board = createBoard($("board"), controller, flipped);
   board.fit($("stage"), $("boardFrame"));
   showScreen("game");
   updateHUD();
@@ -269,7 +271,7 @@ export function openReplay(events){
   if (!events?.length){ toast("Nenhum replay disponível."); return; }
   RP.events = events; RP.idx = 0; RP.playing = false; RP.state = newGame();
   if (replayBoard) replayBoard.destroy();
-  replayBoard = createBoard($("replayBoard"));   // sem controller = só assiste
+    replayBoard = createBoard($("replayBoard"), null, false);  // replay sempre normal  // sem controller = só assiste
   replayBoard.sync(RP.state);
   $("btnReplayPlay").textContent = "▶";
   showScreen("replay");

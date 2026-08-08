@@ -169,5 +169,5 @@ export function bindSession(userId, handlers){
 /* ═══════ FINAL DO ARQUIVO — confere se chegou até aqui ═══════ */
 export const net = {
   startQueue, cancelQueue, createRoom, joinRoom, leaveRoom,
-  onEvent, sendAction, sendChat, onStatus, inviteFriend
+  onEvent, sendAction, sendChat, onStatus, inviteFriend, onMatch
 };

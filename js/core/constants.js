@@ -1,10 +1,8 @@
 /* =============================================================
 Quoridor Arena — core/constants.js
-Todos os DADOS e constantes do jogo. Sem lógica de partida
-aqui (isso vive em rules.js / ai.js).
+Todos os DADOS e constantes do jogo.
 ============================================================= */
 
-/* ═══════════ TABULEIRO ═══════════ */
 export const SIZE = 9;
 export const WALLS_PER_PLAYER = 10;
 export const G = 0.19;
@@ -13,12 +11,10 @@ export const T = SIZE + (SIZE - 1) * G;
 export const NAMES = { red: "Vermelho", blue: "Azul" };
 export const GOAL = { red: 0, blue: SIZE - 1 };
 
-/* ═══════════ CHAT RÁPIDO ═══════════ */
 export const CHAT_MESSAGES = [
   "👍", "😂", "😎", "Boa jogada!", "GG!", "Quase!", "Sua vez!", "Excelente!"
 ];
 
-/* ═══════════ LIGAS (ELO) ═══════════ */
 export const ELO_START = 1000;
 export const ELO_K = 32;
 
@@ -38,7 +34,6 @@ export function leagueOf(elo) {
   return cur;
 }
 
-/* ═══════════ XP & NÍVEIS ═══════════ */
 export const XP_WIN = 40;
 export const XP_DRAW = 20;
 export const XP_LOSS = 10;
@@ -51,7 +46,6 @@ export function xpForLevel(level) {
   return 100 * level * level;
 }
 
-/* ═══════════ NÍVEIS DA IA ═══════════ */
 export const AI_LEVELS = [
   { key: "easy", icon: "🙂", name: "Fácil" },
   { key: "medium", icon: "😼", name: "Médio" },
@@ -59,14 +53,12 @@ export const AI_LEVELS = [
   { key: "expert", icon: "👑", name: "Especialista" }
 ];
 
-/* ═══════════ SKINS ═══════════ */
 export const SKINS = [
   { key: "classic", name: "Clássica", swatch: ["#b07a42", "#fffdf6"] },
   { key: "neon", name: "Neon", swatch: ["#1d2330", "#38bdf8"] },
   { key: "pastel", name: "Pastel", swatch: ["#d9b183", "#f2766b"] }
 ];
 
-/* ═══════════ CONQUISTAS ═══════════ */
 export const ACHIEVEMENTS = [
   { key: "first_win", icon: "🏅", name: "Primeira Vitória", desc: "Vença sua primeira partida", xp: 20 },
   { key: "wins_10", icon: "🏆", name: "Dez de Ouro", desc: "Vença 10 partidas", xp: 50 },
@@ -78,7 +70,6 @@ export const ACHIEVEMENTS = [
   { key: "comeback", icon: "🔥", name: "Virada Épica", desc: "Vença quando o rival estava na frente", xp: 50 }
 ];
 
-/* ═══════════ TEXTOS (i18n) ═══════════ */
 export const TEXTS = {
   pt: {
     heroSub: "duelo de barreiras · estratégia pura",
@@ -118,9 +109,7 @@ export const TEXTS = {
 
 export const LS_PREFIX = "qa_";
 
-/* ═══════════ CATÁLOGO DE SKINS ═══════════ */
 export const SKIN_CATALOG = [
-  /* 🔴 BOLINHA */
   { id: "p-classic", cat: "piece", name: "Clássica", swatch: ["#ef4444", "#3b82f6"], free: true },
   { id: "p-fire", cat: "piece", name: "Fogo", swatch: ["#fde047", "#f97316"], free: true },
   { id: "p-ice", cat: "piece", name: "Gelo", swatch: ["#a5f3fc", "#60a5fa"], free: true },
@@ -128,7 +117,6 @@ export const SKIN_CATALOG = [
     unlock: { desc: "Vença a IA Especialista 1 vez.", cur: s => s.iaExpertWins || 0, target: 1 } },
   { id: "p-galaxy", cat: "piece", name: "Galáxia", swatch: ["#c7d2fe", "#0f172a"],
     unlock: { desc: "Alcance o nível 5.", cur: (s, l) => l, target: 5 } },
-  /* 🧱 TABULEIRO */
   { id: "classic", cat: "board", name: "Clássico", swatch: ["#b98a5a", "#e9d7b7"], free: true },
   { id: "neon", cat: "board", name: "Neon", swatch: ["#22d3ee", "#a78bfa"], free: true },
   { id: "pastel", cat: "board", name: "Pastel", swatch: ["#f9a8d4", "#93c5fd"], free: true },
@@ -138,7 +126,6 @@ export const SKIN_CATALOG = [
     unlock: { desc: "Vença 20 partidas (qualquer modo).", cur: s => s.wins, target: 20 } },
   { id: "mono", cat: "board", name: "Monocromo", swatch: ["#e5e7eb", "#111827"],
     unlock: { desc: "Faça uma sequência de 3 vitórias.", cur: s => s.bestWinStreak, target: 3 } },
-  /* 🖼️ MOLDURA */
   { id: "f-none", cat: "frame", name: "Sem moldura", swatch: ["#888888", "#444444"], free: true },
   { id: "f-wood", cat: "frame", name: "Madeira", swatch: ["#8a5a2e", "#5b3a1c"], free: true },
   { id: "f-blue", cat: "frame", name: "Azul", swatch: ["#2f7fd6", "#1f5fae"], free: true },
@@ -149,18 +136,21 @@ export const SKIN_CATALOG = [
 ];
 
 export const ADMIN_EMAIL = "2008kauapedro@gmail.com";
+
 /* ═══════════ COR DA BOLINHA / BARREIRA POR JOGADOR ═══════════ */
-export function pieceSwatch(id){
+export function pieceSwatch(id) {
   const it = SKIN_CATALOG.find((i) => i.cat === "piece" && i.id === id);
   return it ? it.swatch : ["#ef4444", "#3b82f6"];
 }
-export function pieceColorFor(id, color, online = false){
+
+export function pieceColorFor(id, color, online = false) {
   const sw = pieceSwatch(id);
   if (online && id !== "p-classic") return sw[0];
   return sw[color === "red" ? 0 : 1];
 }
+
 /* visual rico (igual ao celular): degradê claro→escuro da skin */
-export function pieceBgFor(id, color, online = false){
+export function pieceBgFor(id, color, online = false) {
   const sw = pieceSwatch(id);
   if (online && id !== "p-classic")
     return `radial-gradient(circle at 35% 30%, ${sw[0]} 0%, ${sw[1]} 95%)`;

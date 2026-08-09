@@ -154,3 +154,13 @@ export const SKIN_CATALOG = [
 
 /* 🔐 E-mail do DONO — só essa conta tem modo admin */
 export const ADMIN_EMAIL = "2008kauapedro@gmail.com";
+
+/* ═══════════ COR DA BOLINHA / BARREIRA POR JOGADOR ═══════════ */
+/* Cada skin de bolinha tem 2 tons no swatch: [tom do vermelho, tom do azul] */
+export function pieceSwatch(id){
+  const it = SKIN_CATALOG.find((i) => i.cat === "piece" && i.id === id);
+  return it ? it.swatch : ["#ef4444", "#3b82f6"];
+}
+export function pieceColorFor(id, color){
+  return pieceSwatch(id)[color === "red" ? 0 : 1];
+}

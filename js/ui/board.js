@@ -1,11 +1,11 @@
 /* =============================================================
-   Quoridor Arena — ui/board.js (v3 — barreiras intuitivas)
-   -------------------------------------------------------------
-   • flipped=true (azul) vira o tabuleiro 180°.
-   • Modo barreira: toca na LINHA → cai na LINHA (snap nos dois eixos).
-   • Guias visuais mostram onde a barreira pode cair.
-   ============================================================= */
-import { SIZE, G, T } from "../core/constants.js";
+Quoridor Arena — ui/board.js (v3 — barreiras intuitivas)
+• flipped=true (azul) vira o tabuleiro 180°.
+• Modo barreira: toca na LINHA → cai na LINHA (snap nos dois eixos).
+• Guias visuais mostram onde a barreira pode cair.
+• NOVO: bolinhas e barreiras pintadas pela skin de cada jogador.
+============================================================= */
+import { SIZE, G, T, pieceColorFor } from "../core/constants.js";
 import { legalMoves } from "../core/rules.js";
 
 /* ═══════════ GEOMETRIA (unidades → %) ═══════════ */
@@ -62,11 +62,9 @@ export function createBoard(boardEl, controller = null, flipped = false){
   const wallLayer = document.createElement("div");
   wallLayer.style.cssText = "position:absolute;inset:0;z-index:3;pointer-events:none";
   boardEl.appendChild(wallLayer);
-
   const ghost = document.createElement("div");
   ghost.id = "ghost";
   boardEl.appendChild(ghost);
-
   const pieces = {};
   for (const id of ["red", "blue"]){
     const el = document.createElement("div");
@@ -82,6 +80,29 @@ export function createBoard(boardEl, controller = null, flipped = false){
   let currentSlot = null, lastKey = null;
   let drawnWalls = 0;
   let fitCleanup = null;
+  let pieceSkins = { red: null, blue: null };
+
+  /* ---------- cores por jogador (bolinha + barreiras) ---------- */
+  function wallColorFor(p){
+    const skin = pieceSkins[p];
+    return skin ? pieceColorFor(skin, p) : null;
+  }
+  function paintPiece(id){
+    const col = wallColorFor(id);
+    const core = pieces[id].querySelector(".core");
+    if (core && col) core.style.background = col;
+  }
+  function paintWalls(){
+    for (const el of wallLayer.children){
+      const p = el.classList.contains("by-red") ? "red" : "blue";
+      const col = wallColorFor(p);
+      if (col) el.style.background = col;
+    }
+  }
+  function setPieceSkins(skins){
+    Object.assign(pieceSkins, skins);
+    paintPiece("red"); paintPiece("blue"); paintWalls();
+  }
 
   /* ---------- ghost: snap na LINHA mais próxima (2 eixos) ---------- */
   function slotFromEvent(e){
@@ -93,7 +114,6 @@ export function createBoard(boardEl, controller = null, flipped = false){
     const inBoard = r >= 0 && r <= SIZE - 2 && c >= 0 && c <= SIZE - 2;
     return { o: mode, r: clamp(r, 0, SIZE - 2), c: clamp(c, 0, SIZE - 2), inBoard };
   }
-
   function updateGhost(e){
     if (!controller || mode === "move"){ hideGhost(); return; }
     const s = slotFromEvent(e);
@@ -108,12 +128,10 @@ export function createBoard(boardEl, controller = null, flipped = false){
     Object.assign(ghost.style, { left: rc.left+"%", top: rc.top+"%", width: rc.width+"%", height: rc.height+"%" });
     ghost.classList.add("show");
   }
-
   function hideGhost(){
     ghost.classList.remove("show", "shake");
     currentSlot = null; lastKey = null;
   }
-
   function ghostFail(){
     ghost.classList.remove("shake"); void ghost.offsetWidth;
     ghost.classList.add("shake");
@@ -169,27 +187,28 @@ export function createBoard(boardEl, controller = null, flipped = false){
     boardEl.classList.toggle("turn-red",  state.turn === "red");
     boardEl.classList.toggle("turn-blue", state.turn === "blue");
     boardEl.classList.toggle("mode-wall", mode !== "move");
-
     for (const id of ["red", "blue"]){
       const p = state.players[id], g = cellGeom(p.r, p.c, flipped);
       Object.assign(pieces[id].style, { left: g.left+"%", top: g.top+"%", width: g.size+"%", height: g.size+"%" });
       pieces[id].classList.toggle("active", state.turn === id && !state.over);
+      paintPiece(id);
     }
-
+    const gcol = wallColorFor(state.turn);
+    if (gcol) ghost.style.background = gcol;
     const wallEvents = state.replay.filter((ev) => ev.t === "w");
     while (drawnWalls < wallEvents.length){
       const w = wallEvents[drawnWalls++];
       const el = document.createElement("div");
       el.className = "wall by-" + w.p;
+      const wcol = wallColorFor(w.p);
+      if (wcol) el.style.background = wcol;
       const rc = wallRect(w.o, w.r, w.c, flipped);
       Object.assign(el.style, { left: rc.left+"%", top: rc.top+"%", width: rc.width+"%", height: rc.height+"%" });
       wallLayer.appendChild(el);
     }
-
     for (let r = 0; r < SIZE; r++)
       for (let c = 0; c < SIZE; c++)
         cellEls[r][c].classList.remove("target", "last");
-
     if (!state.over && mode === "move" && controller){
       for (const m of legalMoves(state, state.turn))
         cellEls[m.r][m.c].classList.add("target");
@@ -225,7 +244,8 @@ export function createBoard(boardEl, controller = null, flipped = false){
     boardEl.innerHTML = "";
   }
 
-  return { sync, setMode, deny, ghostFail, destroy, hideGhost,
+  return {
+    sync, setMode, deny, ghostFail, destroy, hideGhost, setPieceSkins,
     fit(stageEl, frameEl){
       const doFit = () => {
         if (!stageEl || !frameEl) return;

@@ -393,6 +393,23 @@ export function initScreens(){
   $("btnHowTo").onclick    = () => { SFX.click(); showScreen("howto"); };
   $("btnSettings").onclick = () => { SFX.click(); showScreen("settings"); };
   $("btnLogin").onclick    = () => { SFX.click(); showScreen("auth"); };
+ 
+  /* HOME v2: sidebar + atalhos online */
+  const sbOpen  = () => { $("sidebar").classList.add("open"); $("sidebarBackdrop").classList.remove("hidden"); };
+  const sbClose = () => { $("sidebar").classList.remove("open"); $("sidebarBackdrop").classList.add("hidden"); };
+  $("btnSidebarOpen").onclick  = sbOpen;
+  $("btnSidebarClose").onclick = sbClose;
+  $("sidebarBackdrop").onclick = sbClose;
+  document.querySelectorAll(".side-link").forEach((b) => b.addEventListener("click", sbClose));
+
+  const goOnline = (fn) => {
+    if (!isConfigured()){ toast("Configure o Supabase em js/config.js."); return; }
+    if (!getSession()){ toast("Entre na sua conta para jogar online."); showScreen("auth"); return; }
+    showScreen("lobby"); fn();
+  };
+  $("btnFindMatch").onclick      = () => { SFX.click(); goOnline(() => $("btnQueue").click()); };
+  $("btnCreateRoomHome").onclick = () => { SFX.click(); goOnline(() => $("btnCreateRoom").click()); };
+  $("btnJoinCodeHome").onclick   = () => { SFX.click(); goOnline(() => setTimeout(() => $("roomCodeInput").focus(), 60)); };
 
   const setTab = (login) => {
     $("tabLogin").classList.toggle("active", login);

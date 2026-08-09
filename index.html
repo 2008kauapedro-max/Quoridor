@@ -20,6 +20,29 @@
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/animations.css">
+
+  <style>
+  /* ═══ HOME v2 + SIDEBAR (embutido p/ não mexer no components.css) ═══ */
+  .hamburger{position:absolute;top:14px;left:14px;z-index:5;width:46px;height:46px;border-radius:14px;
+    border:1px solid var(--line);background:var(--card);font-size:20px;cursor:pointer;color:var(--text)}
+  .home-top{display:flex;justify-content:flex-end;align-items:center;gap:10px;padding:16px 16px 0}
+  .modes{display:grid;gap:12px;width:100%;max-width:430px;padding:0 20px;margin-top:8px}
+  .mode-btn{padding:16px;border-radius:16px;border:1px solid var(--line);background:var(--card);
+    color:var(--text);font-size:16px;font-weight:700;cursor:pointer;transition:transform .12s}
+  .mode-btn:active{transform:scale(.97)}
+  .mode-btn.primary{background:linear-gradient(135deg,#2f7fd6,#1f5fae);border:none;font-size:18px;
+    box-shadow:0 6px 18px rgba(47,127,214,.35);color:#fff}
+  .sidebar{position:fixed;top:0;right:0;height:100%;width:280px;z-index:60;background:var(--card);
+    border-left:1px solid var(--line);transform:translateX(105%);transition:transform .25s ease;
+    display:flex;flex-direction:column;gap:6px;padding:16px}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:55}
+  .sidebar-head{display:flex;justify-content:space-between;align-items:center;font-weight:800;margin-bottom:10px}
+  .side-close{border:none;background:none;color:var(--text);font-size:18px;cursor:pointer}
+  .side-link{text-align:left;padding:14px;border-radius:12px;border:none;background:transparent;
+    color:var(--text);font-size:15px;font-weight:600;cursor:pointer}
+  .side-link:hover{background:rgba(128,128,128,.12)}
+  </style>
 </head>
 <body>
 
@@ -33,29 +56,48 @@
     </div>
   </section>
 
-  <!-- ════════════════ TELA: HOME ════════════════ -->
+  <!-- ════════════════ TELA: HOME (v2) ════════════════ -->
   <section class="screen" data-screen="home">
+    <button id="btnSidebarOpen" class="hamburger" aria-label="Menu">☰</button>
+
+    <div class="home-top">
+      <button id="homeUserChip" class="user-chip hidden">
+        <img id="homeUserAvatar" src="icons/icon.svg" alt="avatar" class="chip-avatar">
+        <span id="homeUserName">Jogador</span>
+      </button>
+      <button id="btnLogin" class="mini-btn">🔑 Entrar</button>
+    </div>
+
     <header class="home-hero">
       <div class="hero-logo">▦</div>
       <h1 class="hero-title">QUORIDOR <span>ARENA</span></h1>
       <p class="hero-sub" data-i18n="heroSub">duelo de barreiras · estratégia pura</p>
-      <button id="homeUserChip" class="user-chip hidden">
-        <img id="homeUserAvatar" alt="avatar" class="chip-avatar">
-        <span id="homeUserName">Jogador</span>
-      </button>
     </header>
 
-    <nav class="home-menu">
-      <button id="btnOnline"   class="menu-btn primary">🌐 <b data-i18n="playOnline">Jogar Online</b></button>
-      <button id="btnLocal"    class="menu-btn">👥 <b data-i18n="playLocal">Jogar Local</b></button>
-      <button id="btnAI"       class="menu-btn">🤖 <b data-i18n="playAI">Treinar contra IA</b></button>
-      <button id="btnRanking"  class="menu-btn">🏆 <b data-i18n="ranking">Ranking</b></button>
-      <button id="btnProfile"  class="menu-btn">👤 <b data-i18n="profile">Perfil</b></button>
-      <button id="btnHowTo"    class="menu-btn">📖 <b data-i18n="howto">Como Jogar</b></button>
-      <button id="btnSettings" class="menu-btn">⚙️ <b data-i18n="settings">Configurações</b></button>
-      <button id="btnLogin"    class="menu-btn ghost">🔑 <b data-i18n="login">Entrar</b></button>
+    <nav class="modes">
+      <button id="btnFindMatch"      class="mode-btn primary">⚡ Encontrar Partida</button>
+      <button id="btnCreateRoomHome" class="mode-btn">🏠 Criar Sala</button>
+      <button id="btnJoinCodeHome"   class="mode-btn">🔑 Entrar com Código</button>
+      <button id="btnLocal"          class="mode-btn">👥 Jogar Local</button>
+      <button id="btnAI"             class="mode-btn">🤖 Jogar vs IA</button>
     </nav>
-    <p class="home-foot">v1.0 · 100% gratuito · PWA</p>
+    <button id="btnOnline" class="hidden"></button>
+    <p class="home-foot">v1.1 · 100% gratuito · PWA</p>
+
+    <!-- ══ BARRA LATERAL ══ -->
+    <div id="sidebarBackdrop" class="sidebar-backdrop hidden"></div>
+    <nav id="sidebar" class="sidebar">
+      <div class="sidebar-head">
+        <span>Menu</span>
+        <button id="btnSidebarClose" class="side-close">✕</button>
+      </div>
+      <button id="btnProfile"  class="side-link">👤 Perfil</button>
+      <button id="btnRanking"  class="side-link">🏆 Ranking</button>
+      <button id="btnSettings" class="side-link">⚙️ Configurações</button>
+      <button id="btnHowTo"    class="side-link">❓ Como Jogar</button>
+      <button id="btnInstall"  class="side-link hidden">📲 Baixar App</button>
+      <button id="btnLogout"   class="side-link hidden">🚪 Sair da conta</button>
+    </nav>
   </section>
 
   <!-- ════════════════ TELA: LOGIN / CADASTRO ════════════════ -->
@@ -80,7 +122,7 @@
       <button id="btnForgot"     class="link-btn hidden" data-i18n="forgot">Esqueci minha senha</button>
       <div class="divider"><span>ou</span></div>
       <button id="btnGoogle" class="menu-btn google wide">
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M23.5 12.3c0-.9-.1-1.5-.3-2.3H12v4.5h6.5c-.1 1.1-.8 2.7-2.4 3.8l3.7 2.9c2.2-2.1 3.7-5.1 3.7-8.9z"/><path fill="#34A853" d="M12 24c3.2 0 5.9-1.1 7.9-2.9l-3.7-2.9c-1 .7-2.4 1.2-4.2 1.2-3.2 0-5.9-2.1-6.9-5.1H1.3v3C3.3 21.3 7.3 24 12 24z"/><path fill="#FBBC05" d="M5.1 14.3c-.2-.7-.4-1.5-.4-2.3s.1-1.6.4-2.3v-3H1.3C.5 8.3 0 10.1 0 12s.5 3.7 1.3 5.3l3.8-3z"/><path fill="#EA4335" d="M12 4.7c1.8 0 3 .8 3.7 1.4l3.3-3.2C16.9 1 14.2 0 12 0 7.3 0 3.3 2.7 1.3 6.7l3.8 3c1-3 3.7-5 6.9-5z"/></svg>
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M23.5 12.3c0-.9-.1-1.5-.3-2.3H12v4.5h6.5c-.1 1.1-.8 2.7-2.4 3.8l3.7 2.9c2.2-2.1 3.7-5.1 3.7-8.9z"/><path fill="#34A853" d="M12 24c3.2 0 5.9-1.1 7.9-2.9l-3.7-2.9c- .9.7-2.4 1.2-4.2 1.2-3.2 0-5.9-2.1-6.9-5.1H1.3v3C3.3 21.3 7.3 24 12 24z"/><path fill="#FBBC05" d="M5.1 14.3c-.2-.7-.4-1.5-.4-2.3s.1-1.6.4-2.3v-3H1.3C.5 8.3 0 10.1 0 12s.5 3.7 1.3 5.3l3.8 3z"/><path fill="#EA4335" d="M12 4.7c1.8 0 3 .8 3.7 1.4l3.3-3.2C16.9 1 14.2 0 12 0 7.3 0 3.3 2.7 1.3 6.7l3.8 3c1-3 3.7-5 6.9-5z"/></svg>
         <b>Continuar com Google</b>
       </button>
     </div>
@@ -96,11 +138,11 @@
       <p>🎯 <b>Objetivo:</b> leve sua bolinha até a fileira oposta antes do rival.</p>
       <p>🔴 Vermelho começa embaixo e sobe · 🔵 Azul começa em cima e desce.</p>
       <p>👣 Por turno, faça <b>UMA</b> ação: andar 1 casa <i>ou</i> colocar 1 barreira.</p>
-      <p>🧱 Cada jogador tem <b>10 barreiras</b> (horizontais ou verticais). Arraste para posicionar — a silhueta fica <b class="ok">verde</b> se válida, <b class="bad">vermelha</b> se inválida.</p>
-      <p>🚫 Não pode: atravessar barreiras, sair do tabuleiro, sobrepor/cruzar barreiras, ou <b>trancar</b> o caminho de alguém (o jogo verifica com BFS).</p>
-      <p>🌐 <b>Online:</b> entre na fila e o matchmaking acha um rival do seu nível. Ou crie uma sala privada e mande o código.</p>
+      <p>🧱 Cada jogador tem <b>10 barreiras</b>. Arraste para posicionar — a silhueta fica <b class="ok">verde</b> se válida, <b class="bad">vermelha</b> se inválida.</p>
+      <p>🚫 Não pode: atravessar barreiras, sair do tabuleiro, sobrepor/cruzar barreiras, ou <b>trancar</b> o caminho de alguém.</p>
+      <p>🌐 <b>Online:</b> use <b>⚡ Encontrar Partida</b>, <b>🏠 Criar Sala</b> ou <b>🔑 Entrar com Código</b>.</p>
       <p>🤖 <b>IA:</b> 4 níveis — Fácil, Médio, Difícil e Especialista.</p>
-      <p>⌨️ Atalhos: setas movem · <b>1/2/3</b> trocam ação · <b>R</b> reinicia.</p>
+      <p>⌨️ Atalhos: setas movem · <b>1/2/3</b> trocam ação.</p>
     </div>
   </section>
 
@@ -129,10 +171,6 @@
         <select id="setQuality" class="input slim">
           <option value="high">Alta</option><option value="low">Baixa (modo leve)</option>
         </select></label>
-      <div class="set-actions">
-        <button id="btnInstall" class="menu-btn wide hidden">📲 <b data-i18n="install">Instalar aplicativo</b></button>
-        <button id="btnLogout"  class="menu-btn danger wide hidden">🚪 <b data-i18n="logout">Sair da conta</b></button>
-      </div>
     </div>
   </section>
 
@@ -247,10 +285,9 @@
       </div>
     </footer>
 
-    <!-- Chat rápido -->
     <div id="chatFeed" class="chat-feed hidden"></div>
     <div id="chatBar" class="chat-bar hidden">
-      <button class="chat-btn" data-msg="👍">👍</button>
+      <button class="chat-btn" data-msg="👍"></button>
       <button class="chat-btn" data-msg="😂">😂</button>
       <button class="chat-btn" data-msg="😎">😎</button>
       <button class="chat-btn" data-msg="Boa jogada!">Boa jogada!</button>
@@ -291,8 +328,6 @@
   </section>
 
   <!-- ════════════════ OVERLAYS COMPARTILHADOS ════════════════ -->
-
-  <!-- Vitória -->
   <div id="overlay" class="overlay hidden" role="dialog" aria-modal="true">
     <div id="overlayCard" class="overlay-card">
       <div id="winEmoji">🏆</div>
@@ -306,7 +341,6 @@
     </div>
   </div>
 
-  <!-- Modal genérico (nível da IA, continuar partida, convites…) -->
   <div id="modal" class="overlay hidden" role="dialog" aria-modal="true">
     <div class="overlay-card small">
       <h3 id="modalTitle">Título</h3>
@@ -315,7 +349,6 @@
     </div>
   </div>
 
-  <!-- Reconexão -->
   <div id="reconnect" class="overlay hidden">
     <div class="overlay-card small">
       <span class="spinner big"></span>
@@ -328,7 +361,6 @@
 
   <!-- Boot do app (ES Modules) -->
   <script>
-  /* Mostra erro de boot NA TELA (debug no celular) */
   window.addEventListener("error", (e) => {
     const el = document.querySelector(".splash-hint");
     if (el) el.textContent = "ERRO: " + (e.message || "desconhecido");
@@ -337,7 +369,7 @@
     const el = document.querySelector(".splash-hint");
     if (el) el.textContent = "ERRO: " + (e.reason?.message || e.reason || "promessa rejeitada");
   });
-</script>
+  </script>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

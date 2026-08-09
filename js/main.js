@@ -1,4 +1,4 @@
-/* =============================================================
+﻿/* =============================================================
    Quoridor Arena — js/main.js (BOOT + auto-update)
    ============================================================= */
 import { initScreens, showScreen, openModal, startGame } from "./ui/screens.js";
@@ -52,7 +52,7 @@ net.onMatch((info) => startGame({ mode: "online", ...info }));
    Se estiver velho: limpa cache + recarrega UMA vez. */
 (async () => {
   try {
-    const live = await fetch("/js/realtime.js", { cache: "no-store" }).then((r) => r.text());
+    const live = await fetch("/js/services/realtime.js", { cache: "no-store" }).then((r) => r.text());
     const servidorTem = live.includes("onMatch");          // marca da versão nova
     const memoriaTem  = typeof net.onMatch === "function"; // o que carregou agora
     if (servidorTem && !memoriaTem && !sessionStorage.getItem("qa_updating")){

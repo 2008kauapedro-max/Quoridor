@@ -123,7 +123,7 @@ export function startGame(opts){
       [S.myColor]: pieceBgFor(myPiece, S.myColor, true),
       [oppC]: pieceBgFor("p-classic", oppC, true)
     });
-    for (const d of [300, 1200, 2500, 5000, 8000, 12000]) setTimeout(() => net.sendSkin(myPiece), d); toast("🔄 sync v3");
+    for (const d of [300, 1200, 2500, 5000, 8000, 12000]) setTimeout(() => net.sendSkin(myPiece), d);
   } else {
     board.setPieceColors({
       red:  pieceBgFor(myPiece, "red",  false),

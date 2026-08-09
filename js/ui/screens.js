@@ -1,4 +1,4 @@
-/* =============================================================
+﻿/* =============================================================
 Quoridor Arena — ui/screens.js (v2 — skins sincronizadas)
 ============================================================= */
 import {
@@ -123,7 +123,7 @@ export function startGame(opts){
       [S.myColor]: pieceBgFor(myPiece, S.myColor, true),
       [oppC]: pieceBgFor("p-classic", oppC, true)
     });
-    for (const d of [300, 1200, 2500, 5000, 8000]) setTimeout(() => net.sendSkin(myPiece), d);
+    for (const d of [300, 1200, 2500, 5000, 8000, 12000]) setTimeout(() => net.sendSkin(myPiece), d); toast("🔄 sync v3");
   } else {
     board.setPieceColors({
       red:  pieceBgFor(myPiece, "red",  false),
@@ -695,6 +695,7 @@ export function initScreens(){
   net.onEvent((msg) => {
     if (msg.kind === "action"){ applyOppSkin(msg.piece); handleRemoteEvent(msg.ev); }
         if (msg.kind === "skin")   applyOppSkin(msg.piece);
+    if (msg.kind === "skinreq") net.sendSkin(getSettings().piece || "p-classic");
     if (msg.kind === "skinreq") net.sendSkin(getSettings().piece || "p-classic");
     if (msg.kind === "chat")   feedBubble(msg.text, false);
   });

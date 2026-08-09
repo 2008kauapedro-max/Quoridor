@@ -1,12 +1,15 @@
 /* =============================================================
-Quoridor Arena — ui/board.js (v3 — barreiras intuitivas)
-• flipped=true (azul) vira o tabuleiro 180°.
-• Modo barreira: toca na LINHA → cai na LINHA (snap nos dois eixos).
-• Guias visuais mostram onde a barreira pode cair.
-• NOVO: bolinhas e barreiras pintadas pela skin de cada jogador.
+Quoridor Arena — ui/board.js (v4 — barreiras com cor do dono)
 ============================================================= */
-import { SIZE, G, T, pieceColorFor } from "../core/constants.js";
+import { SIZE, G, T, SKIN_CATALOG } from "../core/constants.js";
 import { legalMoves } from "../core/rules.js";
+
+/* cor da skin de bolinha: "red" usa tom 0, "blue" usa tom 1 */
+function pieceColorFor(id, color){
+  const it = SKIN_CATALOG.find((i) => i.cat === "piece" && i.id === id);
+  const sw = it ? it.swatch : ["#ef4444", "#3b82f6"];
+  return sw[color === "red" ? 0 : 1];
+}
 
 /* ═══════════ GEOMETRIA (unidades → %) ═══════════ */
 const uPct = (u) => (u / T) * 100;
@@ -21,7 +24,6 @@ function wallRect(type, r, c, flipped){
   return { left: uPct(c * (1 + G) + 1), top: uPct(vr * (1 + G)), width: uPct(G), height: uPct(2 + G) };
 }
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-/* snap: índice da linha/coluna de gap mais próxima do toque */
 const lat = (v) => Math.round((v - 1 - G / 2) / (1 + G));
 
 /* ═══════════ FÁBRICA DO TABULEIRO ═══════════ */
@@ -29,7 +31,6 @@ export function createBoard(boardEl, controller = null, flipped = false){
   boardEl.innerHTML = "";
   const cellEls = [];
 
-  /* casas */
   for (let r = 0; r < SIZE; r++){
     cellEls[r] = [];
     for (let c = 0; c < SIZE; c++){
@@ -43,7 +44,6 @@ export function createBoard(boardEl, controller = null, flipped = false){
     }
   }
 
-  /* guias: linhas onde barreiras podem cair (acendem no modo barreira) */
   const guideLayer = document.createElement("div");
   guideLayer.style.cssText = "position:absolute;inset:0;z-index:2;pointer-events:none";
   boardEl.appendChild(guideLayer);
@@ -58,7 +58,6 @@ export function createBoard(boardEl, controller = null, flipped = false){
     guideLayer.appendChild(vl);
   }
 
-  /* camadas: paredes → ghost → bolinhas */
   const wallLayer = document.createElement("div");
   wallLayer.style.cssText = "position:absolute;inset:0;z-index:3;pointer-events:none";
   boardEl.appendChild(wallLayer);
@@ -74,7 +73,6 @@ export function createBoard(boardEl, controller = null, flipped = false){
     pieces[id] = el;
   }
 
-  /* estado interno */
   let mode = "move";
   let dragging = false, activePointer = null;
   let currentSlot = null, lastKey = null;
@@ -104,13 +102,13 @@ export function createBoard(boardEl, controller = null, flipped = false){
     paintPiece("red"); paintPiece("blue"); paintWalls();
   }
 
-  /* ---------- ghost: snap na LINHA mais próxima (2 eixos) ---------- */
+  /* ---------- ghost ---------- */
   function slotFromEvent(e){
     const rect = boardEl.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width)  * T;
     const y = ((e.clientY - rect.top)  / rect.height) * T;
     let r = lat(y), c = lat(x);
-    if (flipped) r = SIZE - 2 - r;   // converte visual → jogo
+    if (flipped) r = SIZE - 2 - r;
     const inBoard = r >= 0 && r <= SIZE - 2 && c >= 0 && c <= SIZE - 2;
     return { o: mode, r: clamp(r, 0, SIZE - 2), c: clamp(c, 0, SIZE - 2), inBoard };
   }
@@ -244,8 +242,7 @@ export function createBoard(boardEl, controller = null, flipped = false){
     boardEl.innerHTML = "";
   }
 
-  return {
-    sync, setMode, deny, ghostFail, destroy, hideGhost, setPieceSkins,
+  return { sync, setMode, deny, ghostFail, destroy, hideGhost, setPieceSkins,
     fit(stageEl, frameEl){
       const doFit = () => {
         if (!stageEl || !frameEl) return;

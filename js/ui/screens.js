@@ -119,6 +119,13 @@ export function startGame(opts){
   board = createBoard($("board"), controller, flipped);
     board.fit($("stage"), $("boardFrame"));
   showScreen("game");
+    const myPiece = getSettings().piece || "p-classic";
+  if (S.mode === "online" && S.myColor){
+    board.setPieceSkins({ [S.myColor]: myPiece });
+    for (const d of [300, 1200, 2500]) setTimeout(() => net.sendSkin(myPiece), d);
+  } else {
+    board.setPieceSkins({ red: myPiece, blue: myPiece });
+  }
   $("btnRestart").classList.toggle("hidden", S.mode === "online");
   updateHUD();
   board.sync(S.state);
@@ -195,6 +202,16 @@ function maybeAI(){
     if (ev) afterAction(ev, ev.t === "m" ? "move" : "wall");
   }, 700);
 }
+
+function applyOppSkin(piece){
+  if (!S || S.mode !== "online" || !S.myColor || !piece) return;
+  if (S.oppPiece === piece) return;
+  S.oppPiece = piece;
+  const opp = S.myColor === "red" ? "blue" : "red";
+  board?.setPieceSkins({ [opp]: piece });
+  board?.sync(S.state);
+}
+
 
 /* ---------- eventos remotos (online) ---------- */
 export function handleRemoteEvent(ev){
@@ -674,7 +691,8 @@ export function initScreens(){
 
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
   net.onEvent((msg) => {
-    if (msg.kind === "action") handleRemoteEvent(msg.ev);
+       if (msg.kind === "action"){ applyOppSkin(msg.piece); handleRemoteEvent(msg.ev); }
+    if (msg.kind === "skin")   applyOppSkin(msg.piece);
     if (msg.kind === "chat")   feedBubble(msg.text, false);
   });
 }

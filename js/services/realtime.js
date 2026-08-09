@@ -1,4 +1,5 @@
 import { getSession, sbClient } from "./supabase.js";
+import { getSettings } from "./storage.js";
 
 let eventCb=null, statusCb=null, inviteCb=null, matchHandler=null;
 let roomChannel=null, userChannel=null;
@@ -17,13 +18,15 @@ export function onStatus(cb){statusCb=cb;
   window.addEventListener("offline",()=>statusCb?.(false));
   window.addEventListener("online",()=>statusCb?.(true));}
 export function onEvent(cb){eventCb=cb;}
-export function sendAction(ev){roomChannel?.send({type:"broadcast",event:"action",payload:{ev}});}
+export function sendAction(ev){roomChannel?.send({type:"broadcast",event:"action",payload:{ev,piece:getSettings().piece}});}
 export function sendChat(t){roomChannel?.send({type:"broadcast",event:"chat",payload:{text:t}});}
+export function sendSkin(piece){roomChannel?.send({type:"broadcast",event:"skin",payload:{piece}});}
 
 function openRoomChannel(code){
   if(!sbClient)return;
   roomChannel=sbClient.channel("room:"+code)
-    .on("broadcast",{event:"action"},(m)=>eventCb?.({kind:"action",ev:m.payload.ev}))
+    .on("broadcast",{event:"action"},(m)=>eventCb?.({kind:"action",ev:m.payload.ev,piece:m.payload.piece}))
+    .on("broadcast",{event:"skin"},(m)=>eventCb?.({kind:"skin",piece:m.payload.piece}))
     .on("broadcast",{event:"chat"},(m)=>eventCb?.({kind:"chat",text:m.payload.text}))
     .subscribe();
 }
@@ -45,7 +48,6 @@ async function tryJoin(code){
     .select("code").maybeSingle();
   return !!data;
 }
-/* QUALQUER lado vira "playing" (simétrico, à prova de cache velho) */
 async function flipToPlaying(row){
   await sbClient.from("rooms")
     .update({status:"playing",host_color:rndTurn(),first_turn:rndTurn()})
@@ -111,9 +113,8 @@ export async function joinRoom(code,onMatched){
 export async function leaveRoom(){
   stopPolls();
   if(currentRoom)await sbClient?.from("rooms").update({status:"finished"}).eq("code",currentRoom);
-  if(roomChannel)sbClient?.removeChannel(roomChannel);   // fecha só o canal da sala
+  if(roomChannel)sbClient?.removeChannel(roomChannel);
   roomChannel=null;currentRoom=null;matched=false;
-  /* userChannel (convites) continua vivo p/ os próximos convites */
 }
 export function inviteFriend(id){
   if(!sbClient)return;
@@ -122,7 +123,7 @@ export function inviteFriend(id){
     const ch=sbClient.channel("user:"+id);
     ch.subscribe(()=>{ch.send({type:"broadcast",event:"invite",
       payload:{code,from:getSession()?.user?.user_metadata?.name||"Alguém"}});});
-    pollRoom(code,(info)=>matchHandler?.(info));   // quem convida vigia também
+    pollRoom(code,(info)=>matchHandler?.(info));
     window.dispatchEvent(new CustomEvent("qa-toast",{detail:"Convite enviado! 📨"}));
   });
 }
@@ -135,4 +136,4 @@ export function bindSession(userId,handlers){
 }
 export function hostRoom(code,onMatched){reset();pollRoom(code,onMatched);}
 export const net={startQueue,cancelQueue,createRoom,joinRoom,leaveRoom,hostRoom,
-  onEvent,sendAction,sendChat,onStatus,inviteFriend,onMatch};
+  onEvent,sendAction,sendChat,sendSkin,onStatus,inviteFriend,onMatch};

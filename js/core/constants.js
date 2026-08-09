@@ -154,24 +154,8 @@ export function pieceSwatch(id){
   const it = SKIN_CATALOG.find((i) => i.cat === "piece" && i.id === id);
   return it ? it.swatch : ["#ef4444", "#3b82f6"];
 }
-/* online = true → mesma cor nas duas telas (só a Clássica mantém vermelho/azul)
-   online = false (local/IA) → um tom pra cada lado */
 export function pieceColorFor(id, color, online = false){
   const sw = pieceSwatch(id);
   if (online && id !== "p-classic") return sw[0];
   return sw[color === "red" ? 0 : 1];
 }
-/* ═══════════ COR DA BOLINHA / BARREIRA POR JOGADOR ═══════════ */
-export function pieceSwatch(id){
-  const it = SKIN_CATALOG.find((i) => i.cat === "piece" && i.id === id);
-  return it ? it.swatch : ["#ef4444", "#3b82f6"];
-}
-/* online = true → mesma cor nas duas telas (só a Clássica mantém vermelho/azul)
-   online = false (local/IA) → um tom pra cada lado */
-export function pieceColorFor(id, color, online = false){
-  const sw = pieceSwatch(id);
-  if (online && id !== "p-classic") return sw[0];
-  return sw[color === "red" ? 0 : 1];
-}
-
-// TESTE DO MANO 123

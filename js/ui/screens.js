@@ -465,7 +465,20 @@ export function initScreens(){
     if (!getSession()){ toast("Entre na sua conta para jogar online."); showScreen("auth"); return; }
     showScreen("lobby"); fn();
   };
-  $("btnFindMatch").onclick      = () => { SFX.click(); goOnline(() => $("btnQueue").click()); };
+   $("btnFindMatch").onclick = () => {
+    SFX.click();
+    if (!isConfigured()){ toast("Configure o Supabase em js/config.js."); return; }
+    if (!getSession()){ toast("Entre na sua conta para jogar online."); showScreen("auth"); return; }
+    $("searchOverlay").classList.remove("hidden");
+    net.startQueue((info) => {
+      $("searchOverlay").classList.add("hidden");
+      startGame({ mode: "online", ...info });
+    });
+  };
+  $("btnCancelSearch").onclick = () => {
+    net.cancelQueue();
+    $("searchOverlay").classList.add("hidden");
+  };
   $("btnCreateRoomHome").onclick = () => { SFX.click(); goOnline(() => $("btnCreateRoom").click()); };
   $("btnJoinCodeHome").onclick   = () => { SFX.click(); goOnline(() => setTimeout(() => $("roomCodeInput").focus(), 60)); };
 

@@ -62,6 +62,15 @@
   .guide{position:absolute;background:var(--accent,#2f7fd6);border-radius:3px;opacity:0;transition:opacity .15s}
   #board.mode-h .guide.h{opacity:.25}
   #board.mode-v .guide.v{opacity:.25}
+    .search-card{text-align:center}
+  .search-anim{position:relative;width:88px;height:88px;margin:6px auto 14px}
+  .search-anim::before,.search-anim::after{content:"";position:absolute;inset:0;border-radius:50%;
+    border:3px solid transparent;border-top-color:#2f7fd6;animation:spin 1.1s linear infinite}
+  .search-anim::after{inset:14px;border-top-color:#e11d48;animation-duration:.8s;animation-direction:reverse}
+  .search-anim span{position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;
+    border-radius:50%;background:linear-gradient(135deg,#e11d48,#2f7fd6);animation:pulse 1s ease-in-out infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes pulse{0%,100%{transform:scale(.7);opacity:.6}50%{transform:scale(1.15);opacity:1}}
   </style>
 </head>
 <body>
@@ -92,7 +101,7 @@
       <p class="hero-sub" data-i18n="heroSub">duelo de barreiras · estratégia pura</p>
     </header>
     <nav class="modes">
-      <button id="btnFindMatch"      class="mode-btn primary">⚡ Encontrar Partida</button>
+      <button id="btnFindMatch"      class="mode-btn primary">Partida Online</button>
       <button id="btnCreateRoomHome" class="mode-btn">🏠 Criar Sala</button>
       <button id="btnJoinCodeHome"   class="mode-btn">🔑 Entrar com Código</button>
       <button id="btnLocal"          class="mode-btn">👥 Jogar Local</button>
@@ -348,6 +357,16 @@
   <div id="reconnect" class="overlay hidden">
     <div class="overlay-card small"><span class="spinner big"></span><h3 data-i18n="reconnecting">Reconectando…</h3></div>
   </div>
+    <!-- BUSCA DE OPONENTE -->
+  <div id="searchOverlay" class="overlay hidden">
+    <div class="overlay-card small search-card">
+      <div class="search-anim"><span></span></div>
+      <h3>Procurando oponente…</h3>
+      <p class="hint">preparando o duelo de barreiras</p>
+      <button id="btnCancelSearch" class="menu-btn">Cancelar</button>
+    </div>
+  </div>
+
   <div id="toast" role="status" aria-live="polite"></div>
   <div id="confetti" aria-hidden="true"></div>
 

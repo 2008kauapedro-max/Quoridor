@@ -173,3 +173,5 @@ export function pieceColorFor(id, color, online = false){
   if (online && id !== "p-classic") return sw[0];
   return sw[color === "red" ? 0 : 1];
 }
+
+// TESTE DO MANO 123

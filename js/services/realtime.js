@@ -1,4 +1,4 @@
-import { getSession, sbClient } from "./supabase.js";
+﻿import { getSession, sbClient } from "./supabase.js";
 import { getSettings } from "./storage.js";
 
 let eventCb=null, statusCb=null, inviteCb=null, matchHandler=null;
@@ -137,5 +137,6 @@ export function bindSession(userId,handlers){
     .subscribe();
 }
 export function hostRoom(code,onMatched){reset();pollRoom(code,onMatched);}
+export async function ensureAnon(){if(!sbClient)return false;if(getSession())return true;const r=await sbClient.auth.signInAnonymously();return !r.error;}
 export const net={startQueue,cancelQueue,createRoom,joinRoom,leaveRoom,hostRoom,
   onEvent,sendAction,sendChat,sendSkin,sendSkinReq,onStatus,inviteFriend,onMatch};

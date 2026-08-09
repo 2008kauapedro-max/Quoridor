@@ -457,10 +457,10 @@ export function initScreens(){
       label: `${l.icon} ${l.name}`, onClick: () => startGame({ mode: "ai", level: l.key })
     })));
   };
-  $("btnOnline").onclick = () => {
+  $("btnOnline").onclick = async () => {
     SFX.click();
     if (!isConfigured()){ toast("Configure o Supabase em js/config.js para jogar online."); return; }
-    if (!getSession()){ toast("Entre na sua conta para jogar online."); showScreen("auth"); return; }
+    if (!getSession()){ const ok = await net.ensureAnon(); if (!ok){ toast("Entre na sua conta para jogar online."); showScreen("auth"); return; } }
     showScreen("lobby");
   };
   $("btnSkins").onclick = () => { SFX.click(); showScreen("skins"); };
@@ -485,15 +485,15 @@ export function initScreens(){
   $("sidebarBackdrop").onclick = sbClose;
   document.querySelectorAll(".side-link").forEach((b) => b.addEventListener("click", sbClose));
 
-  const goOnline = (fn) => {
+  const goOnline = async (fn) => {
     if (!isConfigured()){ toast("Configure o Supabase em js/config.js."); return; }
-    if (!getSession()){ toast("Entre na sua conta para jogar online."); showScreen("auth"); return; }
+    if (!getSession()){ const ok = await net.ensureAnon(); if (!ok){ toast("Entre na sua conta para jogar online."); showScreen("auth"); return; } }
     showScreen("lobby"); fn();
   };
-  $("btnFindMatch").onclick = () => {
+  $("btnFindMatch").onclick = async () => {
     SFX.click();
     if (!isConfigured()){ toast("Configure o Supabase em js/config.js."); return; }
-    if (!getSession()){ toast("Entre na sua conta para jogar online."); showScreen("auth"); return; }
+    if (!getSession()){ const ok = await net.ensureAnon(); if (!ok){ toast("Entre na sua conta para jogar online."); showScreen("auth"); return; } }
     $("searchOverlay").classList.remove("hidden");
     net.startQueue((info) => {
       $("searchOverlay").classList.add("hidden");

@@ -159,3 +159,10 @@ export function pieceColorFor(id, color, online = false){
   if (online && id !== "p-classic") return sw[0];
   return sw[color === "red" ? 0 : 1];
 }
+/* visual rico (igual ao celular): degradê claro→escuro da skin */
+export function pieceBgFor(id, color, online = false){
+  const sw = pieceSwatch(id);
+  if (online && id !== "p-classic")
+    return `radial-gradient(circle at 35% 30%, ${sw[0]} 0%, ${sw[1]} 95%)`;
+  return sw[color === "red" ? 0 : 1];
+}

@@ -3,7 +3,7 @@ Quoridor Arena — ui/screens.js (v2 — skins sincronizadas)
 ============================================================= */
 import {
   TEXTS, NAMES, AI_LEVELS, SKINS, ACHIEVEMENTS, SKIN_CATALOG, ADMIN_EMAIL,
-  levelFromXp, xpForLevel, leagueOf, ELO_START, pieceColorFor
+  levelFromXp, xpForLevel, leagueOf, ELO_START, pieceBgFor
 } from "../core/constants.js";
 import {
   newGame, applyMove, applyWall, validateWall, randomFirstTurn, applyEvent
@@ -119,12 +119,12 @@ export function startGame(opts){
   /* skins sincronizadas: mesma cor nas duas telas; barreiras seguem a cor */
   const myPiece = getSettings().piece || "p-classic";
   if (S.mode === "online" && S.myColor){
-    board.setPieceColors({ [S.myColor]: pieceColorFor(myPiece, S.myColor, true) });
+    board.setPieceColors({ [S.myColor]: pieceBgFor(myPiece, S.myColor, true) });
     for (const d of [300, 1200, 2500]) setTimeout(() => net.sendSkin(myPiece), d);
   } else {
     board.setPieceColors({
-      red:  pieceColorFor(myPiece, "red",  false),
-      blue: pieceColorFor(myPiece, "blue", false)
+      red:  pieceBgFor(myPiece, "red",  false),
+      blue: pieceBgFor(myPiece, "blue", false)
     });
   }
 
@@ -211,7 +211,7 @@ function applyOppSkin(piece){
   if (S.oppPiece === piece) return;
   S.oppPiece = piece;
   const opp = S.myColor === "red" ? "blue" : "red";
-  board?.setPieceColors({ [opp]: pieceColorFor(piece, opp, true) });
+  board?.setPieceColors({ [opp]: pieceBgFor(piece, opp, true) });
   board?.sync(S.state);
 }
 

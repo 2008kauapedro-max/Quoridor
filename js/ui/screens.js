@@ -544,7 +544,7 @@ export function initScreens(){
   };
   const s0 = getSettings();
   $("setTheme").value = s0.theme; $("setLang").value = s0.lang;
-  $("setVolume").value = s0.volume; $("setMusic").checked = !!s.music;
+  $("setVolume").value = s0.volume; $("setMusic").checked = !!s0.music;
   $("setAnimations").checked = s0.animations !== false; $("setQuality").value = s0.quality;
   bindSet("setTheme", "theme"); bindSet("setLang", "lang");
   bindSet("setVolume", "volume", (v) => +v);

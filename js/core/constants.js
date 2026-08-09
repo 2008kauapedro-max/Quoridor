@@ -161,13 +161,3 @@ export function pieceColorFor(id, color, online = false){
   if (online && id !== "p-classic") return sw[0];
   return sw[color === "red" ? 0 : 1];
 }
-
-/* ═══════════ COR DA BOLINHA / BARREIRA ═══════════ */
-export function pieceSwatch(id) {
-  const it = SKIN_CATALOG.find((i) => i.cat === "piece" && i.id === id);
-  return it ? it.swatch : ["#ef4444", "#3b82f6"];
-}
-
-export function pieceColorFor(id, color) {
-  return pieceSwatch(id)[color === "red" ? 0 : 1];
-}

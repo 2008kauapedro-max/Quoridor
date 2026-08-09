@@ -108,7 +108,6 @@ export function startGame(opts){
   if (opts.firstTurn) S.state.turn = opts.firstTurn;
   else if (!opts.state) S.state.turn = randomFirstTurn();
 
-  /* cor do jogador local → perspectiva do tabuleiro */
   const myColor = opts.myColor || "red";
   const flipped = myColor === "blue";
 
@@ -133,7 +132,6 @@ export function startGame(opts){
   board.sync(S.state);
   startTimer();
 
-  /* banner 2s: "🔴 Vermelho começa" */
   const first = S.state.turn;
   const banner = $("turnBanner");
   banner.textContent = (first === "red" ? "🔴 " : "🔵 ") + NAMES[first] + " começa";
@@ -152,7 +150,7 @@ function startTimer(){
   }, 1000);
 }
 function stopTimer(){ if (S?.timerId) clearInterval(S.timerId); }
-const fmt = (s) => String(Math.floor(s / 60).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"));
+const fmt = (s) => String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
 
 /* ---------- controller entregue ao board.js ---------- */
 const controller = {
@@ -276,7 +274,7 @@ function endGame(){
         movesUsed: S.state.stats.moves[humanColor],
         wasBehind: S.state.stats.wasBehind[humanColor]
       })
-    : { xp: 0, eloDelta: 0, unlocked: [] };   // local/IA = sem recompensa
+    : { xp: 0, eloDelta: 0, unlocked: [] };
   $("winText").textContent = NAMES[w] + " venceu!";
   $("winSub").textContent = `+${res.xp} XP` + (res.eloDelta ? ` · ${res.eloDelta > 0 ? "+" : ""}${res.eloDelta} Elo` : "");
   for (const key of res.unlocked) toast("🏅 Conquista: " + ACHIEVEMENTS.find((a) => a.key === key)?.name);
@@ -476,7 +474,6 @@ export function initScreens(){
   $("btnSettings").onclick = () => { SFX.click(); showScreen("settings"); };
   $("btnLogin").onclick    = () => { SFX.click(); showScreen("auth"); };
 
-  /* HOME v2: sidebar + atalhos online */
   const sbOpen  = () => { $("sidebar").classList.add("open"); $("sidebarBackdrop").classList.remove("hidden"); };
   const sbClose = () => { $("sidebar").classList.remove("open"); $("sidebarBackdrop").classList.add("hidden"); };
   $("btnSidebarOpen").onclick  = sbOpen;

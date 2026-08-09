@@ -9,8 +9,6 @@ import {
   TEXTS, NAMES, AI_LEVELS, SKINS, ACHIEVEMENTS, SKIN_CATALOG, ADMIN_EMAIL,
   levelFromXp, xpForLevel, leagueOf, ELO_START
 } from "../core/constants.js";
-  levelFromXp, xpForLevel, leagueOf, ELO_START
-} from "../core/constants.js";
 import {
   newGame, applyMove, applyWall, validateWall, randomFirstTurn, applyEvent
 } from "../core/rules.js";
@@ -252,13 +250,15 @@ function endGame(){
   }
   if (S.private) extra.privateGames = (extra.privateGames||0)+1;
   localStorage.setItem("qa_extra", JSON.stringify(extra));
-  const res = recordMatch({
-    mode: S.mode, winner: w, myColor: humanColor,
-    durationSec: S.seconds,
-    wallsUsed: S.state.stats.walls[humanColor],
-    movesUsed: S.state.stats.moves[humanColor],
-    wasBehind: S.state.stats.wasBehind[humanColor]
-  });
+    const res = S.mode === "online"
+    ? recordMatch({
+        mode: S.mode, winner: w, myColor: humanColor,
+        durationSec: S.seconds,
+        wallsUsed: S.state.stats.walls[humanColor],
+        movesUsed: S.state.stats.moves[humanColor],
+        wasBehind: S.state.stats.wasBehind[humanColor]
+      })
+    : { xp: 0, eloDelta: 0, unlocked: [] };   // local/IA = sem recompensa
   $("winText").textContent = NAMES[w] + " venceu!";
   $("winSub").textContent = `+${res.xp} XP` + (res.eloDelta ? ` · ${res.eloDelta > 0 ? "+" : ""}${res.eloDelta} Elo` : "");
   for (const key of res.unlocked) toast("🏅 Conquista: " + ACHIEVEMENTS.find((a) => a.key === key)?.name);
@@ -532,6 +532,11 @@ export function initScreens(){
   bindSet("setVolume", "volume", (v) => +v);
   bindSet("setMusic", "music"); bindSet("setAnimations", "animations");
   bindSet("setQuality", "quality");
+    $("setAdmin").addEventListener("change", (e) => {
+    localStorage.setItem("qa_admin", e.target.checked ? "1" : "0");
+    toast(e.target.checked ? "Skins liberadas! 🔓" : "Skins travadas p/ teste.");
+    renderSkins();
+  });
   $("btnLogout").onclick = async () => { await logout(); toast("Até logo! 👋"); showScreen("home"); };
 
   document.querySelectorAll(".rank-tabs .tab").forEach((t) =>

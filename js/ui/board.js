@@ -1,4 +1,4 @@
-import { SIZE, G, T } from "../core/constants.js";
+﻿import { SIZE, G, T } from "../core/constants.js";
 import { legalMoves } from "../core/rules.js";
 
 const uPct = (u) => (u / T) * 100;
@@ -73,13 +73,13 @@ export function createBoard(boardEl, controller = null, flipped = false){
   function paintPiece(id){
     const col = colorFor(id);
     const core = pieces[id].querySelector(".core");
-    if (core && col) core.style.background = col;
+    if (core && col) core.style.setProperty("background", col, "important");
   }
   function paintWalls(){
     for (const el of wallLayer.children){
       const p = el.classList.contains("by-red") ? "red" : "blue";
       const col = colorFor(p);
-      if (col) el.style.background = col;
+      if (col) el.style.setProperty("background", col, "important");
     }
   }
   function setPieceColors(colors){

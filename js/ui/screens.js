@@ -152,7 +152,7 @@ function startTimer(){
   }, 1000);
 }
 function stopTimer(){ if (S?.timerId) clearInterval(S.timerId); }
-const fmt = (s) => String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+const fmt = (s) => String(Math.floor(s / 60).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"));
 
 /* ---------- controller entregue ao board.js ---------- */
 const controller = {

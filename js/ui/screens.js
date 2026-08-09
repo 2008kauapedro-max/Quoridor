@@ -119,7 +119,7 @@ export function startGame(opts){
   const myPiece = getSettings().piece || "p-classic";
   if (S.mode === "online" && S.myColor){
     board.setPieceColors({ [S.myColor]: pieceBgFor(myPiece, S.myColor, true) });
-    for (const d of [300, 1200, 2500]) setTimeout(() => net.sendSkin(myPiece), d);
+    for (const d of [300, 1200, 2500, 5000, 8000]) setTimeout(() => net.sendSkin(myPiece), d);
   } else {
     board.setPieceColors({
       red:  pieceBgFor(myPiece, "red",  false),
@@ -185,7 +185,7 @@ function afterAction(ev, kind){
   board.sync(S.state);
   updateHUD();
   if (S.mode !== "online") setSnapshot({ mode: S.mode, level: S.level, state: S.state, seconds: S.seconds });
-  else net.sendAction(ev);
+  else { net.sendAction(ev); net.sendSkin(getSettings().piece || "p-classic"); }
   if (S.state.over) return endGame();
   maybeAI();
 }

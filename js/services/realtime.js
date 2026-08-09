@@ -18,7 +18,7 @@ export function onStatus(cb){statusCb=cb;
   window.addEventListener("offline",()=>statusCb?.(false));
   window.addEventListener("online",()=>statusCb?.(true));}
 export function onEvent(cb){eventCb=cb;}
-export function sendAction(ev){roomChannel?.send({type:"broadcast",event:"action",payload:{ev,piece:getSettings().piece}});}
+export function sendAction(ev){roomChannel?.send({type:"broadcast",event:"action",payload:{ev,piece:getSettings().piece||"p-classic"}});}
 export function sendChat(t){roomChannel?.send({type:"broadcast",event:"chat",payload:{text:t}});}
 export function sendSkin(piece){roomChannel?.send({type:"broadcast",event:"skin",payload:{piece}});}
 

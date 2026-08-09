@@ -1,17 +1,9 @@
 /* =============================================================
-Quoridor Arena — ui/board.js (v4 — barreiras com cor do dono)
+Quoridor Arena — ui/board.js (v5 — cores sincronizadas)
 ============================================================= */
-import { SIZE, G, T, SKIN_CATALOG } from "../core/constants.js";
+import { SIZE, G, T } from "../core/constants.js";
 import { legalMoves } from "../core/rules.js";
 
-/* cor da skin de bolinha: "red" usa tom 0, "blue" usa tom 1 */
-function pieceColorFor(id, color){
-  const it = SKIN_CATALOG.find((i) => i.cat === "piece" && i.id === id);
-  const sw = it ? it.swatch : ["#ef4444", "#3b82f6"];
-  return sw[color === "red" ? 0 : 1];
-}
-
-/* ═══════════ GEOMETRIA (unidades → %) ═══════════ */
 const uPct = (u) => (u / T) * 100;
 const cellGeom = (r, c, flipped) => {
   const vr = flipped ? (SIZE - 1 - r) : r;
@@ -26,7 +18,6 @@ function wallRect(type, r, c, flipped){
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lat = (v) => Math.round((v - 1 - G / 2) / (1 + G));
 
-/* ═══════════ FÁBRICA DO TABULEIRO ═══════════ */
 export function createBoard(boardEl, controller = null, flipped = false){
   boardEl.innerHTML = "";
   const cellEls = [];
@@ -78,27 +69,24 @@ export function createBoard(boardEl, controller = null, flipped = false){
   let currentSlot = null, lastKey = null;
   let drawnWalls = 0;
   let fitCleanup = null;
-  let pieceSkins = { red: null, blue: null };
+  let pieceColors = { red: null, blue: null };
 
   /* ---------- cores por jogador (bolinha + barreiras) ---------- */
-  function wallColorFor(p){
-    const skin = pieceSkins[p];
-    return skin ? pieceColorFor(skin, p) : null;
-  }
+  function colorFor(p){ return pieceColors[p] || null; }
   function paintPiece(id){
-    const col = wallColorFor(id);
+    const col = colorFor(id);
     const core = pieces[id].querySelector(".core");
     if (core && col) core.style.background = col;
   }
   function paintWalls(){
     for (const el of wallLayer.children){
       const p = el.classList.contains("by-red") ? "red" : "blue";
-      const col = wallColorFor(p);
+      const col = colorFor(p);
       if (col) el.style.background = col;
     }
   }
-  function setPieceSkins(skins){
-    Object.assign(pieceSkins, skins);
+  function setPieceColors(colors){
+    Object.assign(pieceColors, colors);
     paintPiece("red"); paintPiece("blue"); paintWalls();
   }
 
@@ -191,14 +179,14 @@ export function createBoard(boardEl, controller = null, flipped = false){
       pieces[id].classList.toggle("active", state.turn === id && !state.over);
       paintPiece(id);
     }
-    const gcol = wallColorFor(state.turn);
+    const gcol = colorFor(state.turn);
     if (gcol) ghost.style.background = gcol;
     const wallEvents = state.replay.filter((ev) => ev.t === "w");
     while (drawnWalls < wallEvents.length){
       const w = wallEvents[drawnWalls++];
       const el = document.createElement("div");
       el.className = "wall by-" + w.p;
-      const wcol = wallColorFor(w.p);
+      const wcol = colorFor(w.p);
       if (wcol) el.style.background = wcol;
       const rc = wallRect(w.o, w.r, w.c, flipped);
       Object.assign(el.style, { left: rc.left+"%", top: rc.top+"%", width: rc.width+"%", height: rc.height+"%" });
@@ -242,7 +230,7 @@ export function createBoard(boardEl, controller = null, flipped = false){
     boardEl.innerHTML = "";
   }
 
-  return { sync, setMode, deny, ghostFail, destroy, hideGhost, setPieceSkins,
+  return { sync, setMode, deny, ghostFail, destroy, hideGhost, setPieceColors,
     fit(stageEl, frameEl){
       const doFit = () => {
         if (!stageEl || !frameEl) return;

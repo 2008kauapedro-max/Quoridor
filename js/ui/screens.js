@@ -1,13 +1,9 @@
 /* =============================================================
-   Quoridor Arena — ui/screens.js
-   -------------------------------------------------------------
-   • Navegação entre telas + i18n + tema/skins + modal.
-   • Controller da partida: local · IA · online.
-   • Replay com controles e código compartilhável.
-   ============================================================= */
+Quoridor Arena — ui/screens.js (v2 — skins sincronizadas)
+============================================================= */
 import {
   TEXTS, NAMES, AI_LEVELS, SKINS, ACHIEVEMENTS, SKIN_CATALOG, ADMIN_EMAIL,
-  levelFromXp, xpForLevel, leagueOf, ELO_START
+  levelFromXp, xpForLevel, leagueOf, ELO_START, pieceColorFor
 } from "../core/constants.js";
 import {
   newGame, applyMove, applyWall, validateWall, randomFirstTurn, applyEvent
@@ -35,7 +31,7 @@ export function showScreen(name){
     s.classList.toggle("active", s.dataset.screen === name));
   current = name;
   if (name === "ranking") refreshRanking("global");
-    if (name === "skins") renderSkins();
+  if (name === "skins") renderSkins();
   if (name === "profile") refreshProfile();
 }
 
@@ -46,7 +42,7 @@ export function applySettings(s){
   if (theme === "auto")
     theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   html.dataset.theme = theme;
-    html.dataset.skin = s.skin;
+  html.dataset.skin = s.skin;
   html.dataset.piece = s.piece || "p-classic";
   html.dataset.frame = s.frame || "f-none";
   html.dataset.quality = s.quality;
@@ -92,7 +88,7 @@ function freshSession(mode, level){
     uiMode: "move",
     locked: true,
     seconds: 0, timerId: null, aiTimer: null,
-    myColor: null
+    myColor: null, oppPiece: null
   };
 }
 
@@ -108,7 +104,7 @@ export function startGame(opts){
   S = freshSession(opts.mode, opts.level);
   if (opts.state){ S.state = opts.state; S.seconds = opts.seconds || 0; }
   if (opts.myColor) S.myColor = opts.myColor;
-    S.private = !!opts.private;
+  S.private = !!opts.private;
   if (opts.firstTurn) S.state.turn = opts.firstTurn;
   else if (!opts.state) S.state.turn = randomFirstTurn();
 
@@ -117,15 +113,21 @@ export function startGame(opts){
   const flipped = myColor === "blue";
 
   board = createBoard($("board"), controller, flipped);
-    board.fit($("stage"), $("boardFrame"));
+  board.fit($("stage"), $("boardFrame"));
   showScreen("game");
-    const myPiece = getSettings().piece || "p-classic";
+
+  /* skins sincronizadas: mesma cor nas duas telas; barreiras seguem a cor */
+  const myPiece = getSettings().piece || "p-classic";
   if (S.mode === "online" && S.myColor){
-    board.setPieceSkins({ [S.myColor]: myPiece });
+    board.setPieceColors({ [S.myColor]: pieceColorFor(myPiece, S.myColor, true) });
     for (const d of [300, 1200, 2500]) setTimeout(() => net.sendSkin(myPiece), d);
   } else {
-    board.setPieceSkins({ red: myPiece, blue: myPiece });
+    board.setPieceColors({
+      red:  pieceColorFor(myPiece, "red",  false),
+      blue: pieceColorFor(myPiece, "blue", false)
+    });
   }
+
   $("btnRestart").classList.toggle("hidden", S.mode === "online");
   updateHUD();
   board.sync(S.state);
@@ -203,17 +205,16 @@ function maybeAI(){
   }, 700);
 }
 
+/* ---------- eventos remotos (online) ---------- */
 function applyOppSkin(piece){
   if (!S || S.mode !== "online" || !S.myColor || !piece) return;
   if (S.oppPiece === piece) return;
   S.oppPiece = piece;
   const opp = S.myColor === "red" ? "blue" : "red";
-  board?.setPieceSkins({ [opp]: piece });
+  board?.setPieceColors({ [opp]: pieceColorFor(piece, opp, true) });
   board?.sync(S.state);
 }
 
-
-/* ---------- eventos remotos (online) ---------- */
 export function handleRemoteEvent(ev){
   if (!S || S.mode !== "online") return;
   const applied = applyEvent(S.state, ev);
@@ -259,7 +260,7 @@ function endGame(){
   setLastReplay(S.state.replay);
 
   const humanColor = S.mode === "ai" ? "red" : (S.mode === "online" ? S.myColor : w);
-    const humanWon = humanColor === w;
+  const humanWon = humanColor === w;
   const extra = JSON.parse(localStorage.getItem("qa_extra") || "{}");
   if (humanWon){
     if (S.mode === "online") extra.onlineWins = (extra.onlineWins||0)+1;
@@ -267,7 +268,7 @@ function endGame(){
   }
   if (S.private) extra.privateGames = (extra.privateGames||0)+1;
   localStorage.setItem("qa_extra", JSON.stringify(extra));
-    const res = S.mode === "online"
+  const res = S.mode === "online"
     ? recordMatch({
         mode: S.mode, winner: w, myColor: humanColor,
         durationSec: S.seconds,
@@ -397,8 +398,8 @@ async function refreshProfile(){
     : '<p class="hint">Busque jogadores pelo nome e monte sua lista. 🔎</p>';
 }
 
- 
 const isAdmin = () => (getSession()?.user?.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
 /* ═══════════ SKINS (personalização) ═══════════ */
 const CAT_KEY = { board:"skin", piece:"piece", frame:"frame" };
 let skinCat = "piece";
@@ -460,7 +461,7 @@ export function initScreens(){
     if (!getSession()){ toast("Entre na sua conta para jogar online."); showScreen("auth"); return; }
     showScreen("lobby");
   };
-    $("btnSkins").onclick = () => { SFX.click(); showScreen("skins"); };
+  $("btnSkins").onclick = () => { SFX.click(); showScreen("skins"); };
   if ($("btnOpenSkins")) $("btnOpenSkins").onclick = () => { SFX.click(); showScreen("skins"); };
   document.querySelectorAll(".skin-tabs .tab").forEach((t)=>t.addEventListener("click",()=>{
     document.querySelectorAll(".skin-tabs .tab").forEach((x)=>x.classList.remove("active"));
@@ -474,7 +475,7 @@ export function initScreens(){
   $("btnHowTo").onclick    = () => { SFX.click(); showScreen("howto"); };
   $("btnSettings").onclick = () => { SFX.click(); showScreen("settings"); };
   $("btnLogin").onclick    = () => { SFX.click(); showScreen("auth"); };
- 
+
   /* HOME v2: sidebar + atalhos online */
   const sbOpen  = () => { $("sidebar").classList.add("open"); $("sidebarBackdrop").classList.remove("hidden"); };
   const sbClose = () => { $("sidebar").classList.remove("open"); $("sidebarBackdrop").classList.add("hidden"); };
@@ -488,7 +489,7 @@ export function initScreens(){
     if (!getSession()){ toast("Entre na sua conta para jogar online."); showScreen("auth"); return; }
     showScreen("lobby"); fn();
   };
-   $("btnFindMatch").onclick = () => {
+  $("btnFindMatch").onclick = () => {
     SFX.click();
     if (!isConfigured()){ toast("Configure o Supabase em js/config.js."); return; }
     if (!getSession()){ toast("Entre na sua conta para jogar online."); showScreen("auth"); return; }
@@ -543,13 +544,13 @@ export function initScreens(){
   };
   const s0 = getSettings();
   $("setTheme").value = s0.theme; $("setLang").value = s0.lang;
-  $("setVolume").value = s0.volume; $("setMusic").checked = !!s0.music;
+  $("setVolume").value = s0.volume; $("setMusic").checked = !!s.music;
   $("setAnimations").checked = s0.animations !== false; $("setQuality").value = s0.quality;
   bindSet("setTheme", "theme"); bindSet("setLang", "lang");
   bindSet("setVolume", "volume", (v) => +v);
   bindSet("setMusic", "music"); bindSet("setAnimations", "animations");
   bindSet("setQuality", "quality");
-    $("setAdmin").addEventListener("change", (e) => {
+  $("setAdmin").addEventListener("change", (e) => {
     localStorage.setItem("qa_admin", e.target.checked ? "1" : "0");
     toast(e.target.checked ? "Skins liberadas! 🔓" : "Skins travadas p/ teste.");
     renderSkins();
@@ -607,11 +608,11 @@ export function initScreens(){
     const code = await net.createRoom(false);
     $("roomCodeDisplay").classList.remove("hidden");
     $("roomCodeDisplay").querySelector("b").textContent = code;
-        net.hostRoom(code, (info) => startGame({ mode: "online", private: true, ...info }));
+    net.hostRoom(code, (info) => startGame({ mode: "online", private: true, ...info }));
     toast("Sala criada! Compartilhe o código.");
   };
   $("btnJoinRoom").onclick = () =>
-        net.joinRoom($("roomCodeInput").value.trim().toUpperCase(),
+    net.joinRoom($("roomCodeInput").value.trim().toUpperCase(),
       (info) => startGame({ mode: "online", private: true, ...info }));
   $("modeMove").onclick  = () => setUiMode("move");
   $("modeWallH").onclick = () => setUiMode("h");
@@ -674,7 +675,7 @@ export function initScreens(){
 
   onAuthChange((session) => {
     const logged = !!session;
-        const admin = (session?.user?.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    const admin = (session?.user?.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase();
     const adminRow = $("setAdmin")?.closest(".set-row");
     if (adminRow) adminRow.classList.toggle("hidden", !admin);
     if (admin && $("setAdmin")) $("setAdmin").checked = localStorage.getItem("qa_admin") !== "0";
@@ -691,7 +692,7 @@ export function initScreens(){
 
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
   net.onEvent((msg) => {
-       if (msg.kind === "action"){ applyOppSkin(msg.piece); handleRemoteEvent(msg.ev); }
+    if (msg.kind === "action"){ applyOppSkin(msg.piece); handleRemoteEvent(msg.ev); }
     if (msg.kind === "skin")   applyOppSkin(msg.piece);
     if (msg.kind === "chat")   feedBubble(msg.text, false);
   });

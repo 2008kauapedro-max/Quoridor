@@ -1,6 +1,3 @@
-/* =============================================================
-Quoridor Arena — ui/board.js (v5 — cores sincronizadas)
-============================================================= */
 import { SIZE, G, T } from "../core/constants.js";
 import { legalMoves } from "../core/rules.js";
 

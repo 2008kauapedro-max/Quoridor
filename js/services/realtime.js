@@ -111,8 +111,9 @@ export async function joinRoom(code,onMatched){
 export async function leaveRoom(){
   stopPolls();
   if(currentRoom)await sbClient?.from("rooms").update({status:"finished"}).eq("code",currentRoom);
-  for(const ch of [roomChannel,userChannel])if(ch)sbClient?.removeChannel(ch);
-  roomChannel=userChannel=null;currentRoom=null;matched=false;
+  if(roomChannel)sbClient?.removeChannel(roomChannel);   // fecha só o canal da sala
+  roomChannel=null;currentRoom=null;matched=false;
+  /* userChannel (convites) continua vivo p/ os próximos convites */
 }
 export function inviteFriend(id){
   if(!sbClient)return;

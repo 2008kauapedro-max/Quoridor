@@ -121,3 +121,33 @@ export const TEXTS = {
 
 /* Prefixo único do localStorage (evita colidir com outros apps) */
 export const LS_PREFIX = "qa_";
+
+/* ═══════════ CATÁLOGO DE SKINS (3 grátis por categoria + premiadas) ═══════════ */
+export const SKIN_CATALOG = [
+  /* 🔴 BOLINHA */
+  { id:"p-classic", cat:"piece", name:"Clássica", swatch:["#ef4444","#3b82f6"], free:true },
+  { id:"p-fire",    cat:"piece", name:"Fogo",     swatch:["#fde047","#f97316"], free:true },
+  { id:"p-ice",     cat:"piece", name:"Gelo",     swatch:["#a5f3fc","#60a5fa"], free:true },
+  { id:"p-gold",   cat:"piece", name:"Dourada", swatch:["#fef08a","#b45309"],
+    unlock:{ desc:"Vença a IA Especialista 1 vez.", cur:s=>s.iaExpertWins||0, target:1 } },
+  { id:"p-galaxy", cat:"piece", name:"Galáxia", swatch:["#c7d2fe","#0f172a"],
+    unlock:{ desc:"Alcance o nível 5.", cur:(s,l)=>l, target:5 } },
+  /* 🧱 TABULEIRO */
+  { id:"classic", cat:"board", name:"Clássico", swatch:["#b98a5a","#e9d7b7"], free:true },
+  { id:"neon",    cat:"board", name:"Neon",     swatch:["#22d3ee","#a78bfa"], free:true },
+  { id:"pastel",  cat:"board", name:"Pastel",   swatch:["#f9a8d4","#93c5fd"], free:true },
+  { id:"ocean",  cat:"board", name:"Oceano", swatch:["#0ea5e9","#082f49"],
+    unlock:{ desc:"Vença 10 partidas no ⚡ Encontrar Partida.", cur:s=>s.onlineWins||0, target:10 } },
+  { id:"sunset", cat:"board", name:"Pôr do Sol", swatch:["#f97316","#431407"],
+    unlock:{ desc:"Vença 20 partidas (qualquer modo).", cur:s=>s.wins, target:20 } },
+  { id:"mono",   cat:"board", name:"Monocromo", swatch:["#e5e7eb","#111827"],
+    unlock:{ desc:"Faça uma sequência de 3 vitórias.", cur:s=>s.bestWinStreak, target:3 } },
+  /* 🖼️ MOLDURA */
+  { id:"f-none", cat:"frame", name:"Sem moldura", swatch:["#888888","#444444"], free:true },
+  { id:"f-wood", cat:"frame", name:"Madeira",     swatch:["#8a5a2e","#5b3a1c"], free:true },
+  { id:"f-blue", cat:"frame", name:"Azul",        swatch:["#2f7fd6","#1f5fae"], free:true },
+  { id:"f-champ",  cat:"frame", name:"Campeão", swatch:["#fbbf24","#f59e0b"],
+    unlock:{ desc:"Faça uma sequência de 5 vitórias.", cur:s=>s.bestWinStreak, target:5 } },
+  { id:"f-friend", cat:"frame", name:"Amizade", swatch:["#22c55e","#15803d"],
+    unlock:{ desc:"Jogue 5 partidas com amigos (Criar Sala / convite).", cur:s=>s.privateGames||0, target:5 } },
+];

@@ -38,7 +38,7 @@ onAuthChange((session) => {
   bindSession(session?.user?.id || null, {
     onInvite: ({ code, from }) => openModal(`${from} te convidou para uma partida! ⚔️`, [
       { label: "✅ Aceitar", onClick: () =>
-          joinRoom(code, (info) => startGame({ mode: "online", ...info })) },
+                    joinRoom(code, (info) => startGame({ mode: "online", private: true, ...info })) },
       { label: "Agora não", onClick: null }
     ])
   });

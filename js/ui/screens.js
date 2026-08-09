@@ -6,7 +6,7 @@
    • Replay com controles e código compartilhável.
    ============================================================= */
 import {
-  TEXTS, NAMES, AI_LEVELS, SKINS, ACHIEVEMENTS,
+  TEXTS, NAMES, AI_LEVELS, SKINS, ACHIEVEMENTS, SKIN_CATALOG,
   levelFromXp, xpForLevel, leagueOf, ELO_START
 } from "../core/constants.js";
 import {
@@ -35,6 +35,7 @@ export function showScreen(name){
     s.classList.toggle("active", s.dataset.screen === name));
   current = name;
   if (name === "ranking") refreshRanking("global");
+    if (name === "skins") renderSkins();
   if (name === "profile") refreshProfile();
 }
 
@@ -45,7 +46,9 @@ export function applySettings(s){
   if (theme === "auto")
     theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   html.dataset.theme = theme;
-  html.dataset.skin = s.skin;
+    html.dataset.skin = s.skin;
+  html.dataset.piece = s.piece || "p-classic";
+  html.dataset.frame = s.frame || "f-none";
   html.dataset.quality = s.quality;
   html.dataset.animations = s.animations ? "on" : "off";
   html.lang = s.lang;
@@ -105,6 +108,7 @@ export function startGame(opts){
   S = freshSession(opts.mode, opts.level);
   if (opts.state){ S.state = opts.state; S.seconds = opts.seconds || 0; }
   if (opts.myColor) S.myColor = opts.myColor;
+    S.private = !!opts.private;
   if (opts.firstTurn) S.state.turn = opts.firstTurn;
   else if (!opts.state) S.state.turn = randomFirstTurn();
 
@@ -113,8 +117,9 @@ export function startGame(opts){
   const flipped = myColor === "blue";
 
   board = createBoard($("board"), controller, flipped);
-  board.fit($("stage"), $("boardFrame"));
+    board.fit($("stage"), $("boardFrame"));
   showScreen("game");
+  $("btnRestart").classList.toggle("hidden", S.mode === "online");
   updateHUD();
   board.sync(S.state);
   startTimer();
@@ -237,6 +242,14 @@ function endGame(){
   setLastReplay(S.state.replay);
 
   const humanColor = S.mode === "ai" ? "red" : (S.mode === "online" ? S.myColor : w);
+    const humanWon = humanColor === w;
+  const extra = JSON.parse(localStorage.getItem("qa_extra") || "{}");
+  if (humanWon){
+    if (S.mode === "online") extra.onlineWins = (extra.onlineWins||0)+1;
+    if (S.mode === "ai" && S.level === "expert") extra.iaExpertWins = (extra.iaExpertWins||0)+1;
+  }
+  if (S.private) extra.privateGames = (extra.privateGames||0)+1;
+  localStorage.setItem("qa_extra", JSON.stringify(extra));
   const res = recordMatch({
     mode: S.mode, winner: w, myColor: humanColor,
     durationSec: S.seconds,
@@ -364,6 +377,42 @@ async function refreshProfile(){
         </div>`).join("")
     : '<p class="hint">Busque jogadores pelo nome e monte sua lista. 🔎</p>';
 }
+/* ═══════════ SKINS (personalização) ═══════════ */
+const CAT_KEY = { board:"skin", piece:"piece", frame:"frame" };
+let skinCat = "piece";
+const extraStats = () => ({ ...getStats(), ...(JSON.parse(localStorage.getItem("qa_extra")||"{}")) });
+function skinUnlocked(it){
+  if (it.free) return true;
+  const s = extraStats();
+  return it.unlock.cur(s, levelFromXp(s.xp)) >= it.unlock.target;
+}
+export function renderSkins(cat){
+  skinCat = cat || skinCat;
+  const equipped = getSettings()[CAT_KEY[skinCat]];
+  $("skinsList").innerHTML = SKIN_CATALOG.filter((i)=>i.cat===skinCat).map((it)=>{
+    const un = skinUnlocked(it);
+    return `<button class="skin-card ${equipped===it.id?"active":""} ${un?"":"locked"}" data-skinid="${it.id}">
+      <span class="skin-swatch" style="background:linear-gradient(135deg,${it.swatch[0]} 50%,${it.swatch[1]} 50%)"></span>
+      <span class="skin-name">${it.name}</span>
+      <span class="skin-state">${equipped===it.id?"✔ Equipada":un?"Livre":"🔒"}</span>
+    </button>`;
+  }).join("");
+}
+function clickSkin(id){
+  const it = SKIN_CATALOG.find((i)=>i.id===id);
+  if (!it) return;
+  if (!skinUnlocked(it)){
+    const s = extraStats();
+    const cur = it.unlock.cur(s, levelFromXp(s.xp));
+    openModal(`🔒 ${it.name}`, [{ label:"Fechar", onClick:null }],
+      `<p style="padding:8px 0">${it.unlock.desc}</p>
+       <p class="hint">Progresso: ${Math.min(cur,it.unlock.target)}/${it.unlock.target}</p>`);
+    return;
+  }
+  const st = getSettings();
+  st[CAT_KEY[it.cat]] = it.id;
+  setSettings(st); applySettings(st); renderSkins(it.cat); SFX.click();
+}
 
 const escapeHtml = (s) => String(s ?? "").replace(/[<>&"]/g, (c) =>
   ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
@@ -388,6 +437,15 @@ export function initScreens(){
     if (!getSession()){ toast("Entre na sua conta para jogar online."); showScreen("auth"); return; }
     showScreen("lobby");
   };
+    $("btnSkins").onclick = () => { SFX.click(); showScreen("skins"); };
+  if ($("btnOpenSkins")) $("btnOpenSkins").onclick = () => { SFX.click(); showScreen("skins"); };
+  document.querySelectorAll(".skin-tabs .tab").forEach((t)=>t.addEventListener("click",()=>{
+    document.querySelectorAll(".skin-tabs .tab").forEach((x)=>x.classList.remove("active"));
+    t.classList.add("active"); renderSkins(t.dataset.cat);
+  }));
+  $("skinsList").addEventListener("click",(e)=>{
+    const b = e.target.closest(".skin-card"); if (b) clickSkin(b.dataset.skinid);
+  });
   $("btnRanking").onclick  = () => { SFX.click(); showScreen("ranking"); };
   $("btnProfile").onclick  = () => { SFX.click(); showScreen("profile"); };
   $("btnHowTo").onclick    = () => { SFX.click(); showScreen("howto"); };
@@ -508,13 +566,12 @@ export function initScreens(){
     const code = await net.createRoom(false);
     $("roomCodeDisplay").classList.remove("hidden");
     $("roomCodeDisplay").querySelector("b").textContent = code;
-    net.hostRoom(code, (info) => startGame({ mode: "online", ...info }));
+        net.hostRoom(code, (info) => startGame({ mode: "online", private: true, ...info }));
     toast("Sala criada! Compartilhe o código.");
   };
   $("btnJoinRoom").onclick = () =>
-    net.joinRoom($("roomCodeInput").value.trim().toUpperCase(),
-      (info) => startGame({ mode: "online", ...info }));
-
+        net.joinRoom($("roomCodeInput").value.trim().toUpperCase(),
+      (info) => startGame({ mode: "online", private: true, ...info }));
   $("modeMove").onclick  = () => setUiMode("move");
   $("modeWallH").onclick = () => setUiMode("h");
   $("modeWallV").onclick = () => setUiMode("v");

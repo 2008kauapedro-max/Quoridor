@@ -1,10 +1,9 @@
 /* =============================================================
-   Quoridor Arena — ui/board.js (v2 — perspectiva do jogador)
+   Quoridor Arena — ui/board.js (v3 — barreiras intuitivas)
    -------------------------------------------------------------
-   • Se flipped=true (você é azul), o tabuleiro vira 180°:
-     linha 0 fica embaixo, linha 8 em cima → você sempre joga
-     "de baixo para cima" visualmente.
-   • Coordenadas de clique/touch são convertidas automaticamente.
+   • flipped=true (azul) vira o tabuleiro 180°.
+   • Modo barreira: toca na LINHA → cai na LINHA (snap nos dois eixos).
+   • Guias visuais mostram onde a barreira pode cair.
    ============================================================= */
 import { SIZE, G, T } from "../core/constants.js";
 import { legalMoves } from "../core/rules.js";
@@ -22,6 +21,8 @@ function wallRect(type, r, c, flipped){
   return { left: uPct(c * (1 + G) + 1), top: uPct(vr * (1 + G)), width: uPct(G), height: uPct(2 + G) };
 }
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+/* snap: índice da linha/coluna de gap mais próxima do toque */
+const lat = (v) => Math.round((v - 1 - G / 2) / (1 + G));
 
 /* ═══════════ FÁBRICA DO TABULEIRO ═══════════ */
 export function createBoard(boardEl, controller = null, flipped = false){
@@ -42,6 +43,21 @@ export function createBoard(boardEl, controller = null, flipped = false){
     }
   }
 
+  /* guias: linhas onde barreiras podem cair (acendem no modo barreira) */
+  const guideLayer = document.createElement("div");
+  guideLayer.style.cssText = "position:absolute;inset:0;z-index:2;pointer-events:none";
+  boardEl.appendChild(guideLayer);
+  for (let i = 0; i < SIZE - 1; i++){
+    const hl = document.createElement("div");
+    hl.className = "guide h";
+    hl.style.cssText = `left:0;width:100%;top:${uPct(i*(1+G)+1)}%;height:${uPct(G)}%`;
+    guideLayer.appendChild(hl);
+    const vl = document.createElement("div");
+    vl.className = "guide v";
+    vl.style.cssText = `top:0;height:100%;left:${uPct(i*(1+G)+1)}%;width:${uPct(G)}%`;
+    guideLayer.appendChild(vl);
+  }
+
   /* camadas: paredes → ghost → bolinhas */
   const wallLayer = document.createElement("div");
   wallLayer.style.cssText = "position:absolute;inset:0;z-index:3;pointer-events:none";
@@ -60,28 +76,20 @@ export function createBoard(boardEl, controller = null, flipped = false){
     pieces[id] = el;
   }
 
-  /* estado interno do renderer */
+  /* estado interno */
   let mode = "move";
   let dragging = false, activePointer = null;
   let currentSlot = null, lastKey = null;
   let drawnWalls = 0;
   let fitCleanup = null;
 
-  /* ---------- ghost (com conversão de coordenadas) ---------- */
+  /* ---------- ghost: snap na LINHA mais próxima (2 eixos) ---------- */
   function slotFromEvent(e){
     const rect = boardEl.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width)  * T;
     const y = ((e.clientY - rect.top)  / rect.height) * T;
-    let r, c;
-    if (mode === "h"){
-      r = Math.round((y - 1 - G / 2) / (1 + G));
-      c = Math.round(x - 1);
-    } else {
-      r = Math.round(y - 1);
-      c = Math.round((x - 1 - G / 2) / (1 + G));
-    }
-    /* converte coordenada visual → coordenada do jogo */
-    if (flipped) r = SIZE - 2 - r;
+    let r = lat(y), c = lat(x);
+    if (flipped) r = SIZE - 2 - r;   // converte visual → jogo
     const inBoard = r >= 0 && r <= SIZE - 2 && c >= 0 && c <= SIZE - 2;
     return { o: mode, r: clamp(r, 0, SIZE - 2), c: clamp(c, 0, SIZE - 2), inBoard };
   }
@@ -138,11 +146,8 @@ export function createBoard(boardEl, controller = null, flipped = false){
       updateGhost(e);
       const s = currentSlot;
       if (s){
-        if (!s.inBoard){ controller.handleWall(s.o, s.r, s.c); ghostFail(); }
-        else {
-          const ok = controller.handleWall(s.o, s.r, s.c);
-          if (!ok) ghostFail();
-        }
+        const ok = controller.handleWall(s.o, s.r, s.c);
+        if (!ok) ghostFail();
       }
     }
     dragging = false; activePointer = null;
@@ -159,7 +164,7 @@ export function createBoard(boardEl, controller = null, flipped = false){
   boardEl.addEventListener("pointercancel", onCancel);
   boardEl.addEventListener("contextmenu", onCtx);
 
-  /* ---------- sincronização com o estado ---------- */
+  /* ---------- sincronização ---------- */
   function sync(state){
     boardEl.classList.toggle("turn-red",  state.turn === "red");
     boardEl.classList.toggle("turn-blue", state.turn === "blue");
@@ -196,6 +201,8 @@ export function createBoard(boardEl, controller = null, flipped = false){
   function setMode(m){
     mode = m;
     boardEl.classList.toggle("mode-wall", m !== "move");
+    boardEl.classList.toggle("mode-h", m === "h");
+    boardEl.classList.toggle("mode-v", m === "v");
     hideGhost();
   }
 

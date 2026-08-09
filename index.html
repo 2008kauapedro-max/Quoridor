@@ -26,7 +26,7 @@
   .hamburger{position:absolute;top:14px;left:14px;z-index:5;width:46px;height:46px;border-radius:14px;
     border:1px solid var(--line);background:var(--card);font-size:20px;cursor:pointer;color:var(--text)}
   .home-top{display:flex;justify-content:flex-end;align-items:center;gap:10px;padding:16px 16px 0}
-  .modes{display:grid;gap:12px;width:100%;max-width:430px;padding:0 20px;margin-top:8px}
+   .modes{display:grid;gap:12px;width:100%;max-width:430px;padding:0 20px;margin:8px auto 0;box-sizing:border-box}
   .mode-btn{padding:16px;border-radius:16px;border:1px solid var(--line);background:var(--card);
     color:var(--text);font-size:16px;font-weight:700;cursor:pointer;transition:transform .12s}
   .mode-btn:active{transform:scale(.97)}
@@ -42,6 +42,9 @@
   .side-link{text-align:left;padding:14px;border-radius:12px;border:none;background:transparent;
     color:var(--text);font-size:15px;font-weight:600;cursor:pointer}
   .side-link:hover{background:rgba(128,128,128,.12)}
+    .guide{position:absolute;background:var(--accent,#2f7fd6);border-radius:3px;opacity:0;transition:opacity .15s}
+  #board.mode-h .guide.h{opacity:.25}
+  #board.mode-v .guide.v{opacity:.25}
   </style>
 </head>
 <body>
@@ -92,6 +95,7 @@
         <button id="btnSidebarClose" class="side-close">✕</button>
       </div>
       <button id="btnProfile"  class="side-link">👤 Perfil</button>
+            <button id="btnSkins"    class="side-link">🎨 Skins</button>
       <button id="btnRanking"  class="side-link">🏆 Ranking</button>
       <button id="btnSettings" class="side-link">⚙️ Configurações</button>
       <button id="btnHowTo"    class="side-link">❓ Como Jogar</button>
@@ -215,8 +219,8 @@
     <h3 class="section-title" data-i18n="achievements">Conquistas</h3>
     <div id="achievementsList" class="ach-list"></div>
 
-    <h3 class="section-title" data-i18n="skins">Skins</h3>
-    <div id="skinsRow" class="skins-row"></div>
+        <button id="btnOpenSkins" class="menu-btn wide">🎨 Personalizar (skins e molduras)</button>
+    <div id="skinsRow" class="skins-row hidden"></div>
 
     <h3 class="section-title" data-i18n="friends">Amigos</h3>
     <div class="card friends-card">
@@ -228,8 +232,20 @@
     </div>
   </section>
 
-  <!-- ════════════════ TELA: LOBBY (online) ════════════════ -->
-  <section class="screen" data-screen="lobby">
+  <!-- ════════════════ TELA: SKINS ════════════════ -->
+  <section class="screen" data-screen="skins">
+    <header class="screen-head">
+      <button class="icon-btn back" data-back="home">←</button>
+      <h2>🎨 Personalizar</h2><span></span>
+    </header>
+    <div class="tabs skin-tabs">
+      <button class="tab active" data-cat="piece">🔴 Bolinha</button>
+      <button class="tab" data-cat="board">🧱 Tabuleiro</button>
+      <button class="tab" data-cat="frame">🖼️ Moldura</button>
+    </div>
+    <div id="skinsList" class="skins-list"></div>
+  </section>
+ 
     <header class="screen-head">
       <button class="icon-btn back" data-back="home">←</button>
       <h2 data-i18n="lobby">Jogar Online</h2><span></span>

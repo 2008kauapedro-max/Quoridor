@@ -151,3 +151,6 @@ export const SKIN_CATALOG = [
   { id:"f-friend", cat:"frame", name:"Amizade", swatch:["#22c55e","#15803d"],
     unlock:{ desc:"Jogue 5 partidas com amigos (Criar Sala / convite).", cur:s=>s.privateGames||0, target:5 } },
 ];
+
+/* 🔐 E-mail do DONO — só essa conta tem modo admin */
+export const ADMIN_EMAIL = "2008kauapedro@gmail.com@aqui.com";

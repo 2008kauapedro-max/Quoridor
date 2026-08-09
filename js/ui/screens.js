@@ -6,7 +6,9 @@
    • Replay com controles e código compartilhável.
    ============================================================= */
 import {
-  TEXTS, NAMES, AI_LEVELS, SKINS, ACHIEVEMENTS, SKIN_CATALOG,
+  TEXTS, NAMES, AI_LEVELS, SKINS, ACHIEVEMENTS, SKIN_CATALOG, ADMIN_EMAIL,
+  levelFromXp, xpForLevel, leagueOf, ELO_START
+} from "../core/constants.js";
   levelFromXp, xpForLevel, leagueOf, ELO_START
 } from "../core/constants.js";
 import {
@@ -377,11 +379,15 @@ async function refreshProfile(){
         </div>`).join("")
     : '<p class="hint">Busque jogadores pelo nome e monte sua lista. 🔎</p>';
 }
+
+ 
+const isAdmin = () => (getSession()?.user?.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase();
 /* ═══════════ SKINS (personalização) ═══════════ */
 const CAT_KEY = { board:"skin", piece:"piece", frame:"frame" };
 let skinCat = "piece";
 const extraStats = () => ({ ...getStats(), ...(JSON.parse(localStorage.getItem("qa_extra")||"{}")) });
 function skinUnlocked(it){
+  if (isAdmin() && localStorage.getItem("qa_admin") !== "0") return true;
   if (it.free) return true;
   const s = extraStats();
   return it.unlock.cur(s, levelFromXp(s.xp)) >= it.unlock.target;
@@ -646,6 +652,10 @@ export function initScreens(){
 
   onAuthChange((session) => {
     const logged = !!session;
+        const admin = (session?.user?.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    const adminRow = $("setAdmin")?.closest(".set-row");
+    if (adminRow) adminRow.classList.toggle("hidden", !admin);
+    if (admin && $("setAdmin")) $("setAdmin").checked = localStorage.getItem("qa_admin") !== "0";
     $("btnLogin").classList.toggle("hidden", logged);
     $("homeUserChip").classList.toggle("hidden", !logged);
     $("btnLogout").classList.toggle("hidden", !logged);

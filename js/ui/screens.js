@@ -491,6 +491,7 @@ export function initScreens(){
     const code = await net.createRoom(false);
     $("roomCodeDisplay").classList.remove("hidden");
     $("roomCodeDisplay").querySelector("b").textContent = code;
+    net.hostRoom(code, (info) => startGame({ mode: "online", ...info }));
     toast("Sala criada! Compartilhe o código.");
   };
   $("btnJoinRoom").onclick = () =>

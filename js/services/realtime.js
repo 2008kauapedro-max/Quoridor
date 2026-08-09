@@ -32,8 +32,10 @@ async function readRoom(code){
   return data||null;
 }
 async function findWaitingOther(){
+  const cutoff=new Date(Date.now()-90000).toISOString();
   const {data}=await sbClient.from("rooms").select("code")
-    .eq("is_public",true).eq("status","waiting").neq("host_id",me()).limit(1).maybeSingle();
+    .eq("is_public",true).eq("status","waiting").neq("host_id",me())
+    .gte("created_at",cutoff).limit(1).maybeSingle();
   return data||null;
 }
 async function tryJoin(code){
@@ -70,6 +72,7 @@ function pollRoom(code,onMatched){
 
 export async function startQueue(onMatched){
   reset();
+  await sbClient?.from("rooms").delete().eq("host_id",me()).eq("status","waiting");
   const other=await findWaitingOther();
   if(other&&await tryJoin(other.code)){pollRoom(other.code,onMatched);return;}
   const code=await createRoom(true);
@@ -129,5 +132,6 @@ export function bindSession(userId,handlers){
     .on("broadcast",{event:"invite"},(m)=>inviteCb?.(m.payload))
     .subscribe();
 }
-export const net={startQueue,cancelQueue,createRoom,joinRoom,leaveRoom,
+export function hostRoom(code,onMatched){reset();pollRoom(code,onMatched);}
+export const net={startQueue,cancelQueue,createRoom,joinRoom,leaveRoom,hostRoom,
   onEvent,sendAction,sendChat,onStatus,inviteFriend,onMatch};

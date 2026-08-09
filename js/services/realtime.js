@@ -48,6 +48,7 @@ async function tryJoin(code){
     .select("code").maybeSingle();
   return !!data;
 }
+/* QUALQUER lado vira "playing" (simétrico, à prova de cache velho) */
 async function flipToPlaying(row){
   await sbClient.from("rooms")
     .update({status:"playing",host_color:rndTurn(),first_turn:rndTurn()})
@@ -113,8 +114,9 @@ export async function joinRoom(code,onMatched){
 export async function leaveRoom(){
   stopPolls();
   if(currentRoom)await sbClient?.from("rooms").update({status:"finished"}).eq("code",currentRoom);
-  if(roomChannel)sbClient?.removeChannel(roomChannel);
+  if(roomChannel)sbClient?.removeChannel(roomChannel);   // fecha só o canal da sala
   roomChannel=null;currentRoom=null;matched=false;
+  /* userChannel (convites) continua vivo p/ os próximos convites */
 }
 export function inviteFriend(id){
   if(!sbClient)return;
@@ -123,7 +125,7 @@ export function inviteFriend(id){
     const ch=sbClient.channel("user:"+id);
     ch.subscribe(()=>{ch.send({type:"broadcast",event:"invite",
       payload:{code,from:getSession()?.user?.user_metadata?.name||"Alguém"}});});
-    pollRoom(code,(info)=>matchHandler?.(info));
+    pollRoom(code,(info)=>matchHandler?.(info));   // quem convida vigia também
     window.dispatchEvent(new CustomEvent("qa-toast",{detail:"Convite enviado! 📨"}));
   });
 }

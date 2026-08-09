@@ -153,4 +153,4 @@ export const SKIN_CATALOG = [
 ];
 
 /* 🔐 E-mail do DONO — só essa conta tem modo admin */
-export const ADMIN_EMAIL = "2008kauapedro@gmail.com@aqui.com";
+export const ADMIN_EMAIL = "2008kauapedro@gmail.com";

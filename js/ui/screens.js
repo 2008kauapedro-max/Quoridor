@@ -118,7 +118,11 @@ export function startGame(opts){
   /* skins sincronizadas: mesma cor nas duas telas; barreiras seguem a cor */
   const myPiece = getSettings().piece || "p-classic";
   if (S.mode === "online" && S.myColor){
-    board.setPieceColors({ [S.myColor]: pieceBgFor(myPiece, S.myColor, true) });
+    const oppC = S.myColor === "red" ? "blue" : "red";
+    board.setPieceColors({
+      [S.myColor]: pieceBgFor(myPiece, S.myColor, true),
+      [oppC]: pieceBgFor("p-classic", oppC, true)
+    });
     for (const d of [300, 1200, 2500, 5000, 8000]) setTimeout(() => net.sendSkin(myPiece), d);
   } else {
     board.setPieceColors({

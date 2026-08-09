@@ -690,7 +690,8 @@ export function initScreens(){
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
   net.onEvent((msg) => {
     if (msg.kind === "action"){ applyOppSkin(msg.piece); handleRemoteEvent(msg.ev); }
-    if (msg.kind === "skin")   applyOppSkin(msg.piece);
+        if (msg.kind === "skin")   applyOppSkin(msg.piece);
+    if (msg.kind === "skinreq") net.sendSkin(getSettings().piece || "p-classic");
     if (msg.kind === "chat")   feedBubble(msg.text, false);
   });
 }

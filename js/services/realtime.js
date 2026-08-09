@@ -21,12 +21,14 @@ export function onEvent(cb){eventCb=cb;}
 export function sendAction(ev){roomChannel?.send({type:"broadcast",event:"action",payload:{ev,piece:getSettings().piece||"p-classic"}});}
 export function sendChat(t){roomChannel?.send({type:"broadcast",event:"chat",payload:{text:t}});}
 export function sendSkin(piece){roomChannel?.send({type:"broadcast",event:"skin",payload:{piece}});}
+export function sendSkinReq(){roomChannel?.send({type:"broadcast",event:"skinreq",payload:{}});}
 
 function openRoomChannel(code){
   if(!sbClient)return;
   roomChannel=sbClient.channel("room:"+code)
     .on("broadcast",{event:"action"},(m)=>eventCb?.({kind:"action",ev:m.payload.ev,piece:m.payload.piece}))
     .on("broadcast",{event:"skin"},(m)=>eventCb?.({kind:"skin",piece:m.payload.piece}))
+    .on("broadcast",{event:"skinreq"},()=>eventCb?.({kind:"skinreq"}))
     .on("broadcast",{event:"chat"},(m)=>eventCb?.({kind:"chat",text:m.payload.text}))
     .subscribe();
 }
@@ -136,4 +138,4 @@ export function bindSession(userId,handlers){
 }
 export function hostRoom(code,onMatched){reset();pollRoom(code,onMatched);}
 export const net={startQueue,cancelQueue,createRoom,joinRoom,leaveRoom,hostRoom,
-  onEvent,sendAction,sendChat,sendSkin,onStatus,inviteFriend,onMatch};
+  onEvent,sendAction,sendChat,sendSkin,sendSkinReq,onStatus,inviteFriend,onMatch};

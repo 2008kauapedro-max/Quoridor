@@ -79,7 +79,7 @@ export async function resetPassword(email){
 
 export async function logout(){
   if (!sb) return;
-  await sb.signOut();
+  try { await sb.signOut({ scope: "local" }); } catch (_){ }
   currentSession = null;
 }
 

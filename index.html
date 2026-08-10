@@ -114,6 +114,10 @@
   .bell-head{display:flex;justify-content:space-between;align-items:center;font-weight:800}
   .bell-title{margin:10px 0 4px;font-size:12px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
   .friend-row{display:flex;align-items:center;gap:10px;padding:8px 4px}
+  /* ═══ banner instalar app ═══ */
+  .install-banner{display:flex;align-items:center;gap:10px;margin:12px auto 0;max-width:430px;
+    padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);
+    font-size:13px;width:calc(100% - 40px);box-sizing:border-box}
 </style>
 </head>
 <body>
@@ -152,6 +156,11 @@
       <button id="btnRace"           class="mode-btn">🏁 Modo Corrida (2p)</button>
       <button id="btnAI"             class="mode-btn">🤖 Jogar vs IA</button>
     </nav>
+    <div id="installBanner" class="install-banner hidden">
+      <span>📲 <b>Você já baixou o jogo?</b> Se não, toque nos <b>⋮</b> (três pontinhos) e depois em "Instalar app"!</span>
+      <button id="btnInstallBanner" class="mini-btn">Instalar</button>
+      <button id="btnDismissBanner" class="side-close">✕</button>
+    </div>
     <button id="btnOnline" class="hidden"></button>
     <p class="home-foot">v1.2 · 100% gratuito · PWA</p>
     <div id="bellPanel" class="bell-panel hidden">

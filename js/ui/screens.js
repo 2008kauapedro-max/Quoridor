@@ -783,6 +783,26 @@ export function initScreens(){
     }
   });
 
+  /* ═══ INSTALAR APP ═══ */
+  window.addEventListener("qa-install-help", () => {
+    $("modalTitle").textContent = "📲 Instalar o jogo";
+    $("modalBody").innerHTML =
+      '<p class="hint" style="margin:6px 0;text-align:left">📱 <b>Celular (Chrome):</b> toque nos ⋮ (três pontinhos) → "Instalar app" ou "Adicionar à tela inicial".</p>' +
+      '<p class="hint" style="margin:6px 0;text-align:left">💻 <b>PC (Chrome/Edge):</b> ⋮ → "Instalar Quoridor Arena" (ou no ícone da barra de endereço).</p>' +
+      '<p class="hint" style="margin:6px 0;text-align:left">✅ Depois o jogo vira um app com ícone na tela!</p>';
+    $("modalActions").innerHTML = '<button class="menu-btn primary" id="modalInstallOk">Entendi!</button>';
+    $("modal").classList.remove("hidden");
+    $("modalInstallOk").onclick = () => $("modal").classList.add("hidden");
+  });
+  const banner = $("installBanner");
+  if (banner && !localStorage.getItem("qa_install_ok") && !matchMedia("(display-mode: standalone)").matches){
+    banner.classList.remove("hidden");
+  }
+  $("btnInstallBanner")?.addEventListener("click", () => window.dispatchEvent(new CustomEvent("qa-install-help")));
+  $("btnDismissBanner")?.addEventListener("click", () => {
+    $("installBanner").classList.add("hidden");
+    localStorage.setItem("qa_install_ok", "1");
+  });
   /* ═══ SININHO ═══ */
   $("btnBell").onclick = () => { SFX.click(); const p = $("bellPanel"); p.classList.toggle("hidden"); if (!p.classList.contains("hidden")) renderBellBody(); };
   $("btnBellClose").onclick = () => $("bellPanel").classList.add("hidden");

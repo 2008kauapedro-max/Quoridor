@@ -20,10 +20,13 @@ window.addEventListener("beforeinstallprompt", (e) => {
   document.getElementById("btnInstall")?.classList.remove("hidden");
 });
 document.getElementById("btnInstall")?.addEventListener("click", async () => {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  deferredPrompt = null;
-  document.getElementById("btnInstall")?.classList.add("hidden");
+  if (deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt = null;
+    document.getElementById("btnInstall")?.classList.add("hidden");
+  } else {
+    window.dispatchEvent(new CustomEvent("qa-install-help"));
+  }
 });
 
 /* Áudio no 1º gesto */

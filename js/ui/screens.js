@@ -891,14 +891,14 @@ export function initScreens(){
     if (id) net.inviteFriend(id, "race");
   });
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
-  /* btnLogout v3 (direto, sem modal) */
+  /* btnLogout v5 (limpa tudo + recarrega) */
   $("btnLogout").onclick = async () => {
     SFX.click();
     $("sidebar").classList.remove("open");
     $("sidebarBackdrop").classList.add("hidden");
-    await logout();
-    toast("Você saiu da conta. Até logo! 👋");
-    showScreen("home");
+    try { await logout(); } catch (_){}
+    Object.keys(localStorage).forEach((k) => { if (k.startsWith("sb-")) localStorage.removeItem(k); });
+    location.reload();
   };
   net.onEvent((msg) => {
     if (msg.kind === "action"){ applyOppSkin(msg.piece); handleRemoteEvent(msg.ev); }

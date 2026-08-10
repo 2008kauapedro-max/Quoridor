@@ -204,3 +204,16 @@ export async function removeFriend(otherId){
     .or(`and(user_a.eq.${me},user_b.eq.${otherId}),and(user_a.eq.${otherId},user_b.eq.${me})`);
   return error ? err(error) : {};
 }
+export async function getAnnouncements(){
+  if (!sb) return [];
+  const { data } = await sb.from("announcements")
+    .select("id, title, body, created_at")
+    .order("id", { ascending: false }).limit(10);
+  return data || [];
+}
+
+export async function postAnnouncement(title, body){
+  if (!sb || !currentSession) return need();
+  const { error } = await sb.from("announcements").insert({ title, body });
+  return error ? err(error) : {};
+}

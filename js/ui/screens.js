@@ -19,7 +19,7 @@ import {
   isConfigured, getSession, onAuthChange,
   loginEmail, registerEmail, loginGoogle, logout, resetPassword,
   getProfile, updateProfile, uploadAvatar, getRanking, searchPlayers, getFriends,
-  getFriendRequests, respondFriendRequest, removeFriend
+  getFriendRequests, respondFriendRequest, removeFriend, sendFriendRequest, getAnnouncements, postAnnouncement
 } from "../services/supabase.js";
 import { net } from "../services/realtime.js";
 
@@ -267,23 +267,33 @@ async function loadRaceFriends(){
     </div>`).join("");
 }
 /* ---------- SININHO ---------- */
+let cachedAnns = [];
 async function refreshBell(){
   const badge = $("bellBadge");
   if (!badge) return;
   if (!getSession()){ badge.classList.add("hidden"); return; }
-  const reqs = await getFriendRequests();
-  const n = (reqs || []).length;
+  const [reqs, anns] = await Promise.all([getFriendRequests(), getAnnouncements()]);
+  cachedAnns = anns || [];
+  const seen = +(localStorage.getItem("qa_ann_seen") || 0);
+  const fresh = cachedAnns.filter((a) => a.id > seen);
+  const n = (reqs || []).length + fresh.length;
   badge.textContent = n;
   badge.classList.toggle("hidden", n === 0);
+  if (fresh.length && $("msgBubble")){
+    $("msgBubbleTitle").textContent = fresh[0].title;
+    $("msgBubbleBody").textContent = fresh[0].body + " · abra o 🔔 na tela inicial!";
+    $("msgBubble").classList.remove("hidden");
+    setTimeout(() => $("msgBubble").classList.add("hidden"), 9000);
+  }
   if ($("bellPanel") && !$("bellPanel").classList.contains("hidden")) renderBellBody(reqs);
 }
-let bellTab = "req";
 async function renderBellBody(reqs){
   const body = $("bellBody");
   if (!body) return;
   reqs = reqs || await getFriendRequests();
   let html = '<div class="tabs">' +
     '<button class="tab' + (bellTab === "req" ? " active" : "") + '" data-belltab="req">📨 Pedidos</button>' +
+    '<button class="tab' + (bellTab === "ann" ? " active" : "") + '" data-belltab="ann">📢 Avisos</button>' +
     '<button class="tab' + (bellTab === "info" ? " active" : "") + '" data-belltab="info">ℹ️ Info</button></div>';
   if (bellTab === "req"){
     if (!reqs?.length) html += '<p class="hint">nenhum pedido pendente</p>';
@@ -294,14 +304,26 @@ async function renderBellBody(reqs){
         <button class="mini-btn" data-accept="${r.id}">✅</button>
         <button class="mini-btn" data-decline="${r.id}">❌</button>
       </div>`).join("");
+  } else if (bellTab === "ann"){
+    if (!cachedAnns?.length) html += '<p class="hint">nenhum aviso ainda</p>';
+    else html += cachedAnns.map((a) => `
+      <div class="friend-row" style="align-items:flex-start">
+        <div class="msg-avatar" style="width:34px;height:34px;font-size:16px">📢</div>
+        <div class="msg-text"><b>${escapeHtml(a.title)}</b><span>${escapeHtml(a.body)}</span></div>
+      </div>`).join("");
+    if (getSettings().admin){
+      html += '<div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">' +
+        '<input id="annTitle" class="input" placeholder="Título do aviso">' +
+        '<input id="annBody" class="input" placeholder="Mensagem pra todos os jogadores">' +
+        '<button class="mini-btn" data-annsend="1">📤 Enviar pra todos</button></div>';
+    }
   } else {
     html += '<p class="hint">🔄 Semanal zera segunda · mensal dia 1º · global em 1º/01 e 1º/07.</p>';
     html += '<p class="hint">🏁 Modo Rush: corrida lado a lado disponível!</p>';
     html += '<p class="hint">📲 Instale o jogo pelo menu → Baixar App.</p>';
   }
   body.innerHTML = html;
-}
-/* ---------- TELA DE AMIGOS ---------- */
+}/* ---------- TELA DE AMIGOS ---------- */
 async function renderFriendsScreen(){
   const list = $("friendsList2");
   if (!list) return;
@@ -814,6 +836,13 @@ export function initScreens(){
     $("installBanner").classList.add("hidden");
     localStorage.setItem("qa_install_ok", "1");
   });
+  $("msgBubble").addEventListener("click", (e) => {
+    if (e.target.id === "msgBubbleClose"){ $("msgBubble").classList.add("hidden"); return; }
+    bellTab = "ann";
+    $("bellPanel").classList.remove("hidden");
+    renderBellBody(); refreshBell();
+    $("msgBubble").classList.add("hidden");
+  });
   /* ═══ TELA DE AMIGOS ═══ */
   $("btnFriends").onclick = () => { SFX.click(); showScreen("friends"); renderFriendsScreen(); };
   $("btnFriendSearch2").onclick = async () => {
@@ -841,7 +870,8 @@ export function initScreens(){
   $("btnBell").onclick = () => { SFX.click(); const p = $("bellPanel"); p.classList.toggle("hidden"); if (!p.classList.contains("hidden")) renderBellBody(); };
   $("btnBellClose").onclick = () => $("bellPanel").classList.add("hidden");
   $("bellBody").addEventListener("click", async (e) => {
-    const tab = e.target.dataset.belltab; if (tab){ bellTab = tab; renderBellBody(); return; }
+    const tab = e.target.dataset.belltab; if (tab){ bellTab = tab; if (tab === "ann" && cachedAnns.length) localStorage.setItem("qa_ann_seen", Math.max(...cachedAnns.map((a) => a.id), 0)); renderBellBody(); refreshBell(); return; }
+    if (e.target.dataset.annsend){ await postAnnouncement($("annTitle").value || "📢 Aviso", $("annBody").value || ""); toast("Mensagem enviada pra todos! 📢"); renderBellBody(); refreshBell(); return; }
     const acc = e.target.dataset.accept, dec = e.target.dataset.decline, rem = e.target.dataset.removefriend;
     if (acc){ await respondFriendRequest(acc, true); toast("Agora vocês são amigos! 🎉"); }
     if (dec){ await respondFriendRequest(dec, false); toast("Pedido recusado."); }

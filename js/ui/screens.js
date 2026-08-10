@@ -900,6 +900,8 @@ export function initScreens(){
     Object.keys(localStorage).forEach((k) => { if (k.startsWith("sb-")) localStorage.removeItem(k); });
     location.reload();
   };
+  const bla = $("btnLogoutAlt");
+  if (bla) bla.onclick = () => $("btnLogout").click();
   net.onEvent((msg) => {
     if (msg.kind === "action"){ applyOppSkin(msg.piece); handleRemoteEvent(msg.ev); }
         if (msg.kind === "skin")   applyOppSkin(msg.piece);
@@ -918,5 +920,4 @@ function feedBubble(text, me){
   feed.appendChild(b);
   while (feed.children.length > 4) feed.removeChild(feed.firstChild);
   setTimeout(() => b.remove(), 4000);
-}/ /   T E S T E   D E   M O D I F I C A C A O  
- 
+}

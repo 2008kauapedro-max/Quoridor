@@ -113,12 +113,12 @@ export async function uploadAvatar(file){
 export async function getRanking(period){
   if (!sb) return null;
   if (period === "global"){
-    const { data } = await sb.from("leaderboard_global").select("id, username, avatar_url, elo").limit(100);
+    const { data } = await sb.from("leaderboard_global").select("id, username, avatar_url, elo, frame").limit(100);
     return data || null;
   }
   const view = period === "weekly" ? "leaderboard_weekly" : "leaderboard_monthly";
   const { data } = await sb.from(view)
-    .select("id, username, avatar_url, elo").limit(100);
+    .select("id, username, avatar_url, elo, frame").limit(100);
   return data || null;
 }
 

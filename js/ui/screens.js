@@ -18,7 +18,7 @@ import {
 import {
   isConfigured, getSession, onAuthChange,
   loginEmail, registerEmail, loginGoogle, logout, resetPassword,
-  getProfile, uploadAvatar, getRanking, searchPlayers, getFriends
+  getProfile, updateProfile, uploadAvatar, getRanking, searchPlayers, getFriends
 } from "../services/supabase.js";
 import { net } from "../services/realtime.js";
 
@@ -386,7 +386,7 @@ async function refreshRanking(period){
   list.innerHTML = rows.map((r, i) => `
     <li class="rank-item ${r.id === me ? "me" : ""}">
       <span class="rank-pos">${i + 1}</span>
-      <img class="rank-avatar" src="${r.avatar_url || "icons/icon.svg"}" alt="">
+      <img class="rank-avatar frm-${r.frame || "none"}" src="${r.avatar_url || "icons/icon.svg"}" alt="">
       <span class="rank-name">${escapeHtml(r.username)}</span>
       <span class="rank-elo">${r.elo ?? ELO_START}</span>
     </li>`).join("");
@@ -480,7 +480,7 @@ function clickSkin(id){
   }
   const st = getSettings();
   st[CAT_KEY[it.cat]] = it.id;
-  setSettings(st); applySettings(st); renderSkins(it.cat); SFX.click();
+  setSettings(st); applySettings(st); renderSkins(it.cat); if (getSession()) updateProfile({ frame: st.frame || "f-none", piece: st.piece || "p-classic" }); SFX.click();
 }
 
 const escapeHtml = (s) => String(s ?? "").replace(/[<>&"]/g, (c) =>

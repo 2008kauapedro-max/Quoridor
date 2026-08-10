@@ -891,6 +891,16 @@ export function initScreens(){
     if (id) net.inviteFriend(id, "race");
   });
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
+  /* btnLogout v2 */
+  $("btnLogout").onclick = () => {
+    SFX.click();
+    $("sidebar").classList.remove("open");
+    $("sidebarBackdrop").classList.add("hidden");
+    openModal("🚪 Sair da conta?", [
+      { label: "Sair", onClick: async () => { await logout(); toast("Você saiu da conta. Até logo! 👋"); showScreen("home"); } },
+      { label: "Cancelar", onClick: null }
+    ]);
+  };
   net.onEvent((msg) => {
     if (msg.kind === "action"){ applyOppSkin(msg.piece); handleRemoteEvent(msg.ev); }
         if (msg.kind === "skin")   applyOppSkin(msg.piece);

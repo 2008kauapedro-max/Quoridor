@@ -918,4 +918,5 @@ function feedBubble(text, me){
   feed.appendChild(b);
   while (feed.children.length > 4) feed.removeChild(feed.firstChild);
   setTimeout(() => b.remove(), 4000);
-}
+}/ /   T E S T E   D E   M O D I F I C A C A O  
+ 

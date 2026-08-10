@@ -118,6 +118,10 @@
   .install-banner{display:flex;align-items:center;gap:10px;margin:12px auto 0;max-width:430px;
     padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);
     font-size:13px;width:calc(100% - 40px);box-sizing:border-box}
+  /* ═══ logo original ═══ */
+  .hero-logo-img{width:92px;height:92px;border-radius:22px;display:block;margin:0 auto 10px;
+    box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .splash-logo-img{width:92px;height:92px;border-radius:22px;margin:0 auto 10px}
 </style>
 </head>
 <body>
@@ -125,7 +129,7 @@
   <!-- LOADING -->
   <section class="screen active" data-screen="loading">
     <div class="splash">
-      <div class="splash-logo" id="loadingLogo">▦</div>
+      <img src="icons/icon.svg" alt="" class="splash-logo-img" id="loadingLogo">
       <h1 class="splash-title">QUORIDOR <span>ARENA</span></h1>
       <div class="splash-bar"><i></i></div>
       <p class="splash-hint">carregando…</p>
@@ -144,7 +148,7 @@
       <button id="btnLogin" class="mini-btn">🔑 Entrar</button>
     </div>
     <header class="home-hero">
-      <div class="hero-logo">▦</div>
+      <img src="icons/icon.svg" alt="Quoridor Arena" class="hero-logo-img">
       <h1 class="hero-title">QUORIDOR <span>ARENA</span></h1>
       <p class="hero-sub" data-i18n="heroSub">duelo de barreiras · estratégia pura</p>
     </header>

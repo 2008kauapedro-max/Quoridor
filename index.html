@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -71,7 +71,22 @@
     border-radius:50%;background:linear-gradient(135deg,#e11d48,#2f7fd6);animation:pulse 1s ease-in-out infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   @keyframes pulse{0%,100%{transform:scale(.7);opacity:.6}50%{transform:scale(1.15);opacity:1}}
-  </style>
+    /* ═══ MODO RUSH ═══ */
+  .race-card{text-align:center;max-width:430px;margin:16px auto;padding:26px 20px;box-sizing:border-box}
+  .race-hero{font-size:54px;line-height:1}
+  .race-title{font-size:24px;font-weight:900;letter-spacing:3px;margin:10px 0 2px}
+  .race-sub{color:var(--muted);font-size:13px;margin:0 0 20px}
+  .race-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .race-box{aspect-ratio:1/1;border-radius:18px;border:1px solid var(--line);background:var(--card);
+    color:var(--text);font-size:36px;cursor:pointer;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:8px;transition:transform .12s}
+  .race-box span{font-size:15px;font-weight:800}
+  .race-box:active{transform:scale(.96)}
+  .race-box.online{background:linear-gradient(135deg,#2f7fd6,#1f5fae);border:none;color:#fff;
+    box-shadow:0 6px 18px rgba(47,127,214,.35)}
+  .race-box.wide{aspect-ratio:auto;width:100%;margin-top:12px;font-size:24px;flex-direction:row;gap:10px;padding:14px;box-sizing:border-box}
+  .race-friends{margin-top:18px;text-align:left}
+</style>
 </head>
 <body>
 
@@ -105,6 +120,7 @@
       <button id="btnCreateRoomHome" class="mode-btn">🏠 Criar Sala</button>
       <button id="btnJoinCodeHome"   class="mode-btn">🔑 Entrar com Código</button>
       <button id="btnLocal"          class="mode-btn">👥 Jogar Local</button>
+      <button id="btnRace"           class="mode-btn">🏁 Modo Corrida (2p)</button>
       <button id="btnAI"             class="mode-btn">🤖 Jogar vs IA</button>
     </nav>
     <button id="btnOnline" class="hidden"></button>
@@ -139,6 +155,10 @@
       <p id="authError" class="error hidden"></p>
       <button id="btnAuthSubmit" class="menu-btn primary wide">Entrar</button>
       <button id="btnForgot" class="link-btn hidden" data-i18n="forgot">Esqueci minha senha</button>
+      <p id="authHint" class="hint hidden" style="margin-top:12px;padding:10px;background:rgba(47,127,214,.1);border-radius:8px;font-size:13px;line-height:1.5">
+        📧 Depois de criar sua conta, <b>acesse seu email</b> e clique no link de confirmação. 
+        Depois volte aqui e faça login com seu email e senha!
+      </p>
       <div class="divider"><span>ou</span></div>
       <button id="btnGoogle" class="menu-btn google wide"><b>Continuar com Google</b></button>
     </div>
@@ -156,7 +176,7 @@
       <p>👣 Por turno, faça <b>UMA</b> ação: andar 1 casa <i>ou</i> colocar 1 barreira.</p>
       <p>🧱 Cada jogador tem <b>10 barreiras</b>. No modo barreira, as <b>linhas acendem</b> — toque na linha e ela cai ali.</p>
       <p>🚫 Não pode: atravessar barreiras, sair do tabuleiro, sobrepor/cruzar, ou <b>trancar</b> o caminho.</p>
-      <p>🌐 <b>Online:</b> ⚡ Encontrar Partida · 🏠 Criar Sala · 🔑 Entrar com Código.</p>
+      <p>🌐 <b>Online:</b> ⚡ Encontrar Partida · 🏠 Criar Sala Personalizada · 🔑 Entrar com Código.</p>
       <p>🤖 <b>IA:</b> 4 níveis — Fácil, Médio, Difícil e Especialista.</p>
     </div>
   </section>
@@ -196,6 +216,7 @@
       <button class="tab" data-period="weekly" data-i18n="rankWeekly">Semanal</button>
       <button class="tab" data-period="monthly" data-i18n="rankMonthly">Mensal</button>
     </div>
+    <p class="hint" style="text-align:center;margin:10px 16px 0">🔄 O semanal zera toda <b>segunda-feira</b> · o mensal no <b>dia 1º</b> · o global a cada <b>6 meses</b> (temporada).</p>
     <ol id="rankingList" class="rank-list card"></ol>
   </section>
 
@@ -270,7 +291,29 @@
     </div>
   </section>
 
-  <!-- JOGO -->
+    <!-- MODO RUSH -->
+  <section class="screen" data-screen="race">
+    <header class="screen-head">
+      <button class="icon-btn back" data-back="home">←</button>
+      <h2>🏁 Modo Rush</h2><span></span>
+    </header>
+    <div class="card race-card">
+      <div class="race-hero">🏁</div>
+      <h3 class="race-title">MODO RUSH</h3>
+      <p class="race-sub">lado a lado · quem chegar primeiro vence</p>
+      <div class="race-grid">
+        <button id="btnRaceOnline" class="race-box online">⚡<span>Online</span></button>
+        <button id="btnRaceFriends" class="race-box">👥<span>Amigos</span></button>
+      </div>
+      <button id="btnRaceLocal" class="race-box wide">🎮<span>Local · 2 no mesmo aparelho</span></button>
+      <div id="raceFriendsWrap" class="race-friends hidden">
+        <p class="hint">Convide um amigo pra corrida:</p>
+        <div id="raceFriendsList" class="friends-list"></div>
+      </div>
+    </div>
+  </section>
+
+<!-- JOGO -->
   <section class="screen" data-screen="game">
     <header class="game-top">
       <button id="btnMenu" class="icon-btn" title="Sair da partida">🏠</button>

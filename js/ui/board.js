@@ -1,32 +1,33 @@
-﻿import { SIZE, G, T } from "../core/constants.js";
+﻿/* =============================================================
+Quoridor Arena — ui/board.js (v7 — corrida sem esticar + skins)
+============================================================= */
+import { SIZE, G } from "../core/constants.js";
 import { legalMoves } from "../core/rules.js";
 
-const uPct = (u) => (u / T) * 100;
-const cellGeom = (r, c, flipped) => {
-  const vr = flipped ? (SIZE - 1 - r) : r;
-  return { left: uPct(c * (1 + G)), top: uPct(vr * (1 + G)), size: uPct(1) };
-};
-function wallRect(type, r, c, flipped){
-  const vr = flipped ? (SIZE - 2 - r) : r;
-  if (type === "h")
-    return { left: uPct(c * (1 + G)), top: uPct(vr * (1 + G) + 1), width: uPct(2 + G), height: uPct(G) };
-  return { left: uPct(c * (1 + G) + 1), top: uPct(vr * (1 + G)), width: uPct(G), height: uPct(2 + G) };
-}
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lat = (v) => Math.round((v - 1 - G / 2) / (1 + G));
 
-export function createBoard(boardEl, controller = null, flipped = false){
+export function createBoard(boardEl, controller = null, flipped = false, state = null){
+  const rows = state?.rows || SIZE;
+  const cols = state?.cols || SIZE;
+  const tR = rows + (rows - 1) * G;
+  const tC = cols + (cols - 1) * G;
+  const px = (u) => (u / tC) * 100;
+  const py = (u) => (u / tR) * 100;
+
   boardEl.innerHTML = "";
   const cellEls = [];
-
-  for (let r = 0; r < SIZE; r++){
+  for (let r = 0; r < rows; r++){
     cellEls[r] = [];
-    for (let c = 0; c < SIZE; c++){
+    for (let c = 0; c < cols; c++){
       const cell = document.createElement("div");
       cell.className = "cell";
       cell.dataset.r = r; cell.dataset.c = c;
-      const g = cellGeom(r, c, flipped);
-      Object.assign(cell.style, { left: g.left+"%", top: g.top+"%", width: g.size+"%", height: g.size+"%" });
+      const vr = flipped ? (rows - 1 - r) : r;
+      Object.assign(cell.style, {
+        left: px(c * (1 + G)) + "%", top: py(vr * (1 + G)) + "%",
+        width: px(1) + "%", height: py(1) + "%"
+      });
       boardEl.appendChild(cell);
       cellEls[r][c] = cell;
     }
@@ -35,14 +36,16 @@ export function createBoard(boardEl, controller = null, flipped = false){
   const guideLayer = document.createElement("div");
   guideLayer.style.cssText = "position:absolute;inset:0;z-index:2;pointer-events:none";
   boardEl.appendChild(guideLayer);
-  for (let i = 0; i < SIZE - 1; i++){
+  for (let i = 0; i < rows - 1; i++){
     const hl = document.createElement("div");
     hl.className = "guide h";
-    hl.style.cssText = `left:0;width:100%;top:${uPct(i*(1+G)+1)}%;height:${uPct(G)}%`;
+    hl.style.cssText = `left:0;width:100%;top:${py(i*(1+G)+1)}%;height:${py(G)}%`;
     guideLayer.appendChild(hl);
+  }
+  for (let i = 0; i < cols - 1; i++){
     const vl = document.createElement("div");
     vl.className = "guide v";
-    vl.style.cssText = `top:0;height:100%;left:${uPct(i*(1+G)+1)}%;width:${uPct(G)}%`;
+    vl.style.cssText = `top:0;height:100%;left:${px(i*(1+G)+1)}%;width:${px(G)}%`;
     guideLayer.appendChild(vl);
   }
 
@@ -68,7 +71,7 @@ export function createBoard(boardEl, controller = null, flipped = false){
   let fitCleanup = null;
   let pieceColors = { red: null, blue: null };
 
-  /* ---------- cores por jogador (bolinha + barreiras) ---------- */
+  /* ═══════════ SKINS (NÃO MEXER) ═══════════ */
   function colorFor(p){ return pieceColors[p] || null; }
   function paintPiece(id){
     const col = colorFor(id);
@@ -86,16 +89,24 @@ export function createBoard(boardEl, controller = null, flipped = false){
     Object.assign(pieceColors, colors);
     paintPiece("red"); paintPiece("blue"); paintWalls();
   }
+  /* ═══════════ FIM SKINS ═══════════ */
+
+  function wallRect(type, r, c){
+    const vr = flipped ? (rows - 2 - r) : r;
+    if (type === "h")
+      return { left: px(c*(1+G)), top: py(vr*(1+G)+1), width: px(2+G), height: py(G) };
+    return { left: px(c*(1+G)+1), top: py(vr*(1+G)), width: px(G), height: py(2+G) };
+  }
 
   /* ---------- ghost ---------- */
   function slotFromEvent(e){
     const rect = boardEl.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width)  * T;
-    const y = ((e.clientY - rect.top)  / rect.height) * T;
+    const x = ((e.clientX - rect.left) / rect.width)  * tC;
+    const y = ((e.clientY - rect.top)  / rect.height) * tR;
     let r = lat(y), c = lat(x);
-    if (flipped) r = SIZE - 2 - r;
-    const inBoard = r >= 0 && r <= SIZE - 2 && c >= 0 && c <= SIZE - 2;
-    return { o: mode, r: clamp(r, 0, SIZE - 2), c: clamp(c, 0, SIZE - 2), inBoard };
+    if (flipped) r = rows - 2 - r;
+    const inBoard = r >= 0 && r <= rows - 2 && c >= 0 && c <= cols - 2;
+    return { o: mode, r: clamp(r, 0, rows - 2), c: clamp(c, 0, cols - 2), inBoard };
   }
   function updateGhost(e){
     if (!controller || mode === "move"){ hideGhost(); return; }
@@ -107,7 +118,7 @@ export function createBoard(boardEl, controller = null, flipped = false){
       const ok = s.inBoard && controller.canPlaceWall(s.o, s.r, s.c);
       ghost.classList.toggle("invalid", !ok);
     }
-    const rc = wallRect(s.o, s.r, s.c, flipped);
+    const rc = wallRect(s.o, s.r, s.c);
     Object.assign(ghost.style, { left: rc.left+"%", top: rc.top+"%", width: rc.width+"%", height: rc.height+"%" });
     ghost.classList.add("show");
   }
@@ -166,37 +177,41 @@ export function createBoard(boardEl, controller = null, flipped = false){
   boardEl.addEventListener("contextmenu", onCtx);
 
   /* ---------- sincronização ---------- */
-  function sync(state){
-    boardEl.classList.toggle("turn-red",  state.turn === "red");
-    boardEl.classList.toggle("turn-blue", state.turn === "blue");
+  function sync(st){
+    boardEl.classList.toggle("turn-red",  st.turn === "red");
+    boardEl.classList.toggle("turn-blue", st.turn === "blue");
     boardEl.classList.toggle("mode-wall", mode !== "move");
     for (const id of ["red", "blue"]){
-      const p = state.players[id], g = cellGeom(p.r, p.c, flipped);
-      Object.assign(pieces[id].style, { left: g.left+"%", top: g.top+"%", width: g.size+"%", height: g.size+"%" });
-      pieces[id].classList.toggle("active", state.turn === id && !state.over);
+      const p = st.players[id];
+      const vr = flipped ? (rows - 1 - p.r) : p.r;
+      Object.assign(pieces[id].style, {
+        left: px(p.c * (1 + G)) + "%", top: py(vr * (1 + G)) + "%",
+        width: px(1) + "%", height: py(1) + "%"
+      });
+      pieces[id].classList.toggle("active", st.turn === id && !st.over);
       paintPiece(id);
     }
-    const gcol = colorFor(state.turn);
+    const gcol = colorFor(st.turn);
     if (gcol) ghost.style.background = gcol;
-    const wallEvents = state.replay.filter((ev) => ev.t === "w");
+    const wallEvents = st.replay.filter((ev) => ev.t === "w");
     while (drawnWalls < wallEvents.length){
       const w = wallEvents[drawnWalls++];
       const el = document.createElement("div");
       el.className = "wall by-" + w.p;
       const wcol = colorFor(w.p);
-      if (wcol) el.style.background = wcol;
-      const rc = wallRect(w.o, w.r, w.c, flipped);
+      if (wcol) el.style.setProperty("background", wcol, "important");
+      const rc = wallRect(w.o, w.r, w.c);
       Object.assign(el.style, { left: rc.left+"%", top: rc.top+"%", width: rc.width+"%", height: rc.height+"%" });
       wallLayer.appendChild(el);
     }
-    for (let r = 0; r < SIZE; r++)
-      for (let c = 0; c < SIZE; c++)
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < cols; c++)
         cellEls[r][c].classList.remove("target", "last");
-    if (!state.over && mode === "move" && controller){
-      for (const m of legalMoves(state, state.turn))
+    if (!st.over && mode === "move" && controller){
+      for (const m of legalMoves(st, st.turn))
         cellEls[m.r][m.c].classList.add("target");
     }
-    const lastM = [...state.replay].reverse().find((ev) => ev.t === "m");
+    const lastM = [...st.replay].reverse().find((ev) => ev.t === "m");
     if (lastM) cellEls[lastM.r][lastM.c].classList.add("last");
   }
 
@@ -233,9 +248,12 @@ export function createBoard(boardEl, controller = null, flipped = false){
         if (!stageEl || !frameEl) return;
         const availW = stageEl.clientWidth  - 24;
         const availH = stageEl.clientHeight - 64;
-        const size = Math.max(140, Math.min(availW, availH, 680));
-        frameEl.style.width  = size + "px";
-        frameEl.style.height = size + "px";
+        const ratio = tC / tR;
+        let h = Math.max(140, Math.min(availH, 680));
+        let w = h * ratio;
+        if (w > availW){ w = availW; h = Math.max(140, w / ratio); }
+        frameEl.style.width  = Math.round(w) + "px";
+        frameEl.style.height = Math.round(h) + "px";
       };
       doFit();
       requestAnimationFrame(doFit);

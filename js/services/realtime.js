@@ -61,7 +61,7 @@ function finalize(row,onMatched){
   const isHost=row.host_id===me();
   const myColor=isHost?row.host_color:(row.host_color==="red"?"blue":"red");
   openRoomChannel(row.code);
-  onMatched({code:row.code,myColor,firstTurn:row.first_turn});
+  onMatched({code:row.code,myColor,firstTurn:row.first_turn,race:row.mode==="race"});
 }
 function pollRoom(code,onMatched){
   currentRoom=code;
@@ -74,12 +74,12 @@ function pollRoom(code,onMatched){
   });
 }
 
-export async function startQueue(onMatched){
+export async function startQueue(onMatched, mode){
   reset();
   await sbClient?.from("rooms").delete().eq("host_id",me()).eq("status","waiting");
   const other=await findWaitingOther();
   if(other&&await tryJoin(other.code)){pollRoom(other.code,onMatched);return;}
-  const code=await createRoom(true);
+  const code=await createRoom(true, mode);
   pollRoom(code,onMatched);
   every(1500,async()=>{
     if(matched)return;
@@ -98,9 +98,9 @@ export async function cancelQueue(){
   if(currentRoom)await sbClient?.from("rooms").delete().eq("code",currentRoom).is("guest_id",null);
   currentRoom=null;
 }
-export async function createRoom(isPublic){
+export async function createRoom(isPublic, mode){
   const code=rndCode();
-  await sbClient.from("rooms").insert({code,host_id:me(),is_public:!!isPublic,status:"waiting"});
+  await sbClient.from("rooms").insert({code,host_id:me(),is_public:!!isPublic,status:"waiting",mode:mode||"classic"});
   currentRoom=code;return code;
 }
 export async function joinRoom(code,onMatched){
@@ -118,10 +118,10 @@ export async function leaveRoom(){
   if(roomChannel)sbClient?.removeChannel(roomChannel);
   roomChannel=null;currentRoom=null;matched=false;
 }
-export function inviteFriend(id){
+export function inviteFriend(id, mode){
   if(!sbClient)return;
   reset();
-  createRoom(false).then((code)=>{
+  createRoom(false, mode).then((code)=>{
     const ch=sbClient.channel("user:"+id);
     ch.subscribe(()=>{ch.send({type:"broadcast",event:"invite",
       payload:{code,from:getSession()?.user?.user_metadata?.name||"Alguém"}});});

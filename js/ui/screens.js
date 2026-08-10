@@ -6,7 +6,7 @@ import {
   levelFromXp, xpForLevel, leagueOf, ELO_START, pieceBgFor
 } from "../core/constants.js";
 import {
-  newGame, applyMove, applyWall, validateWall, randomFirstTurn, applyEvent
+  newGame, newGameRace, applyMove, applyWall, validateWall, randomFirstTurn, applyEvent
 } from "../core/rules.js";
 import { chooseAiAction } from "../core/ai.js";
 import { createBoard } from "./board.js";
@@ -102,16 +102,18 @@ const myTurn = () => {
 export function startGame(opts){
   endSession(false);
   S = freshSession(opts.mode, opts.level);
+  S.race = !!opts.race;
   if (opts.state){ S.state = opts.state; S.seconds = opts.seconds || 0; }
+  else if (S.race){ S.state = newGameRace(); }
   if (opts.myColor) S.myColor = opts.myColor;
   S.private = !!opts.private;
   if (opts.firstTurn) S.state.turn = opts.firstTurn;
   else if (!opts.state) S.state.turn = randomFirstTurn();
 
   const myColor = opts.myColor || "red";
-  const flipped = myColor === "blue";
+  const flipped = S.race ? false : (myColor === "blue");
 
-  board = createBoard($("board"), controller, flipped);
+  board = createBoard($("board"), controller, flipped, S.state);
   board.fit($("stage"), $("boardFrame"));
   showScreen("game");
 
@@ -228,6 +230,41 @@ export function handleRemoteEvent(ev){
 }
 
 /* ---------- HUD ---------- */
+/* ---------- MODO CORRIDA ---------- */
+async function startRaceOnline(){
+  if (!isConfigured()){ toast("Configure o Supabase em js/config.js."); return; }
+  if (!getSession()){ const ok = await net.ensureAnon(); if (!ok){ toast("Entre na sua conta para jogar online."); showScreen("auth"); return; } }
+  $("searchOverlay").classList.remove("hidden");
+  net.startQueue((info) => {
+    $("searchOverlay").classList.add("hidden");
+    startGame({ mode: "online", ...info });
+  }, "race");
+}
+async function startRaceFriends(){
+  if (!isConfigured()){ toast("Configure o Supabase em js/config.js."); return; }
+  if (!getSession()){ const ok = await net.ensureAnon(); if (!ok){ toast("Entre na sua conta para convidar amigos."); showScreen("auth"); return; } }
+  const friends = await getFriends();
+  if (!friends?.length){ toast("Você ainda não tem amigos! Busque no Perfil → Amigos."); return; }
+  openModal("🏁 Convidar pra Corrida", friends.map((f) => ({
+    label: "👥 " + f.username, onClick: () => { net.inviteFriend(f.id, "race"); }
+  })));
+}
+async function loadRaceFriends(){
+  if (!isConfigured()){ toast("Configure o Supabase em js/config.js."); return; }
+  if (!getSession()){ const ok = await net.ensureAnon(); if (!ok){ toast("Entre na sua conta."); showScreen("auth"); return; } }
+  const wrap = $("raceFriendsWrap");
+  const list = $("raceFriendsList");
+  wrap.classList.remove("hidden");
+  list.innerHTML = '<p class="hint">carregando…</p>';
+  const friends = await getFriends();
+  if (!friends?.length){ list.innerHTML = '<p class="hint">Você ainda não tem amigos! Busque no Perfil → Amigos.</p>'; return; }
+  list.innerHTML = friends.map((f) => `
+    <div class="friend-row">
+      <img class="rank-avatar" src="${f.avatar_url || "icons/icon.svg"}" alt="">
+      <span class="rank-name">${escapeHtml(f.username)}</span>
+      <button class="mini-btn" data-raceinvite="${f.id}">Convidar</button>
+    </div>`).join("");
+}
 function updateHUD(){
   if (!S) return;
   const cur = S.state.turn;
@@ -362,6 +399,12 @@ async function refreshProfile(){
   $("xpFill").style.width = Math.min(100, ((st.xp - base) / (next - base)) * 100) + "%";
   $("xpLabel").textContent = `Nível ${lvl} · ${st.xp - base}/${next - base} XP`;
   $("profileName").textContent = getSession()?.user?.user_metadata?.name || "Jogador local";
+  getProfile().then((p) => {
+    if (p?.avatar_url){
+      $("profileAvatar").src = p.avatar_url;
+      $("homeUserAvatar").src = p.avatar_url;
+    }
+  });
   $("profileLeague").textContent = `${leagueOf(st.elo).icon} ${leagueOf(st.elo).name} · Elo ${st.elo}`;
 
   const winrate = st.games ? Math.round((st.wins / st.games) * 100) : 0;
@@ -451,6 +494,14 @@ export function initScreens(){
     b.addEventListener("click", () => { SFX.click(); showScreen(b.dataset.back); }));
 
   $("btnLocal").onclick = () => { SFX.click(); startGame({ mode: "local" }); };
+  $("btnRace").onclick = () => {
+    SFX.click();
+    openModal("🏁 Modo Corrida", [
+      { label: "⚡ Corrida Online", onClick: () => startRaceOnline() },
+      { label: "👥 Corrida com Amigo", onClick: () => startRaceFriends() },
+      { label: "🎮 Corrida Local (2 no mesmo aparelho)", onClick: () => startGame({ mode: "local", race: true }) }
+    ]);
+  };
   $("btnAI").onclick = () => {
     SFX.click();
     openModal("Escolha o nível da IA", AI_LEVELS.map((l) => ({
@@ -512,6 +563,7 @@ export function initScreens(){
     $("tabRegister").classList.toggle("active", !login);
     $("authName").classList.toggle("hidden", login);
     $("btnForgot").classList.toggle("hidden", !login);
+    $("authHint").classList.toggle("hidden", login);
     $("btnAuthSubmit").textContent = login ? "Entrar" : "Criar conta";
     $("btnAuthSubmit").dataset.login = login ? "1" : "";
   };
@@ -691,6 +743,15 @@ export function initScreens(){
     }
   });
 
+  /* ═══ MODO RUSH (tela própria) ═══ */
+  $("btnRace").onclick = () => { SFX.click(); showScreen("race"); };
+  $("btnRaceOnline").onclick = () => { SFX.click(); startRaceOnline(); };
+  $("btnRaceFriends").onclick = () => { SFX.click(); loadRaceFriends(); };
+  $("btnRaceLocal").onclick = () => { SFX.click(); startGame({ mode: "local", race: true }); };
+  $("raceFriendsList").addEventListener("click", (e) => {
+    const id = e.target.dataset.raceinvite;
+    if (id) net.inviteFriend(id, "race");
+  });
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
   net.onEvent((msg) => {
     if (msg.kind === "action"){ applyOppSkin(msg.piece); handleRemoteEvent(msg.ev); }

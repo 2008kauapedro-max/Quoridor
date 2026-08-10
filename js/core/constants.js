@@ -1,4 +1,4 @@
-// =============================================================
+﻿// =============================================================
 // Quoridor Arena — core/constants.js
 // Todos os DADOS e constantes do jogo.
 // =============================================================
@@ -18,17 +18,17 @@ export const CHAT_MESSAGES = [
 ];
 
 // ═══════════ LIGAS (ELO) ═══════════
-export const ELO_START = 1000;
+export const ELO_START = 0;
 export const ELO_K = 32;
 
 export const LEAGUES = [
   { key: "bronze",   icon: "🥉", name: "Bronze",    min: 0    },
-  { key: "prata",    icon: "🥈", name: "Prata",     min: 1100 },
-  { key: "ouro",     icon: "🥇", name: "Ouro",      min: 1300 },
-  { key: "platina",  icon: "💠", name: "Platina",   min: 1500 },
-  { key: "diamante", icon: "💎", name: "Diamante",  min: 1700 },
-  { key: "mestre",   icon: "🔮", name: "Mestre",    min: 1900 },
-  { key: "lendario", icon: "🐉", name: "Lendário",  min: 2100 }
+  { key: "prata",    icon: "🥈", name: "Prata",     min: 100 },
+  { key: "ouro",     icon: "🥇", name: "Ouro",      min: 300 },
+  { key: "platina",  icon: "💠", name: "Platina",   min: 500 },
+  { key: "diamante", icon: "💎", name: "Diamante",  min: 700 },
+  { key: "mestre",   icon: "🔮", name: "Mestre",    min: 900 },
+  { key: "lendario", icon: "🐉", name: "Lendário",  min: 1100 }
 ];
 
 export function leagueOf(elo){
@@ -164,3 +164,9 @@ export function pieceBgFor(id, color, online = false){
     return `radial-gradient(circle at 35% 30%, ${sw[0]} 0%, ${sw[1]} 95%)`;
   return sw[color === "red" ? 0 : 1];
 }
+
+// ═══════════ MODO CORRIDA ═══════════
+export const SIZE_RACE_R = 14;
+export const SIZE_RACE_C = 9;
+export const GOAL_RACE = 0;
+export const WALLS_RACE = 14;

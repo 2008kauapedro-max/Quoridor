@@ -104,6 +104,16 @@
   .rank-avatar.frm-f-blue{box-shadow:0 0 0 3px #2f7fd6}
   .rank-avatar.frm-f-champ{box-shadow:0 0 0 3px #f59e0b,0 0 14px #f59e0b}
   .rank-avatar.frm-f-friend{box-shadow:0 0 0 3px #22c55e}
+  /* ═══ sininho de notificacoes ═══ */
+  .hamburger.bell{left:70px}
+  .bell-badge{position:absolute;top:-6px;right:-6px;background:#e11d48;color:#fff;border-radius:999px;
+    font-size:11px;line-height:1;padding:4px 7px;font-weight:800;box-shadow:0 2px 8px rgba(225,29,72,.5)}
+  .bell-panel{position:fixed;top:70px;left:14px;width:min(340px,calc(100vw - 28px));max-height:70vh;
+    overflow:auto;z-index:65;background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:14px;display:flex;flex-direction:column;gap:6px;box-shadow:0 12px 40px rgba(0,0,0,.4)}
+  .bell-head{display:flex;justify-content:space-between;align-items:center;font-weight:800}
+  .bell-title{margin:10px 0 4px;font-size:12px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+  .friend-row{display:flex;align-items:center;gap:10px;padding:8px 4px}
 </style>
 </head>
 <body>
@@ -121,6 +131,7 @@
   <!-- HOME v2 -->
   <section class="screen" data-screen="home">
     <button id="btnSidebarOpen" class="hamburger" aria-label="Menu">☰</button>
+    <button id="btnBell" class="hamburger bell" aria-label="Notificações">🔔<span id="bellBadge" class="bell-badge hidden">0</span></button>
     <div class="home-top">
       <button id="homeUserChip" class="user-chip hidden">
         <img id="homeUserAvatar" src="icons/icon.svg" alt="avatar" class="chip-avatar">
@@ -143,7 +154,11 @@
     </nav>
     <button id="btnOnline" class="hidden"></button>
     <p class="home-foot">v1.2 · 100% gratuito · PWA</p>
-    <div id="sidebarBackdrop" class="sidebar-backdrop hidden"></div>
+    <div id="bellPanel" class="bell-panel hidden">
+    <div class="bell-head"><span>🔔 Notificações</span><button id="btnBellClose" class="side-close">✕</button></div>
+    <div id="bellBody" class="bell-body"></div>
+  </div>
+  <div id="sidebarBackdrop" class="sidebar-backdrop hidden"></div>
     <nav id="sidebar" class="sidebar">
       <div class="sidebar-head"><span>Menu</span><button id="btnSidebarClose" class="side-close">✕</button></div>
       <button id="btnProfile"  class="side-link">👤 Perfil</button>

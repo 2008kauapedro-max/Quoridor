@@ -18,7 +18,8 @@ import {
 import {
   isConfigured, getSession, onAuthChange,
   loginEmail, registerEmail, loginGoogle, logout, resetPassword,
-  getProfile, updateProfile, uploadAvatar, getRanking, searchPlayers, getFriends
+  getProfile, updateProfile, uploadAvatar, getRanking, searchPlayers, getFriends,
+  getFriendRequests, respondFriendRequest, removeFriend
 } from "../services/supabase.js";
 import { net } from "../services/realtime.js";
 
@@ -264,6 +265,45 @@ async function loadRaceFriends(){
       <span class="rank-name">${escapeHtml(f.username)}</span>
       <button class="mini-btn" data-raceinvite="${f.id}">Convidar</button>
     </div>`).join("");
+}
+/* ---------- SININHO ---------- */
+async function refreshBell(){
+  const badge = $("bellBadge");
+  if (!badge) return;
+  if (!getSession()){ badge.classList.add("hidden"); return; }
+  const reqs = await getFriendRequests();
+  const n = (reqs || []).length;
+  badge.textContent = n;
+  badge.classList.toggle("hidden", n === 0);
+  if ($("bellPanel") && !$("bellPanel").classList.contains("hidden")) renderBellBody(reqs);
+}
+async function renderBellBody(reqs){
+  const body = $("bellBody");
+  if (!body) return;
+  body.innerHTML = '<p class="hint">carregando…</p>';
+  reqs = reqs || await getFriendRequests();
+  const friends = await getFriends();
+  let html = '<div class="bell-title">📨 Pedidos de amizade</div>';
+  if (!reqs?.length) html += '<p class="hint">nenhum pedido pendente</p>';
+  else html += reqs.map((r) => `
+    <div class="friend-row">
+      <img class="rank-avatar" src="${r.avatar_url || "icons/icon.svg"}" alt="">
+      <span class="rank-name">${escapeHtml(r.username)}</span>
+      <button class="mini-btn" data-accept="${r.id}">✅</button>
+      <button class="mini-btn" data-decline="${r.id}">❌</button>
+    </div>`).join("");
+  html += '<div class="bell-title">👥 Seus amigos</div>';
+  if (!friends?.length) html += '<p class="hint">busque amigos no Perfil → Amigos</p>';
+  else html += friends.map((f) => `
+    <div class="friend-row">
+      <img class="rank-avatar" src="${f.avatar_url || "icons/icon.svg"}" alt="">
+      <span class="rank-name">${escapeHtml(f.username)}</span>
+      <button class="mini-btn" data-removefriend="${f.id}">Remover</button>
+    </div>`).join("");
+  html += '<div class="bell-title">ℹ️ Informações</div>';
+  html += '<p class="hint">🔄 Semanal zera segunda · mensal dia 1º · global em 1º/01 e 1º/07.</p>';
+  html += '<p class="hint">🏁 Modo Rush: corrida lado a lado disponível!</p>';
+  body.innerHTML = html;
 }
 function updateHUD(){
   if (!S) return;
@@ -743,6 +783,17 @@ export function initScreens(){
     }
   });
 
+  /* ═══ SININHO ═══ */
+  $("btnBell").onclick = () => { SFX.click(); const p = $("bellPanel"); p.classList.toggle("hidden"); if (!p.classList.contains("hidden")) renderBellBody(); };
+  $("btnBellClose").onclick = () => $("bellPanel").classList.add("hidden");
+  $("bellBody").addEventListener("click", async (e) => {
+    const acc = e.target.dataset.accept, dec = e.target.dataset.decline, rem = e.target.dataset.removefriend;
+    if (acc){ await respondFriendRequest(acc, true); toast("Agora vocês são amigos! 🎉"); }
+    if (dec){ await respondFriendRequest(dec, false); toast("Pedido recusado."); }
+    if (rem){ await removeFriend(rem); toast("Amigo removido."); }
+    if (acc || dec || rem){ renderBellBody(); refreshBell(); }
+  });
+  setInterval(refreshBell, 15000);
   /* ═══ MODO RUSH (tela própria) ═══ */
   $("btnRace").onclick = () => { SFX.click(); showScreen("race"); };
   $("btnRaceOnline").onclick = () => { SFX.click(); startRaceOnline(); };

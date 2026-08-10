@@ -247,7 +247,7 @@ export function createBoard(boardEl, controller = null, flipped = false, state =
       const doFit = () => {
         if (!stageEl || !frameEl) return;
         const availW = stageEl.clientWidth  - 24;
-        const availH = stageEl.clientHeight - 64;
+        const availH = stageEl.clientHeight - (document.documentElement.dataset.race === "on" ? 30 : 64);
         const ratio = tC / tR;
         let h = Math.max(140, Math.min(availH, 680));
         let w = h * ratio;

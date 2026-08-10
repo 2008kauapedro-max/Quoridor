@@ -86,6 +86,17 @@
     box-shadow:0 6px 18px rgba(47,127,214,.35)}
   .race-box.wide{aspect-ratio:auto;width:100%;margin-top:12px;font-size:24px;flex-direction:row;gap:10px;padding:14px;box-sizing:border-box}
   .race-friends{margin-top:18px;text-align:left}
+  /* ═══ MODO RUSH: meta xadrez + layout mobile ═══ */
+  [data-race="on"] .goal-strip.bottom{display:none}
+  [data-race="on"] .goal-strip.top span{display:none}
+  [data-race="on"] .goal-strip.top{height:12px;min-height:12px;padding:0;border-radius:3px;
+    background:repeating-conic-gradient(#f5f5f5 0% 25%, #16161a 0% 50%) 0 0 / 12px 12px;
+    box-shadow:0 0 0 1px var(--line)}
+  @media (max-width:520px){
+    .mode-row{gap:6px}
+    .mode-row .mode-btn{padding:10px 6px;font-size:12.5px;flex:1;min-width:0}
+    .hud-row{gap:8px}
+  }
 </style>
 </head>
 <body>

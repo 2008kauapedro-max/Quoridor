@@ -267,6 +267,8 @@ async function loadRaceFriends(){
     </div>`).join("");
 }
 /* ---------- SININHO ---------- */
+let bellTab = "req";
+let bubbleFor = 0;
 let cachedAnns = [];
 async function refreshBell(){
   const badge = $("bellBadge");
@@ -279,7 +281,7 @@ async function refreshBell(){
   const n = (reqs || []).length + fresh.length;
   badge.textContent = n;
   badge.classList.toggle("hidden", n === 0);
-  if (fresh.length && $("msgBubble")){
+  if (fresh.length && $("msgBubble") && fresh[0].id !== bubbleFor){ bubbleFor = fresh[0].id;
     $("msgBubbleTitle").textContent = fresh[0].title;
     $("msgBubbleBody").textContent = fresh[0].body + " · abra o 🔔 na tela inicial!";
     $("msgBubble").classList.remove("hidden");
@@ -867,7 +869,7 @@ export function initScreens(){
     if (add){ await sendFriendRequest(add); toast("Pedido enviado! 📨"); }
   });
   /* ═══ SININHO ═══ */
-  $("btnBell").onclick = () => { SFX.click(); const p = $("bellPanel"); p.classList.toggle("hidden"); if (!p.classList.contains("hidden")) renderBellBody(); };
+  $("btnBell").onclick = () => { SFX.click(); const p = $("bellPanel"); p.classList.toggle("hidden"); if (!p.classList.contains("hidden")){ if (cachedAnns.length) localStorage.setItem("qa_ann_seen", Math.max(...cachedAnns.map((a) => a.id), 0)); renderBellBody(); refreshBell(); } };
   $("btnBellClose").onclick = () => $("bellPanel").classList.add("hidden");
   $("bellBody").addEventListener("click", async (e) => {
     const tab = e.target.dataset.belltab; if (tab){ bellTab = tab; if (tab === "ann" && cachedAnns.length) localStorage.setItem("qa_ann_seen", Math.max(...cachedAnns.map((a) => a.id), 0)); renderBellBody(); refreshBell(); return; }

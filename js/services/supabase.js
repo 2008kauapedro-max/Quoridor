@@ -1,4 +1,4 @@
-/* =============================================================
+﻿/* =============================================================
    Quoridor Arena — services/supabase.js
    -------------------------------------------------------------
    Cliente Supabase (plano 100% gratuito) carregado via CDN esm.sh
@@ -113,9 +113,7 @@ export async function uploadAvatar(file){
 export async function getRanking(period){
   if (!sb) return null;
   if (period === "global"){
-    const { data } = await sb.from("profiles")
-      .select("id, username, avatar_url, elo")
-      .order("elo", { ascending: false }).limit(100);
+    const { data } = await sb.from("leaderboard_global").select("id, username, avatar_url, elo").limit(100);
     return data || null;
   }
   const view = period === "weekly" ? "leaderboard_weekly" : "leaderboard_monthly";

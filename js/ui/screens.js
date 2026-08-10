@@ -277,33 +277,44 @@ async function refreshBell(){
   badge.classList.toggle("hidden", n === 0);
   if ($("bellPanel") && !$("bellPanel").classList.contains("hidden")) renderBellBody(reqs);
 }
+let bellTab = "req";
 async function renderBellBody(reqs){
   const body = $("bellBody");
   if (!body) return;
-  body.innerHTML = '<p class="hint">carregando…</p>';
   reqs = reqs || await getFriendRequests();
+  let html = '<div class="tabs">' +
+    '<button class="tab' + (bellTab === "req" ? " active" : "") + '" data-belltab="req">📨 Pedidos</button>' +
+    '<button class="tab' + (bellTab === "info" ? " active" : "") + '" data-belltab="info">ℹ️ Info</button></div>';
+  if (bellTab === "req"){
+    if (!reqs?.length) html += '<p class="hint">nenhum pedido pendente</p>';
+    else html += reqs.map((r) => `
+      <div class="friend-row">
+        <img class="rank-avatar" src="${r.avatar_url || "icons/icon.svg"}" alt="">
+        <span class="rank-name">${escapeHtml(r.username)}</span>
+        <button class="mini-btn" data-accept="${r.id}">✅</button>
+        <button class="mini-btn" data-decline="${r.id}">❌</button>
+      </div>`).join("");
+  } else {
+    html += '<p class="hint">🔄 Semanal zera segunda · mensal dia 1º · global em 1º/01 e 1º/07.</p>';
+    html += '<p class="hint">🏁 Modo Rush: corrida lado a lado disponível!</p>';
+    html += '<p class="hint">📲 Instale o jogo pelo menu → Baixar App.</p>';
+  }
+  body.innerHTML = html;
+}
+/* ---------- TELA DE AMIGOS ---------- */
+async function renderFriendsScreen(){
+  const list = $("friendsList2");
+  if (!list) return;
+  list.innerHTML = '<p class="hint">carregando…</p>';
   const friends = await getFriends();
-  let html = '<div class="bell-title">📨 Pedidos de amizade</div>';
-  if (!reqs?.length) html += '<p class="hint">nenhum pedido pendente</p>';
-  else html += reqs.map((r) => `
-    <div class="friend-row">
-      <img class="rank-avatar" src="${r.avatar_url || "icons/icon.svg"}" alt="">
-      <span class="rank-name">${escapeHtml(r.username)}</span>
-      <button class="mini-btn" data-accept="${r.id}">✅</button>
-      <button class="mini-btn" data-decline="${r.id}">❌</button>
-    </div>`).join("");
-  html += '<div class="bell-title">👥 Seus amigos</div>';
-  if (!friends?.length) html += '<p class="hint">busque amigos no Perfil → Amigos</p>';
-  else html += friends.map((f) => `
+  if (!friends?.length){ list.innerHTML = '<p class="hint">você ainda não tem amigos — busque aí em cima!</p>'; return; }
+  list.innerHTML = friends.map((f) => `
     <div class="friend-row">
       <img class="rank-avatar" src="${f.avatar_url || "icons/icon.svg"}" alt="">
       <span class="rank-name">${escapeHtml(f.username)}</span>
-      <button class="mini-btn" data-removefriend="${f.id}">Remover</button>
+      <button class="mini-btn" data-finvt="${f.id}">Convidar</button>
+      <button class="mini-btn" data-frem="${f.id}">Remover</button>
     </div>`).join("");
-  html += '<div class="bell-title">ℹ️ Informações</div>';
-  html += '<p class="hint">🔄 Semanal zera segunda · mensal dia 1º · global em 1º/01 e 1º/07.</p>';
-  html += '<p class="hint">🏁 Modo Rush: corrida lado a lado disponível!</p>';
-  body.innerHTML = html;
 }
 function updateHUD(){
   if (!S) return;
@@ -803,10 +814,34 @@ export function initScreens(){
     $("installBanner").classList.add("hidden");
     localStorage.setItem("qa_install_ok", "1");
   });
+  /* ═══ TELA DE AMIGOS ═══ */
+  $("btnFriends").onclick = () => { SFX.click(); showScreen("friends"); renderFriendsScreen(); };
+  $("btnFriendSearch2").onclick = async () => {
+    const q = $("friendSearch2").value.trim();
+    const res = await searchPlayers(q);
+    const box = $("friendSearchResults");
+    if (!res?.length){ box.innerHTML = '<p class="hint">ninguém encontrado</p>'; return; }
+    box.innerHTML = res.map((p) => `
+      <div class="friend-row">
+        <img class="rank-avatar" src="${p.avatar_url || "icons/icon.svg"}" alt="">
+        <span class="rank-name">${escapeHtml(p.username)}</span>
+        <button class="mini-btn" data-fadd="${p.id}">Adicionar</button>
+      </div>`).join("");
+  };
+  $("friendsList2").addEventListener("click", async (e) => {
+    const rem = e.target.dataset.frem, inv = e.target.dataset.finvt;
+    if (rem){ await removeFriend(rem); toast("Amigo removido."); renderFriendsScreen(); }
+    if (inv){ net.inviteFriend(inv, "classic"); toast("Convite enviado! ⚔️"); }
+  });
+  $("friendSearchResults").addEventListener("click", async (e) => {
+    const add = e.target.dataset.fadd;
+    if (add){ await sendFriendRequest(add); toast("Pedido enviado! 📨"); }
+  });
   /* ═══ SININHO ═══ */
   $("btnBell").onclick = () => { SFX.click(); const p = $("bellPanel"); p.classList.toggle("hidden"); if (!p.classList.contains("hidden")) renderBellBody(); };
   $("btnBellClose").onclick = () => $("bellPanel").classList.add("hidden");
   $("bellBody").addEventListener("click", async (e) => {
+    const tab = e.target.dataset.belltab; if (tab){ bellTab = tab; renderBellBody(); return; }
     const acc = e.target.dataset.accept, dec = e.target.dataset.decline, rem = e.target.dataset.removefriend;
     if (acc){ await respondFriendRequest(acc, true); toast("Agora vocês são amigos! 🎉"); }
     if (dec){ await respondFriendRequest(dec, false); toast("Pedido recusado."); }

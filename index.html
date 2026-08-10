@@ -122,6 +122,11 @@
   .hero-logo-img{width:92px;height:92px;border-radius:22px;display:block;margin:0 auto 10px;
     box-shadow:0 10px 30px rgba(0,0,0,.35)}
   .splash-logo-img{width:92px;height:92px;border-radius:22px;margin:0 auto 10px}
+  /* ═══ amigos + sininho organizados ═══ */
+  .friend-row{padding:10px 4px;gap:12px}
+  .friend-row .rank-avatar{width:44px;height:44px;border-radius:12px;flex:none}
+  .bell-panel .tabs{margin-bottom:8px}
+  .bell-panel .tab{padding:8px 10px;font-size:13px}
 </style>
 </head>
 <body>
@@ -175,6 +180,7 @@
     <nav id="sidebar" class="sidebar">
       <div class="sidebar-head"><span>Menu</span><button id="btnSidebarClose" class="side-close">✕</button></div>
       <button id="btnProfile"  class="side-link">👤 Perfil</button>
+      <button id="btnFriends"  class="side-link">👥 Amigos</button>
       <button id="btnSkins"    class="side-link">🎨 Skins</button>
       <button id="btnRanking"  class="side-link">🏆 Ranking</button>
       <button id="btnSettings" class="side-link">⚙️ Configurações</button>
@@ -299,6 +305,23 @@
         <button id="btnFriendSearch" class="menu-btn">🔎</button>
       </div>
       <div id="friendsList" class="friends-list"></div>
+    </div>
+  </section>
+
+  <!-- AMIGOS -->
+  <section class="screen" data-screen="friends">
+    <header class="screen-head">
+      <button class="icon-btn back" data-back="home">←</button>
+      <h2>👥 Amigos</h2><span></span>
+    </header>
+    <div class="card friends-card">
+      <div class="friends-search">
+        <input id="friendSearch2" class="input" placeholder="Buscar jogador…" maxlength="20">
+        <button id="btnFriendSearch2" class="menu-btn">🔎</button>
+      </div>
+      <div id="friendSearchResults" class="friends-list"></div>
+      <h3 class="section-title">Sua galera</h3>
+      <div id="friendsList2" class="friends-list"></div>
     </div>
   </section>
 

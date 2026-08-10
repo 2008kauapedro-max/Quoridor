@@ -136,10 +136,10 @@ export async function searchPlayers(q){
 export async function sendFriendRequest(otherId){
   if (!sb || !currentSession) return need();
   const me = currentSession.user.id;
-  const a = me < otherId ? me : otherId;         // par ordenado = sem duplicata
-  const b = me < otherId ? otherId : me;
+  const a = me;         // par ordenado = sem duplicata
+  const b = otherId;
     const { error } = await sb.from("friendships")
-    .upsert({ user_a: a, user_b: b, status: "accepted" },
+    .upsert({ user_a: a, user_b: b, status: "pending" },
             { onConflict: "user_a,user_b" });
   return error ? err(error) : {};
 }
@@ -170,4 +170,37 @@ export async function reportMatch(sum){
     walls_me: sum.wallsUsed || 0,
     replay: sum.replay || []
   } }).then(() => {}, () => {});   // silencioso: offline não trava o jogo
+}
+
+export async function getFriendRequests(){
+  if (!sb || !currentSession) return [];
+  const me = currentSession.user.id;
+  const { data } = await sb.from("friendships")
+    .select("user_a, user_b, status").eq("user_b", me).eq("status", "pending");
+  if (!data?.length) return [];
+  const ids = data.map((f) => f.user_a);
+  const { data: profs } = await sb.from("profiles")
+    .select("id, username, avatar_url").in("id", ids);
+  return profs || [];
+}
+
+export async function respondFriendRequest(otherId, accept){
+  if (!sb || !currentSession) return need();
+  const me = currentSession.user.id;
+  if (accept){
+    const { error } = await sb.from("friendships")
+      .update({ status: "accepted" }).eq("user_a", otherId).eq("user_b", me);
+    return error ? err(error) : {};
+  }
+  const { error } = await sb.from("friendships")
+    .delete().eq("user_a", otherId).eq("user_b", me);
+  return error ? err(error) : {};
+}
+
+export async function removeFriend(otherId){
+  if (!sb || !currentSession) return need();
+  const me = currentSession.user.id;
+  const { error } = await sb.from("friendships").delete().eq("status", "accepted")
+    .or(`and(user_a.eq.${me},user_b.eq.${otherId}),and(user_a.eq.${otherId},user_b.eq.${me})`);
+  return error ? err(error) : {};
 }

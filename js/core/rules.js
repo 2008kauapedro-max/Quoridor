@@ -4,6 +4,8 @@
    Lógica PURA da partida (zero DOM). Suporta:
    - Modo clássico (9x9, 10 barreiras)
    - Modo corrida (14x9, 14 barreiras, ambos saem da base)
+   - Regra oficial do pulo: pula o peão inimigo colado na frente;
+     se o pulo estiver bloqueado, cai na diagonal ao lado dele
    ============================================================= */
 import { SIZE, WALLS_PER_PLAYER, GOAL, SIZE_RACE_R, SIZE_RACE_C, WALLS_RACE, GOAL_RACE } from "./constants.js";
 
@@ -76,19 +78,51 @@ export function snapshot(state){
 
 /* ═══════════ MOVIMENTO ═══════════ */
 
+/* Tem parede entre duas casas vizinhas (ortogonais)? */
+function wallBetween(state, r, c, nr, nc){
+  if (nr === r - 1) return !!state.hSeg[r - 1][c];
+  if (nr === r + 1) return !!state.hSeg[r][c];
+  if (nc === c - 1) return !!state.vSeg[r][c - 1];
+  if (nc === c + 1) return !!state.vSeg[r][c];
+  return true;
+}
+
 export function canMoveTo(state, r, c, nr, nc){
   const rows = state.rows || SIZE;
   const cols = state.cols || SIZE;
   if (nr < 0 || nc < 0 || nr >= rows || nc >= cols) return false;
-  const dr = nr - r, dc = nc - c;
-  if (Math.abs(dr) + Math.abs(dc) !== 1) return false;
-  if (dr === -1 && state.hSeg[r - 1][c]) return false;
-  if (dr ===  1 && state.hSeg[r][c])     return false;
-  if (dc === -1 && state.vSeg[r][c - 1]) return false;
-  if (dc ===  1 && state.vSeg[r][c])     return false;
   const foe = state.turn === "red" ? "blue" : "red";
-  if (state.players[foe].r === nr && state.players[foe].c === nc) return false;
-  return true;
+  const f = state.players[foe];
+  const dr = nr - r, dc = nc - c;
+  const inB = (rr, cc) => rr >= 0 && cc >= 0 && rr < rows && cc < cols;
+
+  /* passo normal (1 casa) */
+  if (Math.abs(dr) + Math.abs(dc) === 1){
+    if (wallBetween(state, r, c, nr, nc)) return false;
+    if (f.r === nr && f.c === nc) return false;
+    return true;
+  }
+
+  /* PULO: 2 casas em linha reta, por cima do inimigo colado */
+  if (Math.abs(dr) + Math.abs(dc) === 2 && (dr === 0 || dc === 0)){
+    const mr = r + dr / 2, mc = c + dc / 2;
+    return f.r === mr && f.c === mc &&
+      !wallBetween(state, r, c, mr, mc) &&
+      !wallBetween(state, mr, mc, nr, nc);
+  }
+
+  /* DIAGONAL: só se o pulo estiver bloqueado (borda ou parede) */
+  if (Math.abs(dr) === 1 && Math.abs(dc) === 1){
+    for (const [ar, ac] of [[dr, 0], [0, dc]]){
+      const mr = r + ar, mc = c + ac;
+      if (f.r !== mr || f.c !== mc) continue;
+      if (wallBetween(state, r, c, mr, mc)) continue;
+      const jr = mr + ar, jc = mc + ac;
+      const blocked = !inB(jr, jc) || wallBetween(state, mr, mc, jr, jc);
+      if (blocked && !wallBetween(state, mr, mc, nr, nc)) return true;
+    }
+  }
+  return false;
 }
 
 /* Lista de casas legais (IA + destaques de alvo) */
@@ -96,16 +130,26 @@ export function legalMoves(state, player){
   const rows = state.rows || SIZE;
   const cols = state.cols || SIZE;
   const p = state.players[player];
+  const foe = player === "red" ? "blue" : "red";
+  const f = state.players[foe];
+  const inB = (r, c) => r >= 0 && c >= 0 && r < rows && c < cols;
   const out = [];
   for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]){
     const nr = p.r + dr, nc = p.c + dc;
-    if (nr < 0 || nc < 0 || nr >= rows || nc >= cols) continue;
-    if (dr === -1 && state.hSeg[p.r - 1][p.c]) continue;
-    if (dr ===  1 && state.hSeg[p.r][p.c])     continue;
-    if (dc === -1 && state.vSeg[p.r][p.c - 1]) continue;
-    if (dc ===  1 && state.vSeg[p.r][p.c])     continue;
-    const foe = player === "red" ? "blue" : "red";
-    if (state.players[foe].r === nr && state.players[foe].c === nc) continue;
+    if (!inB(nr, nc) || wallBetween(state, p.r, p.c, nr, nc)) continue;
+    if (f.r === nr && f.c === nc){
+      /* inimigo colado na frente: pula, ou diagonal se pulo bloqueado */
+      const jr = nr + dr, jc = nc + dc;
+      if (inB(jr, jc) && !wallBetween(state, nr, nc, jr, jc)){
+        out.push({ r: jr, c: jc });
+      } else {
+        for (const [pr, pc] of (dr === 0 ? [[-1,0],[1,0]] : [[0,-1],[0,1]])){
+          const sr = nr + pr, sc = nc + pc;
+          if (inB(sr, sc) && !wallBetween(state, nr, nc, sr, sc)) out.push({ r: sr, c: sc });
+        }
+      }
+      continue;
+    }
     out.push({ r: nr, c: nc });
   }
   return out;
@@ -139,7 +183,7 @@ export function validateWall(state, type, r, c){
   const cols = state.cols || SIZE;
   const goalRed = state.mode === "race" ? GOAL_RACE : GOAL.red;
   const goalBlue = state.mode === "race" ? GOAL_RACE : GOAL.blue;
-  
+
   if (r < 0 || c < 0 || r > rows - 2 || c > cols - 2)
     return { ok: false, reason: "fora" };
 

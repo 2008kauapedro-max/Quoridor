@@ -1,9 +1,9 @@
 ﻿/* =============================================================
-Quoridor Arena — ui/screens.js (v2 — skins sincronizadas)
-============================================================= */
+   Quoridor Arena — ui/screens.js (v3 — personalizador + barreiras temáticas)
+   ============================================================= */
 import {
   TEXTS, NAMES, AI_LEVELS, SKINS, ACHIEVEMENTS, SKIN_CATALOG, ADMIN_EMAIL,
-  levelFromXp, xpForLevel, leagueOf, ELO_START, pieceBgFor
+  levelFromXp, xpForLevel, leagueOf, ELO_START, pieceBgFor, pieceWallFor
 } from "../core/constants.js";
 import {
   newGame, newGameRace, applyMove, applyWall, validateWall, randomFirstTurn, applyEvent
@@ -22,6 +22,7 @@ import {
   getFriendRequests, respondFriendRequest, removeFriend, sendFriendRequest, getAnnouncements, postAnnouncement
 } from "../services/supabase.js";
 import { net } from "../services/realtime.js";
+import { initCustomizer } from "./customizer.js";
 
 const $ = (id) => document.getElementById(id);
 let current = "loading";
@@ -124,13 +125,17 @@ export function startGame(opts){
     const oppC = S.myColor === "red" ? "blue" : "red";
     board.setPieceColors({
       [S.myColor]: pieceBgFor(myPiece, S.myColor, true),
-      [oppC]: pieceBgFor("p-classic", oppC, true)
+      [oppC]: pieceBgFor("p-classic", oppC, true),
+      wallRed:  pieceWallFor(S.myColor === "red" ? myPiece : "p-classic", "red", true),
+      wallBlue: pieceWallFor(S.myColor === "blue" ? myPiece : "p-classic", "blue", true)
     });
     for (const d of [300, 1200, 2500, 5000, 8000, 12000]) setTimeout(() => net.sendSkin(myPiece), d);
   } else {
     board.setPieceColors({
       red:  pieceBgFor(myPiece, "red",  false),
-      blue: pieceBgFor(myPiece, "blue", false)
+      blue: pieceBgFor(myPiece, "blue", false),
+      wallRed:  pieceWallFor(myPiece, "red"),
+      wallBlue: pieceWallFor(myPiece, "blue")
     });
   }
 
@@ -325,7 +330,8 @@ async function renderBellBody(reqs){
     html += '<p class="hint">📲 Instale o jogo pelo menu → Baixar App.</p>';
   }
   body.innerHTML = html;
-}/* ---------- TELA DE AMIGOS ---------- */
+}
+/* ---------- TELA DE AMIGOS ---------- */
 async function renderFriendsScreen(){
   const list = $("friendsList2");
   if (!list) return;
@@ -349,7 +355,7 @@ function updateHUD(){
   $("wallsRed").textContent  = S.state.players.red.walls;
   $("wallsBlue").textContent = S.state.players.blue.walls;
   $("chipRed").classList.toggle("is-turn",  cur === "red");
-  $("chipBlue").classList.toggle("is-turn", cur === "blue");
+  $("chipBlue").classList.toggle("is-turn",  cur === "blue");
   const noWalls = S.state.players[cur].walls <= 0;
   $("modeWallH").disabled = noWalls;
   $("modeWallV").disabled = noWalls;
@@ -915,6 +921,7 @@ export function initScreens(){
     if (id) net.inviteFriend(id, "race");
   });
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
+  initCustomizer();
   /* btnLogout v5 (limpa tudo + recarrega) */
   $("btnLogout").onclick = async () => {
     SFX.click();

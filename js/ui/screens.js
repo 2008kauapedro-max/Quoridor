@@ -1,5 +1,5 @@
 ﻿/* =============================================================
-   Quoridor Arena — ui/screens.js (v4 — Oficina + Arena)
+   Quoridor Arena — ui/screens.js (v5 — cards de jogador completos)
    ============================================================= */
 import {
   TEXTS, NAMES, AI_LEVELS, SKINS, ACHIEVEMENTS, SKIN_CATALOG, ADMIN_EMAIL,
@@ -29,6 +29,7 @@ import {
 
 const $ = (id) => document.getElementById(id);
 let current = "loading";
+let myAvatar = null;
 
 /* ═══════════ NAVEGAÇÃO ═══════════ */
 export function showScreen(name){
@@ -93,7 +94,7 @@ function freshSession(mode, level){
     uiMode: "move",
     locked: true,
     seconds: 0, timerId: null, aiTimer: null,
-    myColor: null, oppPiece: null
+    myColor: null, oppPiece: null, oppProfile: null
   };
 }
 
@@ -104,7 +105,6 @@ const myTurn = () => {
   return S.state.turn === S.myColor;
 };
 
-/* cores das faixas de meta (dinâmicas pela skin) */
 function updateStrips(){
   if (!S || !board?.setGoalColors) return;
   const myPiece = getSettings().piece || "p-classic";
@@ -119,6 +119,35 @@ function updateStrips(){
     red = mainColorFor(myPiece, "red", false);
   }
   board.setGoalColors(red, blue);
+}
+
+/* ── troca de perfil entre os jogadores (nome, foto, elo, nível, moldura) ── */
+function sendMyProfile(){
+  try {
+    const s = getSettings();
+    const st = getStats();
+    net.sendSkin(JSON.stringify({
+      p: s.piece || "p-classic",
+      n: getSession()?.user?.user_metadata?.name || "Jogador",
+      a: myAvatar || "",
+      e: st.elo ?? ELO_START,
+      l: levelFromXp(st.xp),
+      f: s.frame || "f-none"
+    }));
+  } catch (_){}
+}
+function handleSkinMsg(raw){
+  if (!S || S.mode !== "online" || !raw) return;
+  if (String(raw).charAt(0) === "{"){
+    try {
+      const d = JSON.parse(raw);
+      S.oppProfile = d;
+      if (d.p) applyOppSkin(d.p);
+      updateHUD();
+      return;
+    } catch (_){}
+  }
+  applyOppSkin(raw);
 }
 
 export function startGame(opts){
@@ -149,7 +178,7 @@ export function startGame(opts){
       wallRed:  S.myColor === "red"  ? (wBg || pieceWallFor(myPiece, "red", true))  : "#ef4444",
       wallBlue: S.myColor === "blue" ? (wBg || pieceWallFor(myPiece, "blue", true)) : "#3b82f6"
     });
-    for (const d of [300, 1200, 2500, 5000, 8000, 12000]) setTimeout(() => net.sendSkin(myPiece), d);
+    for (const d of [300, 1200, 2500, 5000, 8000, 12000]) setTimeout(() => sendMyProfile(), d);
   } else {
     board.setPieceColors({
       red:  pieceBgFor(myPiece, "red",  false),
@@ -218,7 +247,7 @@ function afterAction(ev, kind){
   board.sync(S.state);
   updateHUD();
   if (S.mode !== "online") setSnapshot({ mode: S.mode, level: S.level, state: S.state, seconds: S.seconds });
-  else { net.sendAction(ev); net.sendSkin(getSettings().piece || "p-classic"); }
+  else { net.sendAction(ev); sendMyProfile(); }
   if (S.state.over) return endGame();
   maybeAI();
 }
@@ -257,50 +286,68 @@ export function handleRemoteEvent(ev){
   if (S.state.over) endGame();
 }
 
-/* ---------- HUD / ARENA ---------- */
+/* ---------- HUD / ARENA (cards compactos, estilos inline = nunca quebra) ---------- */
+const CARD_STYLE = "flex:1;min-width:0;display:flex;align-items:center;gap:6px;background:var(--card,#161b26);border:1px solid var(--line,#2a2f3a);border-radius:12px;padding:6px 8px;box-sizing:border-box";
+const IMG_STYLE = "width:32px;height:32px;border-radius:50%;flex:0 0 auto;object-fit:cover;background:#333";
+const NAME_STYLE = "font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:104px;color:var(--text,#eee)";
+const SUB_STYLE = "font-size:9px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:104px;color:var(--text,#eee)";
+
 function buildArenaHud(){
   if (document.getElementById("arenaHud") || !$("stage")) return;
   const hud = document.createElement("div");
   hud.id = "arenaHud";
+  hud.setAttribute("style", "display:flex;align-items:center;justify-content:center;gap:6px;margin:2px auto 10px;max-width:520px;width:100%;padding:0 10px;box-sizing:border-box");
   hud.innerHTML =
-    '<div class="ah-card" id="ahRed"></div>' +
-    '<div class="ah-mid"><div id="ahTurn">—</div><div class="ah-walls"><span id="ahWr"></span><span id="ahWb"></span></div></div>' +
-    '<div class="ah-card" id="ahBlue"></div>';
+    '<div id="ahRed" style="' + CARD_STYLE + '">' +
+      '<img id="ahRedImg" style="' + IMG_STYLE + '" src="icons/icon.svg" alt="">' +
+      '<div style="min-width:0"><div id="ahRedName" style="' + NAME_STYLE + '">—</div>' +
+      '<div id="ahRedSub" style="' + SUB_STYLE + '">—</div></div></div>' +
+    '<div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:3px">' +
+      '<div id="ahTurn" style="font-size:9px;font-weight:800;letter-spacing:.06em;padding:4px 10px;border-radius:999px;background:var(--card,#161b26);border:1px solid var(--line,#2a2f3a);color:var(--text,#eee)">—</div>' +
+      '<div style="display:flex;gap:8px;font-size:9px;opacity:.85;color:var(--text,#eee)"><span id="ahWr"></span><span id="ahWb"></span></div></div>' +
+    '<div id="ahBlue" style="' + CARD_STYLE + '">' +
+      '<img id="ahBlueImg" style="' + IMG_STYLE + '" src="icons/icon.svg" alt="">' +
+      '<div style="min-width:0"><div id="ahBlueName" style="' + NAME_STYLE + '">—</div>' +
+      '<div id="ahBlueSub" style="' + SUB_STYLE + '">—</div></div></div>';
   $("stage").parentElement.insertBefore(hud, $("stage"));
-  const st = document.createElement("style");
-  st.textContent =
-    "#arenaHud{display:flex;gap:8px;align-items:stretch;justify-content:center;margin:4px auto 8px;max-width:440px;padding:0 12px}" +
-    "#arenaHud .ah-card{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;text-align:center;" +
-    "#arenaHud .ah-card img{width:34px;height:34px;border-radius:50%;flex:0 0 auto}" +
-    "#arenaHud .ah-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
-    "#arenaHud .ah-sub{font-size:10px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
-    "#arenaHud .ah-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:76px}" +
-    "#arenaHud #ahTurn{font-size:10px;font-weight:800;letter-spacing:.08em;padding:4px 12px;border-radius:999px;background:var(--card,#161b26);border:1px solid var(--line,#2a2f3a);transition:all .35s}" +
-    "#arenaHud #ahTurn.red{color:#f87171;border-color:#f8717166;box-shadow:0 0 10px #f8717133}" +
-    "#arenaHud #ahTurn.blue{color:#60a5fa;border-color:#60a5fa66;box-shadow:0 0 10px #60a5fa33}" +
-    "#arenaHud .ah-walls{font-size:10px;opacity:.8;display:flex;gap:8px}";
-  document.head.appendChild(st);
   const old = $("turnPill");
   if (old) old.style.display = "none";
 }
-function fillCard(id, color){
-  const el = $(id);
-  if (!el || !S) return;
+
+function fillCard(color){
+  if (!S) return;
+  const pre = color === "red" ? "ahRed" : "ahBlue";
+  const nameEl = $(pre + "Name"), subEl = $(pre + "Sub"), imgEl = $(pre + "Img");
+  if (!nameEl) return;
   const s = getSettings();
-  let name = NAMES[color], sub = "", av = "icons/icon.svg";
-  if (S.mode === "online" && S.myColor === color){
+  const st = getStats();
+  const isMe  = S.mode === "online" && S.myColor === color;
+  const isOpp = S.mode === "online" && S.myColor && S.myColor !== color;
+  let name = NAMES[color], sub = "", av = "icons/icon.svg", frame = "f-none";
+
+  if (isMe){
     name = getSession()?.user?.user_metadata?.name || "Você";
-    sub = "Elo " + getStats().elo;
-    getProfile().then((p) => { if (p?.avatar_url){ const im = el.querySelector("img"); if (im) im.src = p.avatar_url; } });
-  } else if (S.mode === "online"){
-    name = "Rival"; sub = "· online";
-  } else {
-    const t = titleOf(s.title);
-    if (t) sub = t.name;
+    frame = s.frame || "f-none";
+    const lg = leagueOf(st.elo ?? ELO_START);
+    sub = lg.icon + " " + lg.name + " · " + (st.elo ?? ELO_START) + " · Nv " + levelFromXp(st.xp);
+    if (myAvatar) av = myAvatar;
+    else getProfile().then((p) => { if (p?.avatar_url){ myAvatar = p.avatar_url; const im = $(pre + "Img"); if (im) im.src = p.avatar_url; } });
+  } else if (isOpp){
+    const d = S.oppProfile;
+    if (d){
+      name = d.n || "Rival";
+      frame = d.f || "f-none";
+      const lg = leagueOf(d.e ?? ELO_START);
+      sub = lg.icon + " " + lg.name + " · " + (d.e ?? ELO_START) + " · Nv " + (d.l ?? 0);
+      if (d.a) av = d.a;
+    } else { name = "Rival"; sub = "conectando…"; }
   }
-  el.innerHTML = '<img class="rank-avatar frm-' + (s.frame || "none") + '" src="' + av + '" alt="">' +
-    '<div style="min-width:0"><div class="ah-name">' + escapeHtml(name) + '</div><div class="ah-sub">' + escapeHtml(sub) + "</div></div>";
+  imgEl.className = "rank-avatar frm-" + frame;
+  imgEl.src = av;
+  nameEl.textContent = name;
+  subEl.textContent = sub;
 }
+
 function updateHUD(){
   if (!S) return;
   const cur = S.state.turn;
@@ -315,12 +362,13 @@ function updateHUD(){
   $("modeWallH").disabled = noWalls;
   $("modeWallV").disabled = noWalls;
   if (document.getElementById("arenaHud")){
-    fillCard("ahRed", "red"); fillCard("ahBlue", "blue");
+    fillCard("red"); fillCard("blue");
     const t = $("ahTurn");
     t.textContent = S.mode === "online"
       ? (cur === S.myColor ? "SEU TURNO" : "VEZ DO RIVAL")
       : "VEZ DO " + NAMES[cur].toUpperCase();
-    t.className = cur;
+    t.style.color = cur === "red" ? "#f87171" : "#60a5fa";
+    t.style.borderColor = cur === "red" ? "#f8717166" : "#60a5fa66";
     $("ahWr").textContent = "🔴 " + S.state.players.red.walls;
     $("ahWb").textContent = "🔵 " + S.state.players.blue.walls;
   }
@@ -587,6 +635,7 @@ async function refreshProfile(){
   if (pn){ pn.textContent = t ? t.name : ""; pn.setAttribute("style", t?.style || ""); }
   getProfile().then((p) => {
     if (p?.avatar_url){
+      myAvatar = p.avatar_url;
       $("profileAvatar").src = p.avatar_url;
       $("homeUserAvatar").src = p.avatar_url;
     }
@@ -921,7 +970,10 @@ export function initScreens(){
     if (logged){
       $("homeUserName").textContent = session.user.user_metadata?.name || "Jogador";
       getProfile().then((p) => {
-        if (p?.avatar_url) $("homeUserAvatar").src = p.avatar_url;
+        if (p?.avatar_url){
+          myAvatar = p.avatar_url;
+          $("homeUserAvatar").src = p.avatar_url;
+        }
       });
     }
   });
@@ -1019,9 +1071,9 @@ export function initScreens(){
   if (bla) bla.onclick = () => $("btnLogout").click();
 
   net.onEvent((msg) => {
-    if (msg.kind === "action"){ applyOppSkin(msg.piece); handleRemoteEvent(msg.ev); }
-    if (msg.kind === "skin")   applyOppSkin(msg.piece);
-    if (msg.kind === "skinreq") net.sendSkin(getSettings().piece || "p-classic");
+    if (msg.kind === "action"){ handleSkinMsg(msg.piece); handleRemoteEvent(msg.ev); }
+    if (msg.kind === "skin")   handleSkinMsg(msg.piece);
+    if (msg.kind === "skinreq") sendMyProfile();
     if (msg.kind === "chat")   feedBubble(msg.text, false);
   });
 }

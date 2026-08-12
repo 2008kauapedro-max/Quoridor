@@ -1,5 +1,5 @@
 /* =============================================================
-   Quoridor Arena — ui/board.js (v8 — barreiras temáticas)
+   Quoridor Arena — ui/board.js (v9 — metas dinâmicas)
    ============================================================= */
 import { SIZE, G } from "../core/constants.js";
 import { legalMoves } from "../core/rules.js";
@@ -31,6 +31,24 @@ export function createBoard(boardEl, controller = null, flipped = false, state =
       boardEl.appendChild(cell);
       cellEls[r][c] = cell;
     }
+  }
+
+  /* ═══ FAIXAS DE META (dinâmicas, translúcidas) ═══ */
+  const strips = {};
+  for (const k of ["top", "bot"]){
+    const d = document.createElement("div");
+    d.style.cssText = "position:absolute;left:0;width:100%;z-index:1;pointer-events:none;opacity:.20;transition:background .6s;" +
+      (k === "top"
+        ? "top:0;height:" + py(1) + "%;border-radius:8px 8px 0 0;"
+        : "top:" + py((rows - 1) * (1 + G)) + "%;height:" + py(1) + "%;border-radius:0 0 8px 8px;");
+    boardEl.appendChild(d);
+    strips[k] = d;
+  }
+  function setGoalColors(top, bot){
+    strips.top.style.background = "linear-gradient(180deg, transparent 0%, " + top + " 95%)";
+    strips.bot.style.background = "linear-gradient(0deg, transparent 0%, " + bot + " 95%)";
+    strips.top.style.boxShadow = "inset 0 -2px 8px -2px " + top;
+    strips.bot.style.boxShadow = "inset 0 2px 8px -2px " + bot;
   }
 
   const guideLayer = document.createElement("div");
@@ -72,7 +90,6 @@ export function createBoard(boardEl, controller = null, flipped = false, state =
   let pieceColors = { red: null, blue: null };
   let wallColors = { red: null, blue: null };
 
-  /* ═══════════ SKINS ═══════════ */
   function colorFor(p){ return pieceColors[p] || null; }
   function wallFor(p){ return wallColors[p] || pieceColors[p] || null; }
   function paintPiece(id){
@@ -93,7 +110,6 @@ export function createBoard(boardEl, controller = null, flipped = false, state =
     Object.assign(pieceColors, colors);
     paintPiece("red"); paintPiece("blue"); paintWalls();
   }
-  /* ═══════════ FIM SKINS ═══════════ */
 
   function wallRect(type, r, c){
     const vr = flipped ? (rows - 2 - r) : r;
@@ -243,7 +259,7 @@ export function createBoard(boardEl, controller = null, flipped = false, state =
     boardEl.innerHTML = "";
   }
 
-  return { sync, setMode, deny, ghostFail, destroy, hideGhost, setPieceColors,
+  return { sync, setMode, deny, ghostFail, destroy, hideGhost, setPieceColors, setGoalColors,
     fit(stageEl, frameEl){
       const doFit = () => {
         if (!stageEl || !frameEl) return;

@@ -107,7 +107,7 @@ export const LS_PREFIX = "qa_";
    Bandeiras em img/flags/: alemanha.png argentina.png brasil.png franca.png
    holanda.png inglaterra.png paraguai.png portugal.png
    Cada país tem uma MISSÃO FÁCIL — quem já bateu a meta aparece liberado. */
-const flag = (file) => 'url("img/flags/' + file + '.png") center/cover no-repeat';
+const flag = (file) => 'url("img/flags/' + file + '.png") center / 100% 100% no-repeat';
 
 export const SKIN_CATALOG = [
   /* 🔴 bolinhas clássicas */

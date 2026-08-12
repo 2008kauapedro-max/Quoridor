@@ -453,11 +453,43 @@ async function refreshRanking(period){
   const list = $("rankingList");
   list.innerHTML = '<li class="queue-status"><span class="spinner"></span> carregando…</li>';
   const rows = await getRanking(period);
-  if (!rows?.length){
+  if (!rows || !rows.length){
     list.innerHTML = '<li class="hint">Sem partidas ranqueadas ainda — jogue online! 🌐</li>';
     return;
   }
-  const me = getSession()?.user?.id;
+  const ses = getSession();
+  const me = ses ? ses.user.id : null;
+  const TOP = 15;
+  const top = rows.slice(0, TOP);
+  let html = "";
+  for (let i = 0; i < top.length; i++){
+    const r = top[i];
+    html += '<li class="rank-item ' + (r.id === me ? "me" : "") + '">' +
+      '<span class="rank-pos">' + (i + 1) + '</span>' +
+      '<img class="rank-avatar frm-' + (r.frame || "none") + '" src="' + (r.avatar_url || "icons/icon.svg") + '" alt="">' +
+      '<span class="rank-name">' + escapeHtml(r.username) + '</span>' +
+      '<span class="rank-elo">' + (r.elo != null ? r.elo : ELO_START) + '</span></li>';
+  }
+  const myIdx = me ? rows.findIndex(function(r){ return r.id === me; }) : -1;
+  if (myIdx >= TOP){
+    const my = rows[myIdx];
+    const gate = top[TOP - 1];
+    const myElo = my.elo != null ? my.elo : ELO_START;
+    const gateElo = gate.elo != null ? gate.elo : ELO_START;
+    const diff = Math.max(0, gateElo - myElo);
+    html += '<li class="rank-item me" style="margin-top:10px;border:1px dashed var(--line);border-radius:12px">' +
+      '<span class="rank-pos">' + (myIdx + 1) + '</span>' +
+      '<img class="rank-avatar frm-' + (my.frame || "none") + '" src="' + (my.avatar_url || "icons/icon.svg") + '" alt="">' +
+      '<span class="rank-name">' + escapeHtml(my.username) + ' · você</span>' +
+      '<span class="rank-elo">' + myElo + '</span></li>';
+    html += '<li class="hint" style="padding:10px;text-align:center">' +
+      (diff === 0 ? "🔥 Você tá na porta do TOP 15 — uma vitória te coloca!"
+                  : "🎯 Faltam <b>" + diff + "</b> pontos pra você entrar no TOP " + TOP + "!") + '</li>';
+  } else if (me && myIdx === -1){
+    html += '<li class="hint" style="padding:10px;text-align:center">🌐 Jogue partidas online pra entrar no ranking!</li>';
+  }
+  list.innerHTML = html;
+}  const me = getSession()?.user?.id;
   const TOP = 15;
   const top = rows.slice(0, TOP);
   let html = top.map((r, i) => `

@@ -17,6 +17,7 @@ const saveSets = (s) => localStorage.setItem(LS_SETS, JSON.stringify(s));
 const uid = (p) => p + Date.now().toString(36);
 const esc = (s) => String(s ?? "").replace(/[<>&"]/g, (c) => ({ "<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;" }[c]));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const $ = (id) => document.getElementById(id);
 
 /* ═══════════ TÍTULOS ═══════════ */
 export const TITLES = [

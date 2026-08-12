@@ -1,5 +1,5 @@
 // =============================================================
-// Quoridor Arena — core/constants.js (skins prontas + bandeiras)
+// Quoridor Arena — core/constants.js (skins + bandeiras com missão)
 // =============================================================
 
 export const SIZE = 9;
@@ -104,10 +104,9 @@ export const TEXTS = {
 export const LS_PREFIX = "qa_";
 
 /* ═══════════ CATÁLOGO DE SKINS ═══════════
-   Bandeiras: coloque os PNGs em img/flags/ com estes nomes exatos:
-   alemanha.png  argentina.png  brasil.png  franca.png
-   holanda.png   inglaterra.png  paraguai.png  portugal.png
-   (faltou alguma? ela simplesmente não aparece — sem quebrar) */
+   Bandeiras em img/flags/: alemanha.png argentina.png brasil.png franca.png
+   holanda.png inglaterra.png paraguai.png portugal.png
+   Cada país tem uma MISSÃO FÁCIL — quem já bateu a meta aparece liberado. */
 const flag = (file) => 'url("img/flags/' + file + '.png") center/cover no-repeat';
 
 export const SKIN_CATALOG = [
@@ -120,15 +119,23 @@ export const SKIN_CATALOG = [
   { id: "p-gold",    cat: "piece", name: "Dourada",  swatch: ["#fef08a", "#b45309"],
     unlock: { desc: "Vença a IA Especialista 1 vez.", cur: s => s.iaExpertWins || 0, target: 1 } },
 
-  /* 🏁 bandeiras */
-  { id: "p-brasil",      cat: "piece", name: "Brasil",      swatch: ["#22c55e", "#facc15"], badge: flag("brasil"),      free: true },
-  { id: "p-argentina",   cat: "piece", name: "Argentina",   swatch: ["#7dd3fc", "#ffffff"], badge: flag("argentina"),   free: true },
-  { id: "p-alemanha",    cat: "piece", name: "Alemanha",    swatch: ["#111111", "#facc15"], badge: flag("alemanha"),    free: true },
-  { id: "p-franca",      cat: "piece", name: "França",      swatch: ["#2563eb", "#ef4444"], badge: flag("franca"),      free: true },
-  { id: "p-holanda",     cat: "piece", name: "Holanda",     swatch: ["#f97316", "#2563eb"], badge: flag("holanda"),     free: true },
-  { id: "p-inglaterra",  cat: "piece", name: "Inglaterra",  swatch: ["#ffffff", "#dc2626"], badge: flag("inglaterra"),  free: true },
-  { id: "p-paraguai",    cat: "piece", name: "Paraguai",    swatch: ["#dc2626", "#2563eb"], badge: flag("paraguai"),    free: true },
-  { id: "p-portugal",    cat: "piece", name: "Portugal",    swatch: ["#16a34a", "#dc2626"], badge: flag("portugal"),    free: true },
+  /* 🏁 bandeiras (card mostra a FOTO da bandeira + missão fácil) */
+  { id: "p-brasil",     cat: "piece", name: "Brasil",     swatch: ["#22c55e", "#facc15"], img: "img/flags/brasil.png",     badge: flag("brasil"),
+    unlock: { desc: "Vença 1 partida.",            cur: s => s.wins,            target: 1 } },
+  { id: "p-argentina",  cat: "piece", name: "Argentina",  swatch: ["#7dd3fc", "#ffffff"], img: "img/flags/argentina.png",  badge: flag("argentina"),
+    unlock: { desc: "Vença 2 partidas.",           cur: s => s.wins,            target: 2 } },
+  { id: "p-alemanha",   cat: "piece", name: "Alemanha",   swatch: ["#111111", "#facc15"], img: "img/flags/alemanha.png",   badge: flag("alemanha"),
+    unlock: { desc: "Vença 3 partidas.",           cur: s => s.wins,            target: 3 } },
+  { id: "p-franca",     cat: "piece", name: "França",     swatch: ["#2563eb", "#ef4444"], img: "img/flags/franca.png",     badge: flag("franca"),
+    unlock: { desc: "Vença 1 partida online.",     cur: s => s.onlineWins || 0, target: 1 } },
+  { id: "p-holanda",    cat: "piece", name: "Holanda",    swatch: ["#f97316", "#2563eb"], img: "img/flags/holanda.png",    badge: flag("holanda"),
+    unlock: { desc: "Vença 2 partidas online.",    cur: s => s.onlineWins || 0, target: 2 } },
+  { id: "p-inglaterra", cat: "piece", name: "Inglaterra", swatch: ["#ffffff", "#dc2626"], img: "img/flags/inglaterra.png", badge: flag("inglaterra"),
+    unlock: { desc: "Alcance o nível 3.",          cur: (s, l) => l,            target: 3 } },
+  { id: "p-paraguai",   cat: "piece", name: "Paraguai",   swatch: ["#dc2626", "#2563eb"], img: "img/flags/paraguai.png",   badge: flag("paraguai"),
+    unlock: { desc: "Vença 1 partida contra a IA.",cur: s => s.wins,            target: 1 } },
+  { id: "p-portugal",   cat: "piece", name: "Portugal",   swatch: ["#16a34a", "#dc2626"], img: "img/flags/portugal.png",   badge: flag("portugal"),
+    unlock: { desc: "Faça uma sequência de 2 vitórias.", cur: s => s.bestWinStreak, target: 2 } },
 
   /* 🧱 tabuleiro / 🖼️ moldura (base) */
   { id: "classic", cat: "board", name: "Clássico", swatch: ["#b98a5a", "#e9d7b7"], free: true },

@@ -647,7 +647,7 @@ export function renderSkins(cat){
   $("skinsList").innerHTML = SKIN_CATALOG.filter((i)=>i.cat===skinCat && !i.hide).map((it)=>{
     const un = skinUnlocked(it);
     return `<button class="skin-card ${equipped===it.id?"active":""} ${un?"":"locked"}" data-skinid="${it.id}">
-      <span class="skin-swatch" style="background:linear-gradient(135deg,${it.swatch[0]} 50%,${it.swatch[1]} 50%)"></span>
+      <span class="skin-swatch" style="background:${it.img ? 'url(' + it.img + ') center/cover' : 'linear-gradient(135deg,' + it.swatch[0] + ' 50%,' + it.swatch[1] + ' 50%)'}"></span>
       <span class="skin-name">${it.name}</span>
       <span class="skin-state">${equipped===it.id?"✔ Equipada":un?"Livre":"🔒"}</span>
     </button>`;

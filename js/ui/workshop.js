@@ -31,7 +31,7 @@ export const TITLES = [
 ];
 export const titleOf = (id) => TITLES.find((t) => t.id === id) || null;
 
-/* ═══════════ PRESETS ═══════════ */
+/* ═══════════ PRESETS DA OFICINA ═══════════ */
 const WALL_PRESETS = [
   { name: "Clássica", cfg: { c1: "#8a5a2e", c2: "#5b3a1c", style: "degrade" } },
   { name: "Neon",     cfg: { c1: "#22d3ee", c2: "#0e7490", style: "neon" } },
@@ -114,6 +114,7 @@ export function equip(kind, id){
 
 /* ═══════════ CSS DA OFICINA ═══════════ */
 styleTag("wsCss", `
+#btnWorkshop{position:sticky;top:8px;z-index:6;display:block;margin:10px auto 12px;width:min(94%,360px);padding:13px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--accent,#2f7fd6),#7c3aed);color:#fff;font-size:14px;font-weight:800;letter-spacing:.03em;box-shadow:0 6px 18px rgba(0,0,0,.28);cursor:pointer}
 #wsOv{position:fixed;inset:0;z-index:97;background:var(--bg,#0f1218);display:flex;flex-direction:column;overflow:hidden}
 #wsOv .ws-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line,#2a2f3a)}
 #wsOv .ws-head h2{margin:0;font-size:17px;flex:1}
@@ -151,7 +152,7 @@ styleTag("wsCss", `
 #wsOv .ws-btn.ghost{background:transparent;border:1px solid var(--line,#2a2f3a);color:var(--text,#eee)}
 `);
 
-/* ═══════════ UI ═══════════ */
+/* ═══════════ BOTÃO FIXO NO TOPO + ABERTURA ═══════════ */
 let ov = null, tab = "piece", editing = null, editKind = null;
 
 export function initWorkshop(){
@@ -159,14 +160,16 @@ export function initWorkshop(){
   if (!scr || document.getElementById("btnWorkshop")) return;
   const b = document.createElement("button");
   b.id = "btnWorkshop";
-  b.className = "menu-btn primary";
-  b.style.cssText = "margin:12px auto 0;display:block";
-  b.textContent = "🎨 Abrir Oficina";
-  b.onclick = openWorkshop;
-  scr.appendChild(b);
+  b.textContent = "🎨 Personalizar";
+  b.onclick = () => {
+    const active = scr.querySelector(".skin-tabs .tab.active");
+    const cat = active?.dataset?.cat;
+    openWorkshop(cat === "board" ? "board" : cat === "frame" ? "frame" : "piece");
+  };
+  scr.prepend(b);
 }
 
-export function openWorkshop(){
+export function openWorkshop(startTab){
   registerUserSkins();
   closeWorkshop();
   ov = document.createElement("div");
@@ -178,7 +181,7 @@ export function openWorkshop(){
     '<div class="ws-body" id="wsBody"></div>';
   document.body.appendChild(ov);
   ov.querySelector("#wsBack").onclick = closeWorkshop;
-  setTab("piece");
+  setTab(startTab || "piece");
 }
 export function closeWorkshop(){ const o = document.getElementById("wsOv"); if (o) o.remove(); ov = null; }
 
@@ -235,10 +238,13 @@ function renderBody(){
   let h = "";
 
   if (tab === "piece"){
-    h += '<div class="ws-sec">Skins do jogo</div><div class="ws-grid">';
-    h += SKIN_CATALOG.filter((i) => i.cat === "piece" && !i.user).map((i) =>
-      cardHtml(i.id, i.name, '<span class="ws-dot" style="background:' + pieceBgFor(i.id, "red", false) + '"></span>', s.piece === i.id)).join("");
-    h += "</div>";
+    const official = SKIN_CATALOG.filter((i) => i.cat === "piece" && !i.user && !i.hide);
+    if (official.length){
+      h += '<div class="ws-sec">Skins do jogo</div><div class="ws-grid">';
+      h += official.map((i) =>
+        cardHtml(i.id, i.name, '<span class="ws-dot" style="background:' + pieceBgFor(i.id, "red", false) + '"></span>', s.piece === i.id)).join("");
+      h += "</div>";
+    }
     h += mineBanner("pieces", "Minhas peças");
     h += '<div class="ws-grid">' + items.pieces.map((p) =>
       cardHtml(p.id, p.name, '<span class="ws-dot" style="background:' + pieceBg(p.cfg) + '"></span>', s.piece === p.id,
@@ -259,12 +265,10 @@ function renderBody(){
   }
 
   if (tab === "board"){
-    h += '<div class="ws-sec">Temas do jogo</div><div class="ws-grid">';
+    h += '<div class="ws-sec">Temas prontos</div><div class="ws-grid">';
     h += BOARD_PRESETS.map((b, i) =>
       cardHtml("bp" + i, b.name, '<span class="ws-sq" style="background:' + b.cfg.cell + ';border-color:' + b.cfg.border + '"></span>', false,
         '<button data-a="use">Usar</button>')).join("");
-    h += SKIN_CATALOG.filter((i) => i.cat === "board" && !i.user).map((i) =>
-      cardHtml(i.id, i.name, '<span class="ws-sq" style="background:' + i.swatch[1] + ';border-color:' + i.swatch[0] + '"></span>', s.skin === i.id)).join("");
     h += "</div>" + mineBanner("boards", "Meus tabuleiros");
     h += '<div class="ws-grid">' + items.boards.map((b) =>
       cardHtml(b.id, b.name, '<span class="ws-sq" style="background:' + b.cfg.cell + ';border-color:' + b.cfg.border + '"></span>', s.skin === b.id,
@@ -273,10 +277,14 @@ function renderBody(){
   }
 
   if (tab === "frame"){
-    h += '<div class="ws-sec">Molduras do jogo</div><div class="ws-grid">';
-    h += SKIN_CATALOG.filter((i) => i.cat === "frame" && !i.user).map((i) =>
-      cardHtml(i.id, i.name, '<img class="rank-avatar frm-' + i.id + '" src="icons/icon.svg" style="width:36px;height:36px">', s.frame === i.id)).join("");
-    h += "</div>" + mineBanner("frames", "Minhas molduras");
+    const official = SKIN_CATALOG.filter((i) => i.cat === "frame" && !i.user && !i.hide);
+    if (official.length){
+      h += '<div class="ws-sec">Molduras do jogo</div><div class="ws-grid">';
+      h += official.map((i) =>
+        cardHtml(i.id, i.name, '<img class="rank-avatar frm-' + i.id + '" src="icons/icon.svg" style="width:36px;height:36px">', s.frame === i.id)).join("");
+      h += "</div>";
+    }
+    h += mineBanner("frames", "Minhas molduras");
     h += '<div class="ws-grid">' + items.frames.map((f) =>
       cardHtml(f.id, f.name, '<img class="rank-avatar frm-' + f.id + '" src="icons/icon.svg" style="width:36px;height:36px">', s.frame === f.id,
         '<button data-a="ed">✏️</button><button data-a="dup">⧉</button><button data-a="del">🗑</button>')).join("") + "</div>";
@@ -305,7 +313,7 @@ function renderBody(){
 
   body.innerHTML = h;
   body.querySelectorAll(".ws-card").forEach((cd) => cd.addEventListener("click", (e) => onCard(e, cd)));
-  body.querySelectorAll("[data-a]").forEach((b) => { if (!b.closest(".ws-card")) b.addEventListener("click", () => onAction(b.dataset.a, null)); });
+  body.querySelectorAll("[data-a]").forEach((b) => { if (!b.closest(".ws-card")) b.addEventListener("click", () => onAction(b.dataset.a)); });
 }
 
 function mineBanner(key, label){
@@ -323,26 +331,26 @@ function onCard(e, cd){
     if (!st) return;
     if (a === "use"){ equipSet(st); toast("Conjunto equipado! ✨"); setTab(tab); return; }
     if (a === "del"){ saveSets(getSets().filter((x) => x.id !== id)); setTab(tab); return; }
-    if (a === "dup"){ const c2 = Object.assign({}, st, { id: uid("set"), name: st.name + " (cópia)" }); saveSets(getSets().concat([c2])); setTab(tab); return; }
+    if (a === "dup"){ saveSets(getSets().concat([Object.assign({}, st, { id: uid("set"), name: st.name + " (cópia)" })])); setTab(tab); return; }
     if (a === "ren"){ const n = prompt("Novo nome:", st.name); if (n){ st.name = n; saveSets(getSets()); setTab(tab); } return; }
     return;
   }
   const kind = { piece: "pieces", wall: "walls", board: "boards", frame: "frames" }[tab];
   const items = getItems();
   const mine = items[kind].find((x) => x.id === id);
-  if (a === "ed" && mine){ editKind = tab; editing = JSON.parse(JSON.stringify(mine)); renderBody(); return; }
+  if (a === "ed" && mine){ editKind = tab; editing = JSON.parse(JSON.stringify(mine.cfg)); editing.id = mine.id; editing._name = mine.name; renderBody(); return; }
   if (a === "del" && mine){ items[kind] = items[kind].filter((x) => x.id !== id); saveItems(items); registerUserSkins(); setTab(tab); return; }
-  if (a === "dup" && mine){ items[kind].push(Object.assign({}, mine, { id: uid(tab[0]), name: mine.name + " (cópia)" })); saveItems(items); registerUserSkins(); setTab(tab); return; }
+  if (a === "dup" && mine){ items[kind].push({ id: uid(tab[0]), name: mine.name + " (cópia)", cfg: JSON.parse(JSON.stringify(mine.cfg)) }); saveItems(items); registerUserSkins(); setTab(tab); return; }
   if (a === "use"){
-    if (tab === "wall"){ const w = WALL_PRESETS[+id.slice(2)]; equip("wall", null); setSettings(Object.assign(getSettings(), { wall: null })); startEdit("wall", JSON.parse(JSON.stringify(w.cfg)), w.name); return; }
-    if (tab === "board"){ const b = BOARD_PRESETS[+id.slice(2)]; startEdit("board", JSON.parse(JSON.stringify(b.cfg)), b.name); return; }
+    if (tab === "wall"){ startEdit("wall", JSON.parse(JSON.stringify(WALL_PRESETS[+id.slice(2)].cfg)), WALL_PRESETS[+id.slice(2)].name); return; }
+    if (tab === "board"){ startEdit("board", JSON.parse(JSON.stringify(BOARD_PRESETS[+id.slice(2)].cfg)), BOARD_PRESETS[+id.slice(2)].name); return; }
     return;
   }
-  equip(tab === "wall" ? "wall" : tab, id);
+  equip(tab, id);
   setTab(tab);
 }
 
-function onAction(a, _){
+function onAction(a){
   if (a === "newset"){
     const s = getSettings();
     const n = prompt("Nome do conjunto:", "Meu conjunto");
@@ -352,8 +360,8 @@ function onAction(a, _){
   }
   const m = a.split(":");
   if (m[0] === "new"){
-    editKind = { pieces: "piece", walls: "wall", boards: "board", frames: "frame" }[m[1]];
-    editing = null; startEdit(editKind, null, "");
+    const kind = { pieces: "piece", walls: "wall", boards: "board", frames: "frame" }[m[1]];
+    startEdit(kind, null, "");
   }
 }
 function equipSet(st){
@@ -363,36 +371,23 @@ function equipSet(st){
   if (st.frame) equip("frame", st.frame);
   if (st.title) equip("title", st.title);
 }
-
-/* ═══════════ EDITORES ═══════════ */
 function startEdit(kind, cfg, name){
   editKind = kind;
-  editing = cfg || (kind === "piece" ? { c1: "#ef4444", c2: "#7f1d1d", img: "", zoom: 70, x: 50, y: 50, border: "#000000", bw: 0, glow: false }
+  editing = cfg || (kind === "piece" ? { c1: "#ef4444", c2: "#7f1d1d", img: "", zoom: 70, x: 50, y: 50 }
     : kind === "wall" ? { c1: "#ef4444", c2: "#000000", style: "listrado" }
     : kind === "board" ? { bg: "#111827", cell: "#1f2937", border: "#4b5563" }
     : { c1: "#fbbf24", c2: "#92400e" });
-  editing._name = name;
+  editing._name = editing._name || name;
   renderBody(); renderPrev();
 }
 
+/* ═══════════ EDITORES ═══════════ */
 function pieceEditor(){
   const c = editing;
-  return '<div class="ws-ed" style="margin-top:12px">' +
-    '<div class="ws-row"><input type="text" id="edName" placeholder="Nome da peça" value="' + esc(c._name || "") + '"></div>' +
-    '<div class="ws-row">Cor 1 <input type="color" id="edC1" value="' + c.c1 + '"> Cor 2 <input type="color" id="edC2" value="' + c.c2 + '"></div>' +
-    '<div class="ws-row">Zoom <input type="range" id="edZ" min="20" max="200" value="' + (c.zoom || 70) + '"></div>' +
-    '<div class="ws-row">↔ <input type="range" id="edX" min="0" max="100" value="' + (c.x || 50) + '"></div>' +
-    '<div class="ws-row">↕ <input type="range" id="edY" min="0" max="100" value="' + (c.y || 50) + '"></div>' +
-    '<div class="ws-row"><input type="file" id="edFile" accept="image/*"></div>' +
-    '<div class="ws-row"><button class="ws-btn ghost" id="edNoImg">🚫 Sem imagem</button><button class="ws-btn ghost" id="edReset">↺ Padrão</button></div>' +
-    '<div class="ws-row"><button class="ws-btn" id="edSave">💾 Salvar peça</button><button class="ws-btn ghost" id="edCancel">Cancelar</button></div></div>' +
-    bindPieceEd();
-}
-function bindPieceEd(){
   setTimeout(() => {
+    if (!ov || editKind !== "piece") return;
     const $q = (s) => ov.querySelector(s);
-    const c = editing; if (!c || editKind !== "piece") return;
-    const live = () => { ov.querySelector("#wsPrev .wp").style.background = pieceBg(c); };
+    const live = () => { const p = ov.querySelector("#wsPrev .wp"); if (p) p.style.background = pieceBg(c); };
     $q("#edC1").oninput = (e) => { c.c1 = e.target.value; live(); };
     $q("#edC2").oninput = (e) => { c.c2 = e.target.value; live(); };
     $q("#edZ").oninput = (e) => { c.zoom = +e.target.value; live(); };
@@ -417,22 +412,30 @@ function bindPieceEd(){
     $q("#edSave").onclick = () => {
       const name = $q("#edName").value.trim() || "Minha peça";
       const items = getItems();
-      const old = items.pieces.find((p) => p.id === c.id);
       const obj = { id: c.id || uid("p"), name, cfg: { c1: c.c1, c2: c.c2, img: c.img || "", zoom: c.zoom, x: c.x, y: c.y } };
-      if (old) items.pieces = items.pieces.map((p) => p.id === old.id ? obj : p); else items.pieces.push(obj);
+      const i = items.pieces.findIndex((p) => p.id === c.id);
+      if (i >= 0) items.pieces[i] = obj; else items.pieces.push(obj);
       saveItems(items); registerUserSkins(); equip("piece", obj.id);
       editing = null; toast("Peça salva! ⚽"); setTab("piece");
     };
   }, 0);
-  return "";
+  return '<div class="ws-ed" style="margin-top:12px">' +
+    '<div class="ws-row"><input type="text" id="edName" placeholder="Nome da peça" value="' + esc(c._name || "") + '"></div>' +
+    '<div class="ws-row">Cor 1 <input type="color" id="edC1" value="' + c.c1 + '"> Cor 2 <input type="color" id="edC2" value="' + c.c2 + '"></div>' +
+    '<div class="ws-row">Zoom <input type="range" id="edZ" min="20" max="200" value="' + (c.zoom || 70) + '"></div>' +
+    '<div class="ws-row">↔ <input type="range" id="edX" min="0" max="100" value="' + (c.x || 50) + '"></div>' +
+    '<div class="ws-row">↕ <input type="range" id="edY" min="0" max="100" value="' + (c.y || 50) + '"></div>' +
+    '<div class="ws-row"><input type="file" id="edFile" accept="image/*"></div>' +
+    '<div class="ws-row"><button class="ws-btn ghost" id="edNoImg">🚫 Sem imagem</button><button class="ws-btn ghost" id="edReset">↺ Padrão</button></div>' +
+    '<div class="ws-row"><button class="ws-btn" id="edSave">💾 Salvar peça</button><button class="ws-btn ghost" id="edCancel">Cancelar</button></div></div>';
 }
 
 function wallEditor(){
   const c = editing;
   setTimeout(() => {
+    if (!ov || editKind !== "wall") return;
     const $q = (s) => ov.querySelector(s);
-    if (!c || editKind !== "wall") return;
-    const live = () => { ov.querySelectorAll("#wsPrev .wh, #wsPrev .wv").forEach((el) => el.style.background = wallBg(c)); };
+    const live = () => ov.querySelectorAll("#wsPrev .wh, #wsPrev .wv").forEach((el) => el.style.background = wallBg(c));
     $q("#wC1").oninput = (e) => { c.c1 = e.target.value; live(); };
     $q("#wC2").oninput = (e) => { c.c2 = e.target.value; live(); };
     $q("#wSt").onchange = (e) => { c.style = e.target.value; live(); };
@@ -441,8 +444,8 @@ function wallEditor(){
       const name = $q("#wName").value.trim() || "Minha barreira";
       const items = getItems();
       const obj = { id: c.id || uid("w"), name, cfg: { c1: c.c1, c2: c.c2, style: c.style } };
-      const old = items.walls.find((w) => w.id === c.id);
-      if (old) items.walls = items.walls.map((w) => w.id === old.id ? obj : w); else items.walls.push(obj);
+      const i = items.walls.findIndex((w) => w.id === c.id);
+      if (i >= 0) items.walls[i] = obj; else items.walls.push(obj);
       saveItems(items); registerUserSkins(); equip("wall", obj.id);
       editing = null; toast("Barreira salva! 🧱"); setTab("wall");
     };
@@ -457,10 +460,11 @@ function wallEditor(){
 function boardEditor(){
   const c = editing;
   setTimeout(() => {
+    if (!ov || editKind !== "board") return;
     const $q = (s) => ov.querySelector(s);
-    if (!c || editKind !== "board") return;
     const live = () => {
       const bd = ov.querySelector("#wsPrev .ws-board");
+      if (!bd) return;
       bd.style.background = c.bg; bd.style.borderColor = c.border;
       bd.querySelectorAll("i").forEach((i) => i.style.background = c.cell);
     };
@@ -472,8 +476,8 @@ function boardEditor(){
       const name = $q("#bName").value.trim() || "Meu tabuleiro";
       const items = getItems();
       const obj = { id: c.id || uid("b"), name, cfg: { bg: c.bg, cell: c.cell, border: c.border } };
-      const old = items.boards.find((b) => b.id === c.id);
-      if (old) items.boards = items.boards.map((b) => b.id === old.id ? obj : b); else items.boards.push(obj);
+      const i = items.boards.findIndex((b) => b.id === c.id);
+      if (i >= 0) items.boards[i] = obj; else items.boards.push(obj);
       saveItems(items); registerUserSkins(); equip("board", obj.id);
       editing = null; toast("Tabuleiro salvo! 🏟️"); setTab("board");
     };
@@ -489,15 +493,17 @@ function boardEditor(){
 function frameEditor(){
   const c = editing;
   setTimeout(() => {
+    if (!ov || editKind !== "frame") return;
     const $q = (s) => ov.querySelector(s);
-    if (!c || editKind !== "frame") return;
+    $q("#fC1").oninput = (e) => { c.c1 = e.target.value; };
+    $q("#fC2").oninput = (e) => { c.c2 = e.target.value; };
     $q("#fCancel").onclick = () => { editing = null; renderBody(); };
     $q("#fSave").onclick = () => {
       const name = $q("#fName").value.trim() || "Minha moldura";
       const items = getItems();
       const obj = { id: c.id || uid("f"), name, cfg: { c1: c.c1, c2: c.c2 } };
-      const old = items.frames.find((f) => f.id === c.id);
-      if (old) items.frames = items.frames.map((f) => f.id === old.id ? obj : f); else items.frames.push(obj);
+      const i = items.frames.findIndex((f) => f.id === c.id);
+      if (i >= 0) items.frames[i] = obj; else items.frames.push(obj);
       saveItems(items); registerUserSkins(); applyUserFrames(); equip("frame", obj.id);
       editing = null; toast("Moldura salva! 🖼️"); setTab("frame");
     };

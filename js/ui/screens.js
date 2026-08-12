@@ -269,12 +269,12 @@ function buildArenaHud(){
   $("stage").parentElement.insertBefore(hud, $("stage"));
   const st = document.createElement("style");
   st.textContent =
-    "#arenaHud{display:flex;gap:8px;align-items:stretch;justify-content:center;margin:4px auto 8px;max-width:600px;padding:0 12px}" +
-    "#arenaHud .ah-card{flex:1;display:flex;align-items:center;gap:8px;background:var(--card,#161b26);border:1px solid var(--line,#2a2f3a);border-radius:12px;padding:6px 10px;min-width:0}" +
+    "#arenaHud{display:flex;gap:8px;align-items:stretch;justify-content:center;margin:4px auto 8px;max-width:440px;padding:0 12px}" +
+    "#arenaHud .ah-card{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;text-align:center;" +
     "#arenaHud .ah-card img{width:34px;height:34px;border-radius:50%;flex:0 0 auto}" +
     "#arenaHud .ah-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
     "#arenaHud .ah-sub{font-size:10px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
-    "#arenaHud .ah-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:92px}" +
+    "#arenaHud .ah-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:76px}" +
     "#arenaHud #ahTurn{font-size:10px;font-weight:800;letter-spacing:.08em;padding:4px 12px;border-radius:999px;background:var(--card,#161b26);border:1px solid var(--line,#2a2f3a);transition:all .35s}" +
     "#arenaHud #ahTurn.red{color:#f87171;border-color:#f8717166;box-shadow:0 0 10px #f8717133}" +
     "#arenaHud #ahTurn.blue{color:#60a5fa;border-color:#60a5fa66;box-shadow:0 0 10px #60a5fa33}" +

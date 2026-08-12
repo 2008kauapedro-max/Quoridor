@@ -63,14 +63,14 @@ export const SKIN_CATALOG = [
   { id:"p-galaxy",  cat:"piece", name:"Galáxia",  swatch:["#c7d2fe","#0f172a"], unlock:{desc:"Alcance o nível 5.",cur:(s,l)=>l,target:5} },
   { id:"p-gold",    cat:"piece", name:"Dourada",  swatch:["#fef08a","#b45309"], unlock:{desc:"Vença a IA Especialista 1 vez.",cur:s=>s.iaExpertWins||0,target:1} },
 
-  { id:"p-brasil",     cat:"piece", name:"Brasil",     swatch:["#22c55e","#facc15"], img:"img/flags/brasil.png",     badge:F("brasil"),     unlock:{desc:"Vença 1 partida.",cur:s=>s.wins,target:1} },
-  { id:"p-argentina",  cat:"piece", name:"Argentina",  swatch:["#7dd3fc","#ffffff"], img:"img/flags/argentina.png",  badge:F("argentina"),  unlock:{desc:"Vença 2 partidas.",cur:s=>s.wins,target:2} },
-  { id:"p-alemanha",   cat:"piece", name:"Alemanha",   swatch:["#111111","#facc15"], img:"img/flags/alemanha.png",   badge:F("alemanha"),   unlock:{desc:"Vença 3 partidas.",cur:s=>s.wins,target:3} },
-  { id:"p-franca",     cat:"piece", name:"França",     swatch:["#2563eb","#ef4444"], img:"img/flags/franca.png",     badge:F("franca"),     unlock:{desc:"Vença 1 partida online.",cur:s=>s.onlineWins||0,target:1} },
-  { id:"p-holanda",    cat:"piece", name:"Holanda",    swatch:["#f97316","#2563eb"], img:"img/flags/holanda.png",    badge:F("holanda"),    unlock:{desc:"Vença 2 partidas online.",cur:s=>s.onlineWins||0,target:2} },
-  { id:"p-inglaterra", cat:"piece", name:"Inglaterra", swatch:["#ffffff","#dc2626"], img:"img/flags/inglaterra.png", badge:F("inglaterra"), unlock:{desc:"Alcance o nível 3.",cur:(s,l)=>l,target:3} },
-  { id:"p-paraguai",   cat:"piece", name:"Paraguai",   swatch:["#dc2626","#2563eb"], img:"img/flags/paraguai.png",   badge:F("paraguai"),   unlock:{desc:"Vença 1 partida vs IA.",cur:s=>s.wins,target:1} },
-  { id:"p-portugal",   cat:"piece", name:"Portugal",   swatch:["#16a34a","#dc2626"], img:"img/flags/portugal.png",   badge:F("portugal"),   unlock:{desc:"Sequência de 2 vitórias.",cur:s=>s.bestWinStreak,target:2} },
+   { id:"p-brasil",     cat:"piece", name:"Brasil",     swatch:["#22c55e","#facc15"], img:"img/flags/brasil.png",     badge:F("brasil"),     wall:"repeating-linear-gradient(45deg,#009c3b 0 8px,#ffdf00 8px 11px,#002776 11px 19px)", unlock:{desc:"Vença 1 partida.",cur:s=>s.wins,target:1} },
+  { id:"p-argentina",  cat:"piece", name:"Argentina",  swatch:["#7dd3fc","#ffffff"], img:"img/flags/argentina.png",  badge:F("argentina"),  wall:"repeating-linear-gradient(45deg,#74acdf 0 8px,#ffffff 8px 16px,#f6b40e 16px 19px)", unlock:{desc:"Vença 2 partidas.",cur:s=>s.wins,target:2} },
+  { id:"p-alemanha",   cat:"piece", name:"Alemanha",   swatch:["#111111","#facc15"], img:"img/flags/alemanha.png",   badge:F("alemanha"),   wall:"repeating-linear-gradient(45deg,#000000 0 8px,#dd0000 8px 16px,#ffce00 16px 24px)", unlock:{desc:"Vença 3 partidas.",cur:s=>s.wins,target:3} },
+  { id:"p-franca",     cat:"piece", name:"França",     swatch:["#2563eb","#ef4444"], img:"img/flags/franca.png",     badge:F("franca"),     wall:"repeating-linear-gradient(45deg,#0055a4 0 8px,#ffffff 8px 16px,#ef4135 16px 24px)", unlock:{desc:"Vença 1 partida online.",cur:s=>s.onlineWins||0,target:1} },
+  { id:"p-holanda",    cat:"piece", name:"Holanda",    swatch:["#f97316","#2563eb"], img:"img/flags/holanda.png",    badge:F("holanda"),    wall:"repeating-linear-gradient(45deg,#ae1c28 0 8px,#ffffff 8px 16px,#21468b 16px 24px)", unlock:{desc:"Vença 2 partidas online.",cur:s=>s.onlineWins||0,target:2} },
+  { id:"p-inglaterra", cat:"piece", name:"Inglaterra", swatch:["#ffffff","#dc2626"], img:"img/flags/inglaterra.png", badge:F("inglaterra"), wall:"repeating-linear-gradient(45deg,#ffffff 0 8px,#ce1124 8px 16px)", unlock:{desc:"Alcance o nível 3.",cur:(s,l)=>l,target:3} },
+  { id:"p-paraguai",   cat:"piece", name:"Paraguai",   swatch:["#dc2626","#2563eb"], img:"img/flags/paraguai.png",   badge:F("paraguai"),   wall:"repeating-linear-gradient(45deg,#d52b1e 0 8px,#ffffff 8px 16px,#0038a8 16px 24px)", unlock:{desc:"Vença 1 partida vs IA.",cur:s=>s.wins,target:1} },
+  { id:"p-portugal",   cat:"piece", name:"Portugal",   swatch:["#16a34a","#dc2626"], img:"img/flags/portugal.png",   badge:F("portugal"),   wall:"repeating-linear-gradient(45deg,#046a38 0 8px,#da291c 8px 16px)", unlock:{desc:"Sequência de 2 vitórias.",cur:s=>s.bestWinStreak,target:2} },
 
   { id:"classic", cat:"board", name:"Clássico", swatch:["#b98a5a","#e9d7b7"], free:true },
   { id:"f-none",  cat:"frame", name:"Sem moldura", swatch:["#888","#444"], free:true }
@@ -89,6 +89,11 @@ export function pieceBgFor(id, color, online = false){
   if (online && id !== "p-classic") return `radial-gradient(circle at 35% 30%, ${sw[0]} 0%, ${sw[1]} 95%)`;
   return sw[color === "red" ? 0 : 1];
 }
-export function pieceWallFor(id,color,online=false){ const s=pieceSwatch(id); return s[color==="red"?0:1]; }
+export function pieceWallFor(id,color,online=false){
+  const it = SKIN_CATALOG.find((i) => i.cat === "piece" && i.id === id);
+  if (it && it.wall && (online || color === "red")) return it.wall;
+  const s = pieceSwatch(id);
+  return s[color === "red" ? 0 : 1];
+}
 
 export const SIZE_RACE_R = 14, SIZE_RACE_C = 9, GOAL_RACE = 0, WALLS_RACE = 14;

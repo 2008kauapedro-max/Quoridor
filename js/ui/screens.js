@@ -489,68 +489,6 @@ async function refreshRanking(period){
     html += '<li class="hint" style="padding:10px;text-align:center">🌐 Jogue partidas online pra entrar no ranking!</li>';
   }
   list.innerHTML = html;
-}  const me = getSession()?.user?.id;
-  const TOP = 15;
-  const top = rows.slice(0, TOP);
-  let html = top.map((r, i) => `
-    <li class="rank-item ${r.id === me ? "me" : ""}">
-      <span class="rank-pos">${i + 1}</span>
-      <img class="rank-avatar frm-${r.frame || "none"}" src="${r.avatar_url || "icons/icon.svg"}" alt="">
-      <span class="rank-name">${escapeHtml(r.username)}</span>
-      <span class="rank-elo">${r.elo ?? ELO_START}</span>
-    </li>`).join("");
-  const myIdx = me ? rows.findIndex((r) => r.id === me) : -1;
-  if (myIdx >= TOP){
-    const my = rows[myIdx];
-    const gate = top[TOP - 1];
-    const diff = Math.max(0, (gate.elo ?? ELO_START) - (my.elo ?? ELO_START));
-    html += '
-      <li class="rank-item me" style="margin-top:10px;border:1px dashed var(--line);border-radius:12px">
-        <span class="rank-pos">${myIdx + 1}</span>
-        <img class="rank-avatar frm-${my.frame || "none"}" src="${my.avatar_url || "icons/icon.svg"}" alt="">
-        <span class="rank-name">${escapeHtml(my.username)} · você</span>
-        <span class="rank-elo">${my.elo ?? ELO_START}</span>
-      </li>
-      <li class="hint" style="padding:10px;text-align:center">${diff === 0
-        ? "🔥 Você tá na porta do TOP 15 — uma vitória te coloca!"
-        : `🎯 Faltam <b>${diff}</b> pontos pra você entrar no TOP ${TOP}!`}</li>`;
-  } else if (me && myIdx === -1){
-    html += '<li class="hint" style="padding:10px;text-align:center">🌐 Jogue partidas online pra entrar no ranking!</li>';
-  }
-  list.innerHTML = html;
-}
-      <li class="rank-item me" style="margin-top:10px;border:1px dashed var(--line);border-radius:12px">
-        <span class="rank-pos">${myIdx + 1}</span>
-        <img class="rank-avatar frm-${my.frame || "none"}" src="${my.avatar_url || "icons/icon.svg"}" alt="">
-        <span class="rank-name">${escapeHtml(my.username)} · você</span>
-        <span class="rank-elo">${my.elo ?? ELO_START}</span>
-      </li>
-      <li class="hint" style="padding:10px;text-align:center">${diff === 0
-        ? "🔥 Você tá na porta do TOP 15 — uma vitória te coloca!"
-        : `🎯 Faltam <b>${diff}</b> pontos pra você entrar no TOP ${TOP}!`}</li>`;
-  } else if (me && myIdx === -1){
-    html += '<li class="hint" style="padding:10px;text-align:center">🌐 Jogue partidas online pra entrar no ranking!</li>';
-  }
-  list.innerHTML = html;
-}  }
-  const me = getSession()?.user?.id;
-  list.innerHTML = rows.map((r, i) => `
-    <li class="rank-item ${r.id === me ? "me" : ""}">
-      <span class="rank-pos">${i + 1}</span>
-      <img class="rank-avatar frm-${r.frame || "none"}" src="${r.avatar_url || "icons/icon.svg"}" alt="">
-      <span class="rank-name">${escapeHtml(r.username)}</span>
-      <span class="rank-elo">${r.elo ?? ELO_START}</span>
-    </li>`).join("");
-}
-
-const me = getSession()?.user?.id;
-  list.innerHTML = rows.map((r, i) => `
-    <li class="rank-item ${r.id === me ? "me" : ""}">
-      <span class="rank-pos">${i + 1}</span>
-      <img class="rank-avatar frm-${r.frame || "none"}" src="${r.avatar_url || "icons/icon.svg"}" alt="">
-      <span class="rank-name">${escapeHtml(r.username)}</span>
-      <span class="rank-elo">${r.elo ?? ELO_START}</span>
-    </li>`).join("");
 }
 
 async function refreshProfile(){

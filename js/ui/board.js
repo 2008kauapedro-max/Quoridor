@@ -92,10 +92,14 @@ export function createBoard(boardEl, controller = null, flipped = false, state =
 
   function colorFor(p){ return pieceColors[p] || null; }
   function wallFor(p){ return wallColors[p] || pieceColors[p] || null; }
-  function paintPiece(id){
+    function paintPiece(id){
     const col = colorFor(id);
     const core = pieces[id].querySelector(".core");
-    if (core && col) core.style.setProperty("background", col, "important");
+    if (!core || !col) return;
+    core.style.setProperty("background", col, "important");
+    core.style.setProperty("background-size", "100% 100%", "important");
+    core.style.setProperty("background-position", "center", "important");
+    core.style.setProperty("border-radius", "50%", "important");
   }
   function paintWalls(){
     for (const el of wallLayer.children){

@@ -1,5 +1,5 @@
 ﻿/* =============================================================
-   Quoridor Arena — ui/screens.js (v3 — personalizador + barreiras temáticas)
+   Quoridor Arena — ui/screens.js (v4 — Oficina + Arena)
    ============================================================= */
 import {
   TEXTS, NAMES, AI_LEVELS, SKINS, ACHIEVEMENTS, SKIN_CATALOG, ADMIN_EMAIL,
@@ -22,7 +22,10 @@ import {
   getFriendRequests, respondFriendRequest, removeFriend, sendFriendRequest, getAnnouncements, postAnnouncement
 } from "../services/supabase.js";
 import { net } from "../services/realtime.js";
-import { initCustomizer } from "./customizer.js";
+import {
+  initWorkshop, mainColorFor, userWallBg, applyUserBoard, applyUserFrames,
+  registerUserSkins, titleOf
+} from "./workshop.js";
 
 const $ = (id) => document.getElementById(id);
 let current = "loading";
@@ -101,6 +104,23 @@ const myTurn = () => {
   return S.state.turn === S.myColor;
 };
 
+/* cores das faixas de meta (dinâmicas pela skin) */
+function updateStrips(){
+  if (!S || !board?.setGoalColors) return;
+  const myPiece = getSettings().piece || "p-classic";
+  let red = "#ef4444", blue = "#3b82f6";
+  if (S.mode === "online" && S.myColor){
+    const mine = mainColorFor(myPiece, S.myColor, true);
+    const oppP = S.oppPiece || "p-classic";
+    const other = mainColorFor(oppP, S.myColor === "red" ? "blue" : "red", true);
+    if (S.myColor === "red"){ red = mine; blue = other; }
+    else { red = other; blue = mine; }
+  } else {
+    red = mainColorFor(myPiece, "red", false);
+  }
+  board.setGoalColors(red, blue);
+}
+
 export function startGame(opts){
   endSession(false);
   S = freshSession(opts.mode, opts.level);
@@ -119,25 +139,26 @@ export function startGame(opts){
   board.fit($("stage"), $("boardFrame"));
   showScreen("game");
 
-  /* skins sincronizadas: mesma cor nas duas telas; barreiras seguem a cor */
   const myPiece = getSettings().piece || "p-classic";
+  const wBg = userWallBg(getSettings().wall);
   if (S.mode === "online" && S.myColor){
     const oppC = S.myColor === "red" ? "blue" : "red";
     board.setPieceColors({
       [S.myColor]: pieceBgFor(myPiece, S.myColor, true),
       [oppC]: pieceBgFor("p-classic", oppC, true),
-      wallRed:  pieceWallFor(S.myColor === "red" ? myPiece : "p-classic", "red", true),
-      wallBlue: pieceWallFor(S.myColor === "blue" ? myPiece : "p-classic", "blue", true)
+      wallRed:  S.myColor === "red"  ? (wBg || pieceWallFor(myPiece, "red", true))  : "#ef4444",
+      wallBlue: S.myColor === "blue" ? (wBg || pieceWallFor(myPiece, "blue", true)) : "#3b82f6"
     });
     for (const d of [300, 1200, 2500, 5000, 8000, 12000]) setTimeout(() => net.sendSkin(myPiece), d);
   } else {
     board.setPieceColors({
       red:  pieceBgFor(myPiece, "red",  false),
       blue: pieceBgFor(myPiece, "blue", false),
-      wallRed:  pieceWallFor(myPiece, "red"),
-      wallBlue: pieceWallFor(myPiece, "blue")
+      wallRed:  wBg || pieceWallFor(myPiece, "red"),
+      wallBlue: "#3b82f6"
     });
   }
+  updateStrips();
 
   $("btnRestart").classList.toggle("hidden", S.mode === "online");
   updateHUD();
@@ -164,7 +185,7 @@ function startTimer(){
 function stopTimer(){ if (S?.timerId) clearInterval(S.timerId); }
 const fmt = (s) => String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
 
-/* ---------- controller entregue ao board.js ---------- */
+/* ---------- controller ---------- */
 const controller = {
   canPlaceWall(o, r, c){
     return S && !S.locked && myTurn() &&
@@ -215,13 +236,14 @@ function maybeAI(){
   }, 700);
 }
 
-/* ---------- eventos remotos (online) ---------- */
+/* ---------- eventos remotos ---------- */
 function applyOppSkin(piece){
   if (!S || S.mode !== "online" || !S.myColor || !piece) return;
   if (S.oppPiece === piece) return;
   S.oppPiece = piece;
   const opp = S.myColor === "red" ? "blue" : "red";
   board?.setPieceColors({ [opp]: pieceBgFor(piece, opp, true) });
+  updateStrips();
   board?.sync(S.state);
 }
 
@@ -235,7 +257,85 @@ export function handleRemoteEvent(ev){
   if (S.state.over) endGame();
 }
 
-/* ---------- HUD ---------- */
+/* ---------- HUD / ARENA ---------- */
+function buildArenaHud(){
+  if (document.getElementById("arenaHud") || !$("stage")) return;
+  const hud = document.createElement("div");
+  hud.id = "arenaHud";
+  hud.innerHTML =
+    '<div class="ah-card" id="ahRed"></div>' +
+    '<div class="ah-mid"><div id="ahTurn">—</div><div class="ah-walls"><span id="ahWr"></span><span id="ahWb"></span></div></div>' +
+    '<div class="ah-card" id="ahBlue"></div>';
+  $("stage").parentElement.insertBefore(hud, $("stage"));
+  const st = document.createElement("style");
+  st.textContent =
+    "#arenaHud{display:flex;gap:8px;align-items:stretch;justify-content:center;margin:4px auto 8px;max-width:600px;padding:0 12px}" +
+    "#arenaHud .ah-card{flex:1;display:flex;align-items:center;gap:8px;background:var(--card,#161b26);border:1px solid var(--line,#2a2f3a);border-radius:12px;padding:6px 10px;min-width:0}" +
+    "#arenaHud .ah-card img{width:34px;height:34px;border-radius:50%;flex:0 0 auto}" +
+    "#arenaHud .ah-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+    "#arenaHud .ah-sub{font-size:10px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+    "#arenaHud .ah-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:92px}" +
+    "#arenaHud #ahTurn{font-size:10px;font-weight:800;letter-spacing:.08em;padding:4px 12px;border-radius:999px;background:var(--card,#161b26);border:1px solid var(--line,#2a2f3a);transition:all .35s}" +
+    "#arenaHud #ahTurn.red{color:#f87171;border-color:#f8717166;box-shadow:0 0 10px #f8717133}" +
+    "#arenaHud #ahTurn.blue{color:#60a5fa;border-color:#60a5fa66;box-shadow:0 0 10px #60a5fa33}" +
+    "#arenaHud .ah-walls{font-size:10px;opacity:.8;display:flex;gap:8px}";
+  document.head.appendChild(st);
+  const old = $("turnPill");
+  if (old) old.style.display = "none";
+}
+function fillCard(id, color){
+  const el = $(id);
+  if (!el || !S) return;
+  const s = getSettings();
+  let name = NAMES[color], sub = "", av = "icons/icon.svg";
+  if (S.mode === "online" && S.myColor === color){
+    name = getSession()?.user?.user_metadata?.name || "Você";
+    sub = "Elo " + getStats().elo;
+    getProfile().then((p) => { if (p?.avatar_url){ const im = el.querySelector("img"); if (im) im.src = p.avatar_url; } });
+  } else if (S.mode === "online"){
+    name = "Rival"; sub = "· online";
+  } else {
+    const t = titleOf(s.title);
+    if (t) sub = t.name;
+  }
+  el.innerHTML = '<img class="rank-avatar frm-' + (s.frame || "none") + '" src="' + av + '" alt="">' +
+    '<div style="min-width:0"><div class="ah-name">' + escapeHtml(name) + '</div><div class="ah-sub">' + escapeHtml(sub) + "</div></div>";
+}
+function updateHUD(){
+  if (!S) return;
+  const cur = S.state.turn;
+  $("turnText").textContent = "Vez do " + NAMES[cur];
+  $("turnPill").classList.toggle("is-red",  cur === "red");
+  $("turnPill").classList.toggle("is-blue", cur === "blue");
+  $("wallsRed").textContent  = S.state.players.red.walls;
+  $("wallsBlue").textContent = S.state.players.blue.walls;
+  $("chipRed").classList.toggle("is-turn",  cur === "red");
+  $("chipBlue").classList.toggle("is-turn",  cur === "blue");
+  const noWalls = S.state.players[cur].walls <= 0;
+  $("modeWallH").disabled = noWalls;
+  $("modeWallV").disabled = noWalls;
+  if (document.getElementById("arenaHud")){
+    fillCard("ahRed", "red"); fillCard("ahBlue", "blue");
+    const t = $("ahTurn");
+    t.textContent = S.mode === "online"
+      ? (cur === S.myColor ? "SEU TURNO" : "VEZ DO RIVAL")
+      : "VEZ DO " + NAMES[cur].toUpperCase();
+    t.className = cur;
+    $("ahWr").textContent = "🔴 " + S.state.players.red.walls;
+    $("ahWb").textContent = "🔵 " + S.state.players.blue.walls;
+  }
+}
+
+function setUiMode(m){
+  if (!S) return;
+  S.uiMode = m;
+  board.setMode(m);
+  $("modeMove").classList.toggle("active",  m === "move");
+  $("modeWallH").classList.toggle("active", m === "h");
+  $("modeWallV").classList.toggle("active", m === "v");
+  board.sync(S.state);
+}
+
 /* ---------- MODO CORRIDA ---------- */
 async function startRaceOnline(){
   if (!isConfigured()){ toast("Configure o Supabase em js/config.js."); return; }
@@ -270,105 +370,6 @@ async function loadRaceFriends(){
       <span class="rank-name">${escapeHtml(f.username)}</span>
       <button class="mini-btn" data-raceinvite="${f.id}">Convidar</button>
     </div>`).join("");
-}
-/* ---------- SININHO ---------- */
-let bellTab = "req";
-let bubbleFor = 0;
-let cachedAnns = [];
-async function refreshBell(){
-  const badge = $("bellBadge");
-  if (!badge) return;
-  if (!getSession()){ badge.classList.add("hidden"); return; }
-  const [reqs, anns] = await Promise.all([getFriendRequests(), getAnnouncements()]);
-  cachedAnns = anns || [];
-  const seen = +(localStorage.getItem("qa_ann_seen") || 0);
-  const fresh = cachedAnns.filter((a) => a.id > seen);
-  const n = (reqs || []).length + fresh.length;
-  badge.textContent = n;
-  badge.classList.toggle("hidden", n === 0);
-  if (fresh.length && $("msgBubble") && fresh[0].id !== bubbleFor){ bubbleFor = fresh[0].id;
-    $("msgBubbleTitle").textContent = fresh[0].title;
-    $("msgBubbleBody").textContent = fresh[0].body + " · abra o 🔔 na tela inicial!";
-    $("msgBubble").classList.remove("hidden");
-    setTimeout(() => $("msgBubble").classList.add("hidden"), 9000);
-  }
-  if ($("bellPanel") && !$("bellPanel").classList.contains("hidden")) renderBellBody(reqs);
-}
-async function renderBellBody(reqs){
-  const body = $("bellBody");
-  if (!body) return;
-  reqs = reqs || await getFriendRequests();
-  let html = '<div class="tabs">' +
-    '<button class="tab' + (bellTab === "req" ? " active" : "") + '" data-belltab="req">📨 Pedidos</button>' +
-    '<button class="tab' + (bellTab === "ann" ? " active" : "") + '" data-belltab="ann">📢 Avisos</button>' +
-    '<button class="tab' + (bellTab === "info" ? " active" : "") + '" data-belltab="info">ℹ️ Info</button></div>';
-  if (bellTab === "req"){
-    if (!reqs?.length) html += '<p class="hint">nenhum pedido pendente</p>';
-    else html += reqs.map((r) => `
-      <div class="friend-row">
-        <img class="rank-avatar" src="${r.avatar_url || "icons/icon.svg"}" alt="">
-        <span class="rank-name">${escapeHtml(r.username)}</span>
-        <button class="mini-btn" data-accept="${r.id}">✅</button>
-        <button class="mini-btn" data-decline="${r.id}">❌</button>
-      </div>`).join("");
-  } else if (bellTab === "ann"){
-    if (!cachedAnns?.length) html += '<p class="hint">nenhum aviso ainda</p>';
-    else html += cachedAnns.map((a) => `
-      <div class="friend-row" style="align-items:flex-start">
-        <div class="msg-avatar" style="width:34px;height:34px;font-size:16px">📢</div>
-        <div class="msg-text"><b>${escapeHtml(a.title)}</b><span>${escapeHtml(a.body)}</span></div>
-      </div>`).join("");
-    if (getSettings().admin){
-      html += '<div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">' +
-        '<input id="annTitle" class="input" placeholder="Título do aviso">' +
-        '<input id="annBody" class="input" placeholder="Mensagem pra todos os jogadores">' +
-        '<button class="mini-btn" data-annsend="1">📤 Enviar pra todos</button></div>';
-    }
-  } else {
-    html += '<p class="hint">🔄 Semanal zera segunda · mensal dia 1º · global em 1º/01 e 1º/07.</p>';
-    html += '<p class="hint">🏁 Modo Rush: corrida lado a lado disponível!</p>';
-    html += '<p class="hint">📲 Instale o jogo pelo menu → Baixar App.</p>';
-  }
-  body.innerHTML = html;
-}
-/* ---------- TELA DE AMIGOS ---------- */
-async function renderFriendsScreen(){
-  const list = $("friendsList2");
-  if (!list) return;
-  list.innerHTML = '<p class="hint">carregando…</p>';
-  const friends = await getFriends();
-  if (!friends?.length){ list.innerHTML = '<p class="hint">você ainda não tem amigos — busque aí em cima!</p>'; return; }
-  list.innerHTML = friends.map((f) => `
-    <div class="friend-row">
-      <img class="rank-avatar" src="${f.avatar_url || "icons/icon.svg"}" alt="">
-      <span class="rank-name">${escapeHtml(f.username)}</span>
-      <button class="mini-btn" data-finvt="${f.id}">Convidar</button>
-      <button class="mini-btn" data-frem="${f.id}">Remover</button>
-    </div>`).join("");
-}
-function updateHUD(){
-  if (!S) return;
-  const cur = S.state.turn;
-  $("turnText").textContent = "Vez do " + NAMES[cur];
-  $("turnPill").classList.toggle("is-red",  cur === "red");
-  $("turnPill").classList.toggle("is-blue", cur === "blue");
-  $("wallsRed").textContent  = S.state.players.red.walls;
-  $("wallsBlue").textContent = S.state.players.blue.walls;
-  $("chipRed").classList.toggle("is-turn",  cur === "red");
-  $("chipBlue").classList.toggle("is-turn",  cur === "blue");
-  const noWalls = S.state.players[cur].walls <= 0;
-  $("modeWallH").disabled = noWalls;
-  $("modeWallV").disabled = noWalls;
-}
-
-function setUiMode(m){
-  if (!S) return;
-  S.uiMode = m;
-  board.setMode(m);
-  $("modeMove").classList.toggle("active",  m === "move");
-  $("modeWallH").classList.toggle("active", m === "h");
-  $("modeWallV").classList.toggle("active", m === "v");
-  board.sync(S.state);
 }
 
 /* ---------- fim de jogo ---------- */
@@ -454,7 +455,84 @@ function rpPause(){
 }
 const replayCode = () => btoa(unescape(encodeURIComponent(JSON.stringify(RP.events.length ? RP.events : S?.state.replay || []))));
 
-/* ═══════════ PERFIL / RANKING / AMIGOS ═══════════ */
+/* ═══════════ SININHO ═══════════ */
+let bellTab = "req";
+let bubbleFor = 0;
+let cachedAnns = [];
+async function refreshBell(){
+  const badge = $("bellBadge");
+  if (!badge) return;
+  if (!getSession()){ badge.classList.add("hidden"); return; }
+  const [reqs, anns] = await Promise.all([getFriendRequests(), getAnnouncements()]);
+  cachedAnns = anns || [];
+  const seen = +(localStorage.getItem("qa_ann_seen") || 0);
+  const fresh = cachedAnns.filter((a) => a.id > seen);
+  const n = (reqs || []).length + fresh.length;
+  badge.textContent = n;
+  badge.classList.toggle("hidden", n === 0);
+  if (fresh.length && $("msgBubble") && fresh[0].id !== bubbleFor){ bubbleFor = fresh[0].id;
+    $("msgBubbleTitle").textContent = fresh[0].title;
+    $("msgBubbleBody").textContent = fresh[0].body + " · abra o 🔔 na tela inicial!";
+    $("msgBubble").classList.remove("hidden");
+    setTimeout(() => $("msgBubble").classList.add("hidden"), 9000);
+  }
+  if ($("bellPanel") && !$("bellPanel").classList.contains("hidden")) renderBellBody(reqs);
+}
+async function renderBellBody(reqs){
+  const body = $("bellBody");
+  if (!body) return;
+  reqs = reqs || await getFriendRequests();
+  let html = '<div class="tabs">' +
+    '<button class="tab' + (bellTab === "req" ? " active" : "") + '" data-belltab="req">📨 Pedidos</button>' +
+    '<button class="tab' + (bellTab === "ann" ? " active" : "") + '" data-belltab="ann">📢 Avisos</button>' +
+    '<button class="tab' + (bellTab === "info" ? " active" : "") + '" data-belltab="info">ℹ️ Info</button></div>';
+  if (bellTab === "req"){
+    if (!reqs?.length) html += '<p class="hint">nenhum pedido pendente</p>';
+    else html += reqs.map((r) => `
+      <div class="friend-row">
+        <img class="rank-avatar" src="${r.avatar_url || "icons/icon.svg"}" alt="">
+        <span class="rank-name">${escapeHtml(r.username)}</span>
+        <button class="mini-btn" data-accept="${r.id}">✅</button>
+        <button class="mini-btn" data-decline="${r.id}">❌</button>
+      </div>`).join("");
+  } else if (bellTab === "ann"){
+    if (!cachedAnns?.length) html += '<p class="hint">nenhum aviso ainda</p>';
+    else html += cachedAnns.map((a) => `
+      <div class="friend-row" style="align-items:flex-start">
+        <div class="msg-avatar" style="width:34px;height:34px;font-size:16px">📢</div>
+        <div class="msg-text"><b>${escapeHtml(a.title)}</b><span>${escapeHtml(a.body)}</span></div>
+      </div>`).join("");
+    if (getSettings().admin){
+      html += '<div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">' +
+        '<input id="annTitle" class="input" placeholder="Título do aviso">' +
+        '<input id="annBody" class="input" placeholder="Mensagem pra todos os jogadores">' +
+        '<button class="mini-btn" data-annsend="1">📤 Enviar pra todos</button></div>';
+    }
+  } else {
+    html += '<p class="hint">🔄 Semanal zera segunda · mensal dia 1º · global em 1º/01 e 1º/07.</p>';
+    html += '<p class="hint">🏁 Modo Rush: corrida lado a lado disponível!</p>';
+    html += '<p class="hint">📲 Instale o jogo pelo menu → Baixar App.</p>';
+  }
+  body.innerHTML = html;
+}
+
+/* ---------- TELA DE AMIGOS ---------- */
+async function renderFriendsScreen(){
+  const list = $("friendsList2");
+  if (!list) return;
+  list.innerHTML = '<p class="hint">carregando…</p>';
+  const friends = await getFriends();
+  if (!friends?.length){ list.innerHTML = '<p class="hint">você ainda não tem amigos — busque aí em cima!</p>'; return; }
+  list.innerHTML = friends.map((f) => `
+    <div class="friend-row">
+      <img class="rank-avatar" src="${f.avatar_url || "icons/icon.svg"}" alt="">
+      <span class="rank-name">${escapeHtml(f.username)}</span>
+      <button class="mini-btn" data-finvt="${f.id}">Convidar</button>
+      <button class="mini-btn" data-frem="${f.id}">Remover</button>
+    </div>`).join("");
+}
+
+/* ═══════════ PERFIL / RANKING ═══════════ */
 async function refreshRanking(period){
   const list = $("rankingList");
   list.innerHTML = '<li class="queue-status"><span class="spinner"></span> carregando…</li>';
@@ -504,6 +582,9 @@ async function refreshProfile(){
   $("xpFill").style.width = Math.min(100, ((st.xp - base) / (next - base)) * 100) + "%";
   $("xpLabel").textContent = `Nível ${lvl} · ${st.xp - base}/${next - base} XP`;
   $("profileName").textContent = getSession()?.user?.user_metadata?.name || "Jogador local";
+  const t = titleOf(getSettings().title);
+  const pn = $("profileTitle");
+  if (pn){ pn.textContent = t ? t.name : ""; pn.setAttribute("style", t?.style || ""); }
   getProfile().then((p) => {
     if (p?.avatar_url){
       $("profileAvatar").src = p.avatar_url;
@@ -550,7 +631,7 @@ async function refreshProfile(){
 
 const isAdmin = () => (getSession()?.user?.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
-/* ═══════════ SKINS (personalização) ═══════════ */
+/* ═══════════ SKINS ═══════════ */
 const CAT_KEY = { board:"skin", piece:"piece", frame:"frame" };
 let skinCat = "piece";
 const extraStats = () => ({ ...getStats(), ...(JSON.parse(localStorage.getItem("qa_extra")||"{}")) });
@@ -585,28 +666,26 @@ function clickSkin(id){
   }
   const st = getSettings();
   st[CAT_KEY[it.cat]] = it.id;
-  setSettings(st); applySettings(st); renderSkins(it.cat); if (getSession()) updateProfile({ frame: st.frame || "f-none", piece: st.piece || "p-classic" }); SFX.click();
+  setSettings(st); applySettings(st); applyUserBoard(); applyUserFrames(); renderSkins(it.cat);
+  if (getSession()) updateProfile({ frame: st.frame || "f-none", piece: st.piece || "p-classic" });
+  SFX.click();
 }
 
 const escapeHtml = (s) => String(s ?? "").replace(/[<>&"]/g, (c) =>
   ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
 
-/* ═══════════ INICIALIZAÇÃO DA CAMADA UI ═══════════ */
+/* ═══════════ INICIALIZAÇÃO ═══════════ */
 export function initScreens(){
+  registerUserSkins();
+  applyUserBoard();
+  applyUserFrames();
   applySettings(getSettings());
+  document.querySelectorAll('[data-i18n="goalRed"],[data-i18n="goalBlue"]').forEach((el) => el.style.display = "none");
 
   document.querySelectorAll("[data-back]").forEach((b) =>
     b.addEventListener("click", () => { SFX.click(); showScreen(b.dataset.back); }));
 
   $("btnLocal").onclick = () => { SFX.click(); startGame({ mode: "local" }); };
-  $("btnRace").onclick = () => {
-    SFX.click();
-    openModal("🏁 Modo Corrida", [
-      { label: "⚡ Corrida Online", onClick: () => startRaceOnline() },
-      { label: "👥 Corrida com Amigo", onClick: () => startRaceFriends() },
-      { label: "🎮 Corrida Local (2 no mesmo aparelho)", onClick: () => startGame({ mode: "local", race: true }) }
-    ]);
-  };
   $("btnAI").onclick = () => {
     SFX.click();
     openModal("Escolha o nível da IA", AI_LEVELS.map((l) => ({
@@ -713,7 +792,6 @@ export function initScreens(){
     toast(e.target.checked ? "Skins liberadas! 🔓" : "Skins travadas p/ teste.");
     renderSkins();
   });
-  $("btnLogout").onclick = async () => { await logout(); toast("Até logo! 👋"); showScreen("home"); };
 
   document.querySelectorAll(".rank-tabs .tab").forEach((t) =>
     t.addEventListener("click", () => {
@@ -875,6 +953,7 @@ export function initScreens(){
     renderBellBody(); refreshBell();
     $("msgBubble").classList.add("hidden");
   });
+
   /* ═══ TELA DE AMIGOS ═══ */
   $("btnFriends").onclick = () => { SFX.click(); showScreen("friends"); renderFriendsScreen(); };
   $("btnFriendSearch2").onclick = async () => {
@@ -898,6 +977,7 @@ export function initScreens(){
     const add = e.target.dataset.fadd;
     if (add){ await sendFriendRequest(add); toast("Pedido enviado! 📨"); }
   });
+
   /* ═══ SININHO ═══ */
   $("btnBell").onclick = () => { SFX.click(); const p = $("bellPanel"); p.classList.toggle("hidden"); if (!p.classList.contains("hidden")){ if (cachedAnns.length) localStorage.setItem("qa_ann_seen", Math.max(...cachedAnns.map((a) => a.id), 0)); renderBellBody(); refreshBell(); } };
   $("btnBellClose").onclick = () => $("bellPanel").classList.add("hidden");
@@ -911,7 +991,8 @@ export function initScreens(){
     if (acc || dec || rem){ renderBellBody(); refreshBell(); }
   });
   setInterval(refreshBell, 15000);
-  /* ═══ MODO RUSH (tela própria) ═══ */
+
+  /* ═══ MODO RUSH ═══ */
   $("btnRace").onclick = () => { SFX.click(); showScreen("race"); };
   $("btnRaceOnline").onclick = () => { SFX.click(); startRaceOnline(); };
   $("btnRaceFriends").onclick = () => { SFX.click(); loadRaceFriends(); };
@@ -920,9 +1001,12 @@ export function initScreens(){
     const id = e.target.dataset.raceinvite;
     if (id) net.inviteFriend(id, "race");
   });
+
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
-  initCustomizer();
-  /* btnLogout v5 (limpa tudo + recarrega) */
+  buildArenaHud();
+  initWorkshop();
+
+  /* btnLogout v5 */
   $("btnLogout").onclick = async () => {
     SFX.click();
     $("sidebar").classList.remove("open");
@@ -933,10 +1017,10 @@ export function initScreens(){
   };
   const bla = $("btnLogoutAlt");
   if (bla) bla.onclick = () => $("btnLogout").click();
+
   net.onEvent((msg) => {
     if (msg.kind === "action"){ applyOppSkin(msg.piece); handleRemoteEvent(msg.ev); }
-        if (msg.kind === "skin")   applyOppSkin(msg.piece);
-    if (msg.kind === "skinreq") net.sendSkin(getSettings().piece || "p-classic");
+    if (msg.kind === "skin")   applyOppSkin(msg.piece);
     if (msg.kind === "skinreq") net.sendSkin(getSettings().piece || "p-classic");
     if (msg.kind === "chat")   feedBubble(msg.text, false);
   });

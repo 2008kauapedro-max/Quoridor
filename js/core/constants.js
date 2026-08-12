@@ -1,4 +1,4 @@
-﻿// =============================================================
+// =============================================================
 // Quoridor Arena — core/constants.js
 // Todos os DADOS e constantes do jogo.
 // =============================================================
@@ -116,9 +116,18 @@ export const TEXTS = {
 
 export const LS_PREFIX = "qa_";
 
+// ═══════════ ESCUDOS SVG (times brasileiros) ═══════════
+function teamBadge(text, bg, fg){
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
+    '<circle cx="50" cy="50" r="45" fill="' + bg + '" stroke="' + fg + '" stroke-width="4"/>' +
+    '<text x="50" y="62" font-family="Arial Black,Arial" font-size="28" font-weight="900" fill="' + fg + '" text-anchor="middle">' + text + '</text>' +
+    '</svg>';
+  return 'url("data:image/svg+xml;utf8,' + encodeURIComponent(svg) + '")';
+}
+
 // ═══════════ CATÁLOGO DE SKINS ═══════════
 export const SKIN_CATALOG = [
-  // 🔴 BOLINHA
+  // 🔴 BOLINHA (clássicas)
   { id: "p-classic", cat: "piece", name: "Clássica", swatch: ["#ef4444", "#3b82f6"], free: true },
   { id: "p-fire",    cat: "piece", name: "Fogo",     swatch: ["#fde047", "#f97316"], free: true },
   { id: "p-ice",     cat: "piece", name: "Gelo",     swatch: ["#a5f3fc", "#60a5fa"], free: true },
@@ -126,7 +135,34 @@ export const SKIN_CATALOG = [
     unlock: { desc: "Vença a IA Especialista 1 vez.", cur: s => s.iaExpertWins || 0, target: 1 } },
   { id: "p-galaxy",  cat: "piece", name: "Galáxia",  swatch: ["#c7d2fe", "#0f172a"],
     unlock: { desc: "Alcance o nível 5.", cur: (s, l) => l, target: 5 } },
-  // 🧱 TABULEIRO
+  
+  // ⚽ TIMES BRASILEIROS (peças com escudo)
+  { id: "p-vasco", cat: "piece", name: "Vasco", swatch: ["#000000", "#ffffff"],
+    badge: teamBadge("VASCO", "#000000", "#ffffff"), free: true },
+  { id: "p-flamengo", cat: "piece", name: "Flamengo", swatch: ["#c8102e", "#000000"],
+    badge: teamBadge("FLA", "#c8102e", "#000000"), free: true },
+  { id: "p-palmeiras", cat: "piece", name: "Palmeiras", swatch: ["#006437", "#ffffff"],
+    badge: teamBadge("PAL", "#006437", "#ffffff"), free: true },
+  { id: "p-corinthians", cat: "piece", name: "Corinthians", swatch: ["#000000", "#ffffff"],
+    badge: teamBadge("COR", "#000000", "#ffffff"), free: true },
+  { id: "p-saopaulo", cat: "piece", name: "São Paulo", swatch: ["#ff0000", "#000000"],
+    badge: teamBadge("SPFC", "#ffffff", "#ff0000"), free: true },
+  { id: "p-fluminense", cat: "piece", name: "Fluminense", swatch: ["#7b2d3f", "#135b3a"],
+    badge: teamBadge("FLU", "#7b2d3f", "#ffffff"), free: true },
+  { id: "p-botafogo", cat: "piece", name: "Botafogo", swatch: ["#000000", "#ffffff"],
+    badge: teamBadge("BOTA", "#000000", "#ffffff"), free: true },
+  { id: "p-gremio", cat: "piece", name: "Grêmio", swatch: ["#0092c8", "#000000"],
+    badge: teamBadge("GRE", "#0092c8", "#ffffff"), free: true },
+  { id: "p-inter", cat: "piece", name: "Internacional", swatch: ["#e2001a", "#ffffff"],
+    badge: teamBadge("SCI", "#e2001a", "#ffffff"), free: true },
+  { id: "p-cruzeiro", cat: "piece", name: "Cruzeiro", swatch: ["#1e3a8a", "#ffffff"],
+    badge: teamBadge("CRU", "#1e3a8a", "#ffffff"), free: true },
+  { id: "p-atletico", cat: "piece", name: "Atlético-MG", swatch: ["#000000", "#ffffff"],
+    badge: teamBadge("GALO", "#000000", "#ffffff"), free: true },
+  { id: "p-santos", cat: "piece", name: "Santos", swatch: ["#000000", "#ffffff"],
+    badge: teamBadge("SFC", "#ffffff", "#000000"), free: true },
+
+  // 🧱 TABULEIRO (clássicos)
   { id: "classic", cat: "board", name: "Clássico", swatch: ["#b98a5a", "#e9d7b7"], free: true },
   { id: "neon",    cat: "board", name: "Neon",     swatch: ["#22d3ee", "#a78bfa"], free: true },
   { id: "pastel",  cat: "board", name: "Pastel",   swatch: ["#f9a8d4", "#93c5fd"], free: true },
@@ -136,6 +172,14 @@ export const SKIN_CATALOG = [
     unlock: { desc: "Vença 20 partidas (qualquer modo).", cur: s => s.wins, target: 20 } },
   { id: "mono",    cat: "board", name: "Monocromo", swatch: ["#e5e7eb", "#111827"],
     unlock: { desc: "Faça uma sequência de 3 vitórias.", cur: s => s.bestWinStreak, target: 3 } },
+  
+  // 🏟️ TABULEIROS TEMÁTICOS (cores dos times)
+  { id: "b-vasco", cat: "board", name: "Vasco ⚽", swatch: ["#1a1a1a", "#000000"], free: true },
+  { id: "b-flamengo", cat: "board", name: "Flamengo 🔴⚫", swatch: ["#c8102e", "#1a1a1a"], free: true },
+  { id: "b-palmeiras", cat: "board", name: "Palmeiras 🟢", swatch: ["#006437", "#004d2a"], free: true },
+  { id: "b-corinthians", cat: "board", name: "Corinthians ⚫⚪", swatch: ["#2a2a2a", "#000000"], free: true },
+  { id: "b-saopaulo", cat: "board", name: "São Paulo 🔴⚫⚪", swatch: ["#cc0000", "#1a1a1a"], free: true },
+
   // 🖼️ MOLDURA
   { id: "f-none", cat: "frame", name: "Sem moldura", swatch: ["#888888", "#444444"], free: true },
   { id: "f-wood", cat: "frame", name: "Madeira",     swatch: ["#8a5a2e", "#5b3a1c"], free: true },
@@ -159,6 +203,8 @@ export function pieceColorFor(id, color, online = false){
   return sw[color === "red" ? 0 : 1];
 }
 export function pieceBgFor(id, color, online = false){
+  const it = SKIN_CATALOG.find((i) => i.cat === "piece" && i.id === id);
+  if (it && it.badge) return it.badge;
   const sw = pieceSwatch(id);
   if (online && id !== "p-classic")
     return `radial-gradient(circle at 35% 30%, ${sw[0]} 0%, ${sw[1]} 95%)`;

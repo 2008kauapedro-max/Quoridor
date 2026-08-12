@@ -286,29 +286,46 @@ export function handleRemoteEvent(ev){
   if (S.state.over) endGame();
 }
 
-/* ---------- HUD / ARENA (cards compactos, estilos inline = nunca quebra) ---------- */
-const CARD_STYLE = "flex:1;min-width:0;display:flex;align-items:center;gap:6px;background:var(--card,#161b26);border:1px solid var(--line,#2a2f3a);border-radius:12px;padding:6px 8px;box-sizing:border-box";
-const IMG_STYLE = "width:32px;height:32px;border-radius:50%;flex:0 0 auto;object-fit:cover;background:#333";
-const NAME_STYLE = "font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:104px;color:var(--text,#eee)";
-const SUB_STYLE = "font-size:9px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:104px;color:var(--text,#eee)";
+/* ---------- HUD / ARENA (turno em cima · barreiras embaixo de cada card) ---------- */
+(function(){
+  let st = document.getElementById("ahCss");
+  if (!st){ st = document.createElement("style"); st.id = "ahCss"; document.head.appendChild(st); }
+  st.textContent =
+    "#arenaHud{width:100%;max-width:600px;margin:2px auto 10px;padding:0 10px;box-sizing:border-box}" +
+    "#arenaHud .ah-turn{display:flex;justify-content:center;margin-bottom:6px}" +
+    "#arenaHud .ah-turn span{font-size:10px;font-weight:800;letter-spacing:.06em;padding:4px 12px;border-radius:999px;background:var(--card,#161b26);border:1px solid var(--line,#2a2f3a);color:var(--text,#eee);transition:all .3s}" +
+    "#arenaHud .ah-cols{display:flex;gap:8px;align-items:stretch;justify-content:center}" +
+    "#arenaHud .ah-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;align-items:center}" +
+    "#arenaHud .ah-card{width:100%;display:flex;align-items:center;gap:7px;background:var(--card,#161b26);border:1px solid var(--line,#2a2f3a);border-radius:12px;padding:7px 9px;box-sizing:border-box}" +
+    "#arenaHud .ah-card img{width:34px;height:34px;border-radius:50%;flex:0 0 auto;object-fit:cover;background:#333}" +
+    "#arenaHud .ah-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text,#eee)}" +
+    "#arenaHud .ah-sub{font-size:9px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text,#eee)}" +
+    "#arenaHud .ah-walls{font-size:10px;font-weight:700;opacity:.9;color:var(--text,#eee)}" +
+    "@media (min-width:768px){#arenaHud{max-width:680px}#arenaHud .ah-card img{width:38px;height:38px}#arenaHud .ah-name{font-size:13px}#arenaHud .ah-sub{font-size:10px}}";
+})();
 
 function buildArenaHud(){
   if (document.getElementById("arenaHud") || !$("stage")) return;
   const hud = document.createElement("div");
   hud.id = "arenaHud";
-  hud.setAttribute("style", "display:flex;align-items:center;justify-content:center;gap:6px;margin:2px auto 10px;max-width:520px;width:100%;padding:0 10px;box-sizing:border-box");
   hud.innerHTML =
-    '<div id="ahRed" style="' + CARD_STYLE + '">' +
-      '<img id="ahRedImg" style="' + IMG_STYLE + '" src="icons/icon.svg" alt="">' +
-      '<div style="min-width:0"><div id="ahRedName" style="' + NAME_STYLE + '">—</div>' +
-      '<div id="ahRedSub" style="' + SUB_STYLE + '">—</div></div></div>' +
-    '<div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:3px">' +
-      '<div id="ahTurn" style="font-size:9px;font-weight:800;letter-spacing:.06em;padding:4px 10px;border-radius:999px;background:var(--card,#161b26);border:1px solid var(--line,#2a2f3a);color:var(--text,#eee)">—</div>' +
-      '<div style="display:flex;gap:8px;font-size:9px;opacity:.85;color:var(--text,#eee)"><span id="ahWr"></span><span id="ahWb"></span></div></div>' +
-    '<div id="ahBlue" style="' + CARD_STYLE + '">' +
-      '<img id="ahBlueImg" style="' + IMG_STYLE + '" src="icons/icon.svg" alt="">' +
-      '<div style="min-width:0"><div id="ahBlueName" style="' + NAME_STYLE + '">—</div>' +
-      '<div id="ahBlueSub" style="' + SUB_STYLE + '">—</div></div></div>';
+    '<div class="ah-turn"><span id="ahTurn">—</span></div>' +
+    '<div class="ah-cols">' +
+      '<div class="ah-col">' +
+        '<div class="ah-card" id="ahRed">' +
+          '<img id="ahRedImg" src="icons/icon.svg" alt="">' +
+          '<div style="min-width:0"><div class="ah-name" id="ahRedName">—</div><div class="ah-sub" id="ahRedSub">—</div></div>' +
+        '</div>' +
+        '<div class="ah-walls" id="ahWr"></div>' +
+      '</div>' +
+      '<div class="ah-col">' +
+        '<div class="ah-card" id="ahBlue">' +
+          '<img id="ahBlueImg" src="icons/icon.svg" alt="">' +
+          '<div style="min-width:0"><div class="ah-name" id="ahBlueName">—</div><div class="ah-sub" id="ahBlueSub">—</div></div>' +
+        '</div>' +
+        '<div class="ah-walls" id="ahWb"></div>' +
+      '</div>' +
+    '</div>';
   $("stage").parentElement.insertBefore(hud, $("stage"));
   const old = $("turnPill");
   if (old) old.style.display = "none";
@@ -369,8 +386,8 @@ function updateHUD(){
       : "VEZ DO " + NAMES[cur].toUpperCase();
     t.style.color = cur === "red" ? "#f87171" : "#60a5fa";
     t.style.borderColor = cur === "red" ? "#f8717166" : "#60a5fa66";
-    $("ahWr").textContent = "🔴 " + S.state.players.red.walls;
-    $("ahWb").textContent = "🔵 " + S.state.players.blue.walls;
+    $("ahWr").textContent = "🧱 " + S.state.players.red.walls;
+    $("ahWb").textContent = "🧱 " + S.state.players.blue.walls;
   }
 }
 

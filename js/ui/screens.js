@@ -3,7 +3,7 @@
    ============================================================= */
 import {
   TEXTS, NAMES, AI_LEVELS, SKINS, ACHIEVEMENTS, SKIN_CATALOG, ADMIN_EMAIL,
-  levelFromXp, xpForLevel, leagueOf, ELO_START, pieceBgFor, pieceWallFor
+  levelFromXp, xpForLevel, leagueOf, ELO_START, pieceBgFor, pieceWallFor, setCustomColor
 } from "../core/constants.js";
 import {
   newGame, newGameRace, applyMove, applyWall, validateWall, randomFirstTurn, applyEvent
@@ -241,8 +241,8 @@ export function startGame(opts){
     for (const d of [300, 1200, 2500, 5000, 8000, 12000]) setTimeout(() => sendMyProfile(), d);
   } else {
     board.setPieceColors({
-      red:  pieceBgFor(myPiece, "red",  false),
-      blue: pieceBgFor(myPiece, "blue", false),
+          red:  pieceBgFor(myPiece, "red",  false),
+      blue: myPiece === "p-custom" ? "radial-gradient(circle at 35% 30%, #60a5fa 0%, #2563eb 95%)" : pieceBgFor(myPiece, "blue", false),
       wallRed:  wBg || pieceWallFor(myPiece, "red"),
       wallBlue: "#3b82f6"
     });
@@ -866,7 +866,16 @@ export function renderSkins(cat){
         '<button data-psub="' + k + '" style="padding:8px 16px;border-radius:999px;border:1px solid ' + (pieceSub===k?"#3b82f6":"var(--line,#2a2f3a)") + ';background:' + (pieceSub===k?"#3b82f622":"transparent") + ';color:' + (pieceSub===k?"#60a5fa":"var(--text,#eee)") + ';font-weight:700;font-size:12px;cursor:pointer">' + n + '</button>').join("") +
       '</div>'
     : "";
-  $("skinsList").innerHTML = subTabs + items.map((it)=>{
+  let customCard = "";
+  if (skinCat === "piece" && pieceSub === "classic"){
+    const cc = getSettings().customColor || "#22c55e";
+    const eq = getSettings().piece === "p-custom";
+    customCard = '<button class="skin-card ' + (eq?"active":"") + '" data-skinid="p-custom">' +
+      '<span class="skin-swatch" style="background:radial-gradient(circle at 35% 30%, ' + cc + ' 0%, ' + cc + ' 95%);border-radius:50%"></span>' +
+      '<span class="skin-name">🎨 Personalize a cor</span>' +
+      '<span class="skin-state">' + (eq?"✔ Equipada":"Livre") + '</span></button>';
+  }
+  $("skinsList").innerHTML = subTabs + customCard + items.map((it)=>{
     const un = skinUnlocked(it);
     return `<button class="skin-card ${equipped===it.id?"active":""} ${un?"":"locked"}" data-skinid="${it.id}">
             <span class="skin-swatch" style="background:${it.badge ? it.badge : 'linear-gradient(135deg,' + it.swatch[0] + ' 50%,' + it.swatch[1] + ' 50%)'};border-radius:50%"></span>
@@ -876,6 +885,7 @@ export function renderSkins(cat){
   }).join("");
 }
 function clickSkin(id){
+  if (id === "p-custom"){ openColorPicker(); return; }
   const it = SKIN_CATALOG.find((i)=>i.id===id);
   if (!it) return;
   if (!skinUnlocked(it)){
@@ -893,6 +903,30 @@ function clickSkin(id){
   SFX.click();
 }
 
+function openColorPicker(){
+  const cur = getSettings().customColor || "#22c55e";
+  openModal("🎨 Personalize a cor", [
+    { label: "✅ Confirmar", onClick: () => {
+        const val = $("customColorInput").value;
+        const st = getSettings();
+        st.customColor = val;
+        st.piece = "p-custom";
+        setCustomColor(val);
+        setSettings(st); applySettings(st);
+        if (getSession()) updateProfile({ piece: "p-custom" });
+        renderSkins("piece");
+        SFX.click();
+        toast("🎨 Cor equipada!");
+      } },
+    { label: "Cancelar", onClick: null }
+  ], '<div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:8px 0">' +
+     '<div id="customColorPrev" style="width:70px;height:70px;border-radius:50%;background:radial-gradient(circle at 35% 30%, ' + cur + ' 0%, ' + cur + ' 95%);box-shadow:0 4px 14px #0006"></div>' +
+     '<input type="color" id="customColorInput" value="' + cur + '" style="width:100%;height:48px;border:none;background:none;cursor:pointer">' +
+     '<p class="hint">Escolha a cor da sua bolinha e confirme!</p></div>');
+  const inp = $("customColorInput");
+  inp.addEventListener("input", () => { $("customColorPrev").style.background = "radial-gradient(circle at 35% 30%, " + inp.value + " 0%, " + inp.value + " 95%)"; });
+}
+
 const escapeHtml = (s) => String(s ?? "").replace(/[<>&"]/g, (c) =>
   ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
 
@@ -901,6 +935,7 @@ export function initScreens(){
   registerUserSkins();
   applyUserBoard();
   applyUserFrames();
+  setCustomColor(getSettings().customColor);
   applySettings(getSettings());
   document.querySelectorAll('[data-i18n="goalRed"],[data-i18n="goalBlue"]').forEach((el) => el.style.display = "none");
 

@@ -62,6 +62,7 @@ badge: "url('img/flags/" + f + ".png') center / " + z + "% no-repeat, radial-gra
 
 export const SKIN_CATALOG = [
   { id:"p-classic", cat:"piece", name:"Clássica", swatch:["#ef4444","#3b82f6"], free:true },
+  { id:"p-custom", cat:"piece", sub:"classic", name:"Personalizada", swatch:["#22c55e","#3b82f6"], free:true, hide:true },
   { id:"p-fire",    cat:"piece", name:"Fogo",     swatch:["#fde047","#f97316"], free:true },
   { id:"p-ice",     cat:"piece", name:"Gelo",     swatch:["#a5f3fc","#60a5fa"], free:true },
   { id:"p-galaxy",  cat:"piece", name:"Galáxia",  swatch:["#c7d2fe","#0f172a"], unlock:{desc:"Alcance o nível 5.",cur:(s,l)=>l,target:5} },
@@ -89,10 +90,14 @@ export const SKIN_CATALOG = [
 
 export const ADMIN_EMAIL = "2008kauapedro@gmail.com";
 
-export function pieceSwatch(id){ const i=SKIN_CATALOG.find(x=>x.cat==="piece"&&x.id===id); return i?i.swatch:["#ef4444","#3b82f6"]; }
+let CUSTOM_COLOR = "#22c55e";
+export function setCustomColor(c){ if (c) CUSTOM_COLOR = c; }
+export function getCustomColor(){ return CUSTOM_COLOR; }
+export function pieceSwatch(id){ if (id==="p-custom") return [CUSTOM_COLOR, "#3b82f6"]; const i=SKIN_CATALOG.find(x=>x.cat==="piece"&&x.id===id); return i?i.swatch:["#ef4444","#3b82f6"]; }
 export function pieceColorFor(id,color,online=false){ const s=pieceSwatch(id); if(online&&id!=="p-classic")return s[0]; return s[color==="red"?0:1]; }
 
 export function pieceBgFor(id, color, online = false){
+  if (id === "p-custom") return CUSTOM_COLOR;
   const it = SKIN_CATALOG.find((i) => i.cat === "piece" && i.id === id);
   if (it && it.badge) return (online || color === "red") ? it.badge : "radial-gradient(circle at 35% 30%, #60a5fa 0%, #2563eb 95%)";
   const sw = pieceSwatch(id);

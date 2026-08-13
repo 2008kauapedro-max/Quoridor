@@ -218,10 +218,6 @@ header,.topbar,.top-bar,#topbar{ background:#0B1120 !important; border-bottom:1p
 .input,input,select,textarea{ background:#0C1322 !important; color:#F5F7FA !important; border-color:#16233C !important; }
 .input:focus,input:focus,select:focus{ border-color:#63B8FF !important; box-shadow:0 0 0 2px #63B8FF2E !important; outline:none; }
 ::selection{ background:#246BCE; color:#F5F7FA; }
-::-webkit-scrollbar{ width:10px; height:10px; }
-::-webkit-scrollbar-track{ background:#080B14; }
-::-webkit-scrollbar-thumb{ background:#246BCE66; border-radius:6px; }
-::-webkit-scrollbar-thumb:hover{ background:#63B8FF99; }
 .hint{ color:#7E93B4 !important; }
 #sidebar,.sidebar{ background:#0B1120 !important; }
 .overlay-card,.modal-card{ background:#0C1322 !important; color:#F5F7FA !important; border-color:#16233C !important; }

@@ -56,7 +56,7 @@ export const LS_PREFIX = "qa_";
 /* ═══════════ SKINS — zoom + fundo colorido pra ficar TUDO padrão ═══════════ */
 const P = (f, c1, c2, z, wall) => ({
   img: "img/flags/" + f + ".png",
-  badge: 'url("img/flags/' + f + '.png") center / ' + z + '% no-repeat, radial-gradient(circle at 35% 30%, ' + c1 + ' 0%, ' + c2 + ' 95%)',
+badge: "url('img/flags/" + f + ".png') center / " + z + "% no-repeat, radial-gradient(circle at 35% 30%, " + c1 + " 0%, " + c2 + " 95%)",
   wall
 });
 

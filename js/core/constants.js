@@ -54,7 +54,7 @@ export const TEXTS = {
 export const LS_PREFIX = "qa_";
 
 /* ═══════════ SKINS — bandeiras usam SEUS PNGs em img/flags/ ═══════════ */
-const F = (f) => 'url("img/flags/' + f + '.png") center / 100% 100% no-repeat';
+const F = (f) => 'url("img/flags/' + f + '.png") center / cover no-repeat';
 
 export const SKIN_CATALOG = [
   { id:"p-classic", cat:"piece", name:"Clássica", swatch:["#ef4444","#3b82f6"], free:true },
@@ -63,7 +63,7 @@ export const SKIN_CATALOG = [
   { id:"p-galaxy",  cat:"piece", name:"Galáxia",  swatch:["#c7d2fe","#0f172a"], unlock:{desc:"Alcance o nível 5.",cur:(s,l)=>l,target:5} },
   { id:"p-gold",    cat:"piece", name:"Dourada",  swatch:["#fef08a","#b45309"], unlock:{desc:"Vença a IA Especialista 1 vez.",cur:s=>s.iaExpertWins||0,target:1} },
 
-   { id:"p-brasil",     cat:"piece", name:"Brasil",     swatch:["#22c55e","#facc15"], img:"img/flags/brasil.png",     badge:F("brasil"),     wall:"repeating-linear-gradient(45deg,#009c3b 0 8px,#ffdf00 8px 11px,#002776 11px 19px)", unlock:{desc:"Vença 1 partida.",cur:s=>s.wins,target:1} },
+  { id:"p-brasil",     cat:"piece", name:"Brasil",     swatch:["#22c55e","#facc15"], img:"img/flags/brasil.png",     badge:F("brasil"),     wall:"repeating-linear-gradient(45deg,#009c3b 0 8px,#ffdf00 8px 11px,#002776 11px 19px)", unlock:{desc:"Vença 1 partida.",cur:s=>s.wins,target:1} },
   { id:"p-argentina",  cat:"piece", name:"Argentina",  swatch:["#7dd3fc","#ffffff"], img:"img/flags/argentina.png",  badge:F("argentina"),  wall:"repeating-linear-gradient(45deg,#74acdf 0 8px,#ffffff 8px 16px,#f6b40e 16px 19px)", unlock:{desc:"Vença 2 partidas.",cur:s=>s.wins,target:2} },
   { id:"p-alemanha",   cat:"piece", name:"Alemanha",   swatch:["#111111","#facc15"], img:"img/flags/alemanha.png",   badge:F("alemanha"),   wall:"repeating-linear-gradient(45deg,#000000 0 8px,#dd0000 8px 16px,#ffce00 16px 24px)", unlock:{desc:"Vença 3 partidas.",cur:s=>s.wins,target:3} },
   { id:"p-franca",     cat:"piece", name:"França",     swatch:["#2563eb","#ef4444"], img:"img/flags/franca.png",     badge:F("franca"),     wall:"repeating-linear-gradient(45deg,#0055a4 0 8px,#ffffff 8px 16px,#ef4135 16px 24px)", unlock:{desc:"Vença 1 partida online.",cur:s=>s.onlineWins||0,target:1} },
@@ -81,7 +81,6 @@ export const ADMIN_EMAIL = "2008kauapedro@gmail.com";
 export function pieceSwatch(id){ const i=SKIN_CATALOG.find(x=>x.cat==="piece"&&x.id===id); return i?i.swatch:["#ef4444","#3b82f6"]; }
 export function pieceColorFor(id,color,online=false){ const s=pieceSwatch(id); if(online&&id!=="p-classic")return s[0]; return s[color==="red"?0:1]; }
 
-/* 🔑 AQUI É O SEGREDO: se tiver bandeira, usa SÓ a imagem (sem gradiente por baixo = sem fundo preto/luz torta) */
 export function pieceBgFor(id, color, online = false){
   const it = SKIN_CATALOG.find((i) => i.cat === "piece" && i.id === id);
   if (it && it.badge) return (online || color === "red") ? it.badge : "radial-gradient(circle at 35% 30%, #60a5fa 0%, #2563eb 95%)";

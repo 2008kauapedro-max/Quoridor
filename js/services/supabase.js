@@ -171,7 +171,23 @@ export async function reportMatch(sum){
     replay: sum.replay || []
   } }).then(() => {}, () => {});   // silencioso: offline não trava o jogo
 }
-
+/* ═══════════ ANTIFARM — detecta partidas repetidas do mesmo par ═══════════ */
+export async function pairCount(otherId){
+  if (!sb || !currentSession || !otherId) return 0;
+  const me = currentSession.user.id;
+  const a = me < otherId ? me : otherId, b = me < otherId ? otherId : me;
+  const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+  const { count } = await sb.from("match_log")
+    .select("*", { count: "exact", head: true })
+    .eq("a", a).eq("b", b).gte("at", since);
+  return count || 0;
+}
+export async function logMatch(otherId){
+  if (!sb || !currentSession || !otherId) return;
+  const me = currentSession.user.id;
+  if (me >= otherId) return;   // só um dos dois registra a partida
+  await sb.from("match_log").insert({ a: me, b: otherId });
+}
 export async function getFriendRequests(){
   if (!sb || !currentSession) return [];
   const me = currentSession.user.id;

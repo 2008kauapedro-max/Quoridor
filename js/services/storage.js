@@ -1,10 +1,9 @@
 /* =============================================================
-   The Rage Arena — services/storage.js (v2 — sincronização cloud)
+   The Rage Arena — services/storage.js (v3 — antifarm par repetido)
    ============================================================= */
 import { LS_PREFIX, ELO_START, XP_WIN, XP_LOSS, ACHIEVEMENTS } from "../core/constants.js";
 import { reportMatch as cloudReport, isConfigured, getSession, sbClient } from "./supabase.js";
 
-/* helpers seguros (JSON nunca quebra o jogo) */
 function read(key, fallback){
   try {
     const v = localStorage.getItem(LS_PREFIX + key);
@@ -15,16 +14,9 @@ function write(key, value){
   try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(value)); } catch (_) {}
 }
 
-/* ═══════════ CONFIGURAÇÕES ═══════════ */
 export const DEFAULT_SETTINGS = {
-  theme: "auto",
-  lang: "pt",
-  volume: 80,
-  sound: true,
-  music: false,
-  animations: true,
-  quality: "high",
-  skin: "classic"
+  theme: "auto", lang: "pt", volume: 80, sound: true, music: false,
+  animations: true, quality: "high", skin: "classic"
 };
 export function getSettings(){ return { ...DEFAULT_SETTINGS, ...read("settings", {}) }; }
 let _saveT = null;
@@ -34,7 +26,6 @@ export function setSettings(s){
   _saveT = setTimeout(() => saveCloudData(), 800);
 }
 
-/* ═══════════ ESTATÍSTICAS ═══════════ */
 export const DEFAULT_STATS = {
   xp: 0, elo: ELO_START,
   wins: 0, losses: 0, draws: 0, games: 0,
@@ -44,10 +35,8 @@ export const DEFAULT_STATS = {
 };
 export function getStats(){ return { ...DEFAULT_STATS, ...read("stats", {}) }; }
 
-/* ═══════════ CONQUISTAS ═══════════ */
 export function getUnlocked(){ return read("ach", []); }
 
-/* ═══════════ SINCRONIZAÇÃO CLOUD TOTAL (stats+conquistas+extra+prefs) ═══════════ */
 function mergeNums(a, b){
   const m = { ...a, ...b };
   for (const k of new Set([...Object.keys(a), ...Object.keys(b)])){
@@ -75,7 +64,7 @@ export async function syncCloudData(){
     write("settings", mPrefs);
     await sbClient.from("profiles").update({
       stats: mStats, achievements: mAch, extra: mExtra,
-      prefs: { piece: mPrefs.piece, frame: mPrefs.frame, wall: mPrefs.wall, title: mPrefs.title, skin: mPrefs.skin }
+      prefs: { piece: mPrefs.piece, frame: mPrefs.frame, wall: mPrefs.wall, title: mPrefs.title, skin: mPrefs.skin, customColor: mPrefs.customColor }
     }).eq("id", id);
   } catch (_) {}
 }
@@ -86,7 +75,7 @@ async function saveCloudData(){
     const s = getSettings();
     await sbClient.from("profiles").update({
       stats: getStats(), achievements: getUnlocked(), extra: read("extra", {}),
-      prefs: { piece: s.piece, frame: s.frame, wall: s.wall, title: s.title, skin: s.skin }
+      prefs: { piece: s.piece, frame: s.frame, wall: s.wall, title: s.title, skin: s.skin, customColor: s.customColor }
     }).eq("id", getSession().user.id);
   } catch (_) {}
 }
@@ -117,9 +106,17 @@ export function recordMatch(sum){
     }
 
     if (sum.mode === "online"){
-      eloDelta = win ? 16 : -16;
-      st.elo = Math.max(100, st.elo + eloDelta);
-      if (isConfigured() && getSession()){
+      if (sum.repeated){
+        eloDelta = 0;
+      } else if (sum.abandoned && win && (sum.movesUsed || 0) < 2){
+        eloDelta = 0;
+      } else if (sum.abandoned && win){
+        eloDelta = 8;
+      } else {
+        eloDelta = win ? 16 : -16;
+      }
+      if (eloDelta) st.elo = Math.max(100, st.elo + eloDelta);
+      if (!sum.repeated && isConfigured() && getSession()){
         try { cloudReport(sum); } catch (_) {}
       }
     }
@@ -149,7 +146,6 @@ export function recordMatch(sum){
   return { xp, eloDelta, unlocked };
 }
 
-/* ═══════════ AUTOSAVE ═══════════ */
 export function setSnapshot(data){
   write("snapshot", { ...data, at: Date.now() });
 }
@@ -167,6 +163,5 @@ export function clearSnapshot(){
 }
 export function hasSnapshot(){ return !!getSnapshot(); }
 
-/* ═══════════ ÚLTIMO REPLAY ═══════════ */
 export function setLastReplay(list){ write("lastReplay", list || []); }
 export function getLastReplay(){ return read("lastReplay", []); }

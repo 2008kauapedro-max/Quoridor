@@ -1,5 +1,5 @@
 ﻿/* =============================================================
-   The Rage Arena — ui/screens.js (v7 — corrigido + sync cloud)
+   The Rage Arena — ui/screens.js (v8 — antifarm par repetido)
    ============================================================= */
 import {
   TEXTS, NAMES, AI_LEVELS, SKINS, ACHIEVEMENTS, SKIN_CATALOG, ADMIN_EMAIL,
@@ -19,7 +19,8 @@ import {
   isConfigured, getSession, onAuthChange,
   loginEmail, registerEmail, loginGoogle, logout, resetPassword,
   getProfile, updateProfile, uploadAvatar, getRanking, searchPlayers, getFriends,
-  getFriendRequests, respondFriendRequest, removeFriend, sendFriendRequest, getAnnouncements, postAnnouncement
+  getFriendRequests, respondFriendRequest, removeFriend, sendFriendRequest, getAnnouncements, postAnnouncement,
+  pairCount, logMatch
 } from "../services/supabase.js";
 import { net } from "../services/realtime.js";
 import {
@@ -31,17 +32,15 @@ const $ = (id) => document.getElementById(id);
 let current = "loading";
 let myAvatar = null;
 
-/* ═══════════ NAVEGAÇÃO ═══════════ */
 export function showScreen(name){
   document.querySelectorAll(".screen").forEach((s) =>
     s.classList.toggle("active", s.dataset.screen === name));
   current = name;
   if (name === "ranking") refreshRanking("global");
-   if (name === "skins"){ pieceSub = "classic"; renderSkins(); }
+  if (name === "skins"){ pieceSub = "classic"; renderSkins(); }
   if (name === "profile") refreshProfile();
 }
 
-/* ═══════════ i18n & CONFIGURAÇÕES ═══════════ */
 export function applySettings(s){
   const html = document.documentElement;
   let theme = s.theme;
@@ -65,7 +64,6 @@ export function applySettings(s){
   });
 }
 
-/* ═══════════ MODAL GENÉRICO ═══════════ */
 export function openModal(title, choices, bodyHTML = ""){
   $("modalTitle").textContent = title;
   $("modalBody").innerHTML = bodyHTML;
@@ -82,7 +80,6 @@ export function openModal(title, choices, bodyHTML = ""){
 }
 export function closeModal(){ $("modal").classList.add("hidden"); }
 
-/* ═══════════ MODAL DE APOIO (QR Code PIX) ═══════════ */
 function emv(id, value){ return id + String(value.length).padStart(2, "0") + value; }
 function crc16(s){
   let crc = 0xFFFF;
@@ -112,8 +109,7 @@ function openDonateModal(){
       <div style="font-size:40px;margin-bottom:10px">💝</div>
       <h2 style="margin:0 0 10px;font-size:21px">Apoie o The Rage Arena!</h2>
       <p style="margin:0 0 14px;line-height:1.55;font-size:13px;color:#cbd5e1">
-        Qualquer valor já ajuda <strong style="color:#fbbf24">demais</strong>! Todo o apoio vai direto pro
-        <strong style="color:#22d3ee">desenvolvimento do game</strong>: novidades, skins, servidores e melhorias. 🙏
+        Qualquer valor já ajuda <strong style="color:#fbbf24">demais</strong>!
       </p>
       <div style="background:#fff;padding:10px;border-radius:14px;display:inline-block;margin-bottom:6px">
         <img src="${qrUrl}" alt="QR Code PIX" style="width:200px;height:200px;display:block;border-radius:8px">
@@ -138,12 +134,10 @@ function openDonateModal(){
   };
   document.getElementById("copyPasteBtn").onclick = (e) => copy(payload, e.currentTarget);
   document.getElementById("copyPixBtn").onclick = (e) => copy(pixKey, e.currentTarget);
- 
   document.getElementById("closeDonateModal").onclick = () => modal.remove();
   modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 }
 
-/* ═══════════ SESSÃO DE JOGO ═══════════ */
 let S = null;
 let board = null;
 let replayBoard = null;
@@ -155,7 +149,7 @@ function freshSession(mode, level){
     uiMode: "move",
     locked: true,
     seconds: 0, timerId: null, aiTimer: null,
-    myColor: null, oppPiece: null, oppProfile: null
+    myColor: null, oppPiece: null, oppProfile: null, oppId: null
   };
 }
 
@@ -192,7 +186,8 @@ function sendMyProfile(){
       a: myAvatar || "",
       e: st.elo ?? ELO_START,
       l: levelFromXp(st.xp),
-      f: s.frame || "f-none"
+      f: s.frame || "f-none",
+      i: getSession()?.user?.id || ""
     }));
   } catch (_){}
 }
@@ -202,6 +197,7 @@ function handleSkinMsg(raw){
     try {
       const d = JSON.parse(raw);
       S.oppProfile = d;
+      if (d.i) S.oppId = d.i;
       if (d.p) applyOppSkin(d.p);
       updateHUD();
       return;
@@ -218,6 +214,7 @@ export function startGame(opts){
   else if (S.race){ S.state = newGameRace(); }
   if (opts.myColor) S.myColor = opts.myColor;
   S.private = !!opts.private;
+  if (S.private) setTimeout(() => toast("🏠 Sala privada vale Elo — farm com o mesmo rival não"), 2200);
   if (opts.firstTurn) S.state.turn = opts.firstTurn;
   else if (!opts.state) S.state.turn = randomFirstTurn();
 
@@ -241,7 +238,7 @@ export function startGame(opts){
     for (const d of [300, 1200, 2500, 5000, 8000, 12000]) setTimeout(() => sendMyProfile(), d);
   } else {
     board.setPieceColors({
-          red:  pieceBgFor(myPiece, "red",  false),
+      red:  pieceBgFor(myPiece, "red",  false),
       blue: pieceBgFor(myPiece, "blue", false),
       wallRed:  wBg || pieceWallFor(myPiece, "red"),
       wallBlue: "#3b82f6"
@@ -250,11 +247,12 @@ export function startGame(opts){
   updateStrips();
 
   $("btnRestart").classList.toggle("hidden", S.mode === "online");
-    updateHUD();
+  updateHUD();
   board.sync(S.state);
   startTimer();
   startTurnTimer();
   resetTurnTimer();
+
   const first = S.state.turn;
   const banner = $("turnBanner");
   banner.textContent = (first === "red" ? "🔴 " : "🔵 ") + NAMES[first] + " começa";
@@ -276,7 +274,6 @@ function startTimer(){
 function stopTimer(){ if (S?.timerId) clearInterval(S.timerId); }
 const fmt = (s) => String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
 
-/* ---------- TIMER DE TURNO (30s por jogada) ---------- */
 const TURN_SECONDS = 30;
 function humanTurn(){
   if (!S || S.state.over) return false;
@@ -350,7 +347,7 @@ const controller = {
 };
 
 function afterAction(ev, kind){
-   kind === "move" ? SFX.move() : SFX.wall();
+  kind === "move" ? SFX.move() : SFX.wall();
   board.sync(S.state);
   updateHUD();
   resetTurnTimer();
@@ -392,10 +389,11 @@ export function handleRemoteEvent(ev){
     resetTurnTimer();
     return;
   }
-    if (ev && ev.t === "resign"){
+  if (ev && ev.t === "resign"){
     if (S.state.over) return;
     S.state.winner = S.myColor;
     S.state.over = true;
+    S.state.abandoned = true;
     toast("🏳️ O rival abandonou a partida — vitória sua!");
     endGame();
     return;
@@ -408,7 +406,6 @@ export function handleRemoteEvent(ev){
   if (S.state.over) endGame();
 }
 
-/* ---------- HUD / ARENA ---------- */
 (function(){
   let st = document.getElementById("ahCss");
   if (!st){ st = document.createElement("style"); st.id = "ahCss"; document.head.appendChild(st); }
@@ -422,7 +419,7 @@ export function handleRemoteEvent(ev){
     "#arenaHud .ah-card img{width:34px;height:34px;border-radius:50%;flex:0 0 auto;object-fit:cover;background:#333}" +
     "#arenaHud .ah-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text,#eee)}" +
     "#arenaHud .ah-sub{font-size:9px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text,#eee)}" +
-       "#arenaHud .ah-walls{font-size:10px;font-weight:700;opacity:.9;color:var(--text,#eee)}" +
+    "#arenaHud .ah-walls{font-size:10px;font-weight:700;opacity:.9;color:var(--text,#eee)}" +
     "#arenaHud .ah-time{width:100%;height:8px;background:rgba(255,255,255,.10);border-radius:5px;position:relative;overflow:hidden}" +
     "#arenaHud .ah-time i{position:absolute;left:0;top:0;bottom:0;width:100%;border-radius:5px;transition:width .25s linear}" +
     "#arenaHud #ahTrBar{background:#f87171}#arenaHud #ahTbBar{background:#60a5fa}" +
@@ -442,7 +439,7 @@ function buildArenaHud(){
           '<img id="ahRedImg" src="icons/icon.svg" alt="">' +
           '<div style="min-width:0"><div class="ah-name" id="ahRedName">—</div><div class="ah-sub" id="ahRedSub">—</div></div>' +
         '</div>' +
-                '<div class="ah-time"><i id="ahTrBar"></i><span id="ahTrTxt"></span></div>' +
+        '<div class="ah-time"><i id="ahTrBar"></i><span id="ahTrTxt"></span></div>' +
         '<div class="ah-walls" id="ahWr"></div>' +
       '</div>' +
       '<div class="ah-col">' +
@@ -450,7 +447,7 @@ function buildArenaHud(){
           '<img id="ahBlueImg" src="icons/icon.svg" alt="">' +
           '<div style="min-width:0"><div class="ah-name" id="ahBlueName">—</div><div class="ah-sub" id="ahBlueSub">—</div></div>' +
         '</div>' +
-                '<div class="ah-time"><i id="ahTbBar"></i><span id="ahTbTxt"></span></div>' +
+        '<div class="ah-time"><i id="ahTbBar"></i><span id="ahTbTxt"></span></div>' +
         '<div class="ah-walls" id="ahWb"></div>' +
       '</div>' +
     '</div>';
@@ -529,7 +526,6 @@ function setUiMode(m){
   board.sync(S.state);
 }
 
-/* ---------- MODO CORRIDA ---------- */
 async function startRaceOnline(){
   if (!isConfigured()){ toast("Configure o Supabase em js/config.js."); return; }
   if (!getSession()){ const ok = await net.ensureAnon(); if (!ok){ toast("Entre na sua conta para jogar online."); showScreen("auth"); return; } }
@@ -565,7 +561,7 @@ async function loadRaceFriends(){
     </div>`).join("");
 }
 
-function endGame(){
+async function endGame(){
   stopTimer();
   stopTurnTimer();
   const w = S.state.winner;
@@ -582,13 +578,25 @@ function endGame(){
   }
   if (S.private) extra.privateGames = (extra.privateGames||0)+1;
   localStorage.setItem("qa_extra", JSON.stringify(extra));
+
+  let repeated = false;
+  if (S.mode === "online" && S.oppId && getSession()){
+    try {
+      repeated = (await pairCount(S.oppId)) >= 3;
+      if (!repeated) await logMatch(S.oppId);
+    } catch (_){}
+  }
+  if (repeated) toast("🔁 Muitas partidas contra o mesmo rival hoje — Elo pausado");
+
   const res = S.mode === "online"
     ? recordMatch({
         mode: S.mode, winner: w, myColor: humanColor,
         durationSec: S.seconds,
         wallsUsed: S.state.stats.walls[humanColor],
         movesUsed: S.state.stats.moves[humanColor],
-        wasBehind: S.state.stats.wasBehind[humanColor]
+        wasBehind: S.state.stats.wasBehind[humanColor],
+        abandoned: !!S.state.abandoned,
+        repeated
       })
     : { xp: 0, eloDelta: 0, unlocked: [] };
   $("winText").textContent = NAMES[w] + " venceu!";
@@ -601,6 +609,7 @@ function endGame(){
   $("overlay").classList.remove("hidden");
   clearSnapshot();
 }
+
 export function endSession(goHome = true){
   stopTimer();
   stopTurnTimer();
@@ -614,7 +623,8 @@ export function endSession(goHome = true){
         durationSec: S.seconds,
         wallsUsed: S.state.stats.walls[S.myColor],
         movesUsed: S.state.stats.moves[S.myColor],
-        wasBehind: S.state.stats.wasBehind[S.myColor]
+        wasBehind: S.state.stats.wasBehind[S.myColor],
+        abandoned: true
       });
       toast("🏳️ Você abandonou — derrota contabilizada.");
     } catch (_){}
@@ -626,7 +636,6 @@ export function endSession(goHome = true){
   if (goHome) showScreen("home");
 }
 
-/* ═══════════ REPLAY ═══════════ */
 const RP = { events: [], idx: 0, playing: false, timer: null, state: null };
 
 export function openReplay(events){
@@ -662,7 +671,6 @@ function rpPause(){
 }
 const replayCode = () => btoa(unescape(encodeURIComponent(JSON.stringify(RP.events.length ? RP.events : S?.state.replay || []))));
 
-/* ═══════════ SININHO ═══════════ */
 let bellTab = "req";
 let bubbleFor = 0;
 let cachedAnns = [];
@@ -913,7 +921,7 @@ function openColorPicker(){
         st.piece = "p-custom";
         setCustomColor(val);
         setSettings(st); applySettings(st);
-        if (getSession()) updateProfile({ piece: "p-custom" });
+        if (getSession()) updateProfile({ piece: "p-custom", customColor: val });
         renderSkins("piece");
         SFX.click();
         toast("🎨 Cor equipada!");
@@ -930,7 +938,6 @@ function openColorPicker(){
 const escapeHtml = (s) => String(s ?? "").replace(/[<>&"]/g, (c) =>
   ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
 
-/* ═══════════ INICIALIZAÇÃO ═══════════ */
 export function initScreens(){
   registerUserSkins();
   applyUserBoard();
@@ -959,9 +966,9 @@ export function initScreens(){
   if ($("btnOpenSkins")) $("btnOpenSkins").onclick = () => { SFX.click(); showScreen("skins"); };
   document.querySelectorAll(".skin-tabs .tab").forEach((t)=>t.addEventListener("click",()=>{
     document.querySelectorAll(".skin-tabs .tab").forEach((x)=>x.classList.remove("active"));
-       t.classList.add("active"); if (t.dataset.cat === "piece") pieceSub = "classic"; renderSkins(t.dataset.cat);
+    t.classList.add("active"); if (t.dataset.cat === "piece") pieceSub = "classic"; renderSkins(t.dataset.cat);
   }));
-   $("skinsList").addEventListener("click",(e)=>{
+  $("skinsList").addEventListener("click",(e)=>{
     const p = e.target.closest("[data-psub]");
     if (p){ pieceSub = p.dataset.psub; renderSkins(); return; }
     const b = e.target.closest(".skin-card"); if (b) clickSkin(b.dataset.skinid);
@@ -1185,7 +1192,7 @@ export function initScreens(){
     if (e.key === "3") setUiMode("v");
   });
 
-    const refit = () => { if (S && board) board.fit($("stage"), $("boardFrame")); };
+  const refit = () => { if (S && board) board.fit($("stage"), $("boardFrame")); };
   const antiQuit = () => {
     if (S && S.mode === "online" && !S.state.over){
       try { net.sendAction({ t: "resign" }); } catch (_){}
@@ -1198,7 +1205,7 @@ export function initScreens(){
 
   onAuthChange(async (session) => {
     const logged = !!session;
-        if (logged){
+    if (logged){
       await syncCloudData();
       applySettings(getSettings());
       applyUserBoard();

@@ -242,7 +242,7 @@ export function startGame(opts){
   } else {
     board.setPieceColors({
           red:  pieceBgFor(myPiece, "red",  false),
-      blue: myPiece === "p-custom" ? "radial-gradient(circle at 35% 30%, #60a5fa 0%, #2563eb 95%)" : pieceBgFor(myPiece, "blue", false),
+      blue: pieceBgFor(myPiece, "blue", false),
       wallRed:  wBg || pieceWallFor(myPiece, "red"),
       wallBlue: "#3b82f6"
     });

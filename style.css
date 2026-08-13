@@ -340,3 +340,8 @@ header,.topbar,.top-bar,#topbar{ background:#0B1120 !important; border-bottom:1p
 .hint{ color:#7E93B4 !important; }
 #sidebar,.sidebar{ background:#0B1120 !important; }
 .overlay-card,.modal-card{ background:#0C1322 !important; color:#F5F7FA !important; border-color:#16233C !important; }
+
+/* ═══ ALINHAMENTO DO TOPO ═══ */
+header, .topbar, .top-bar, #topbar{ align-items:center !important; }
+header > *, .topbar > *, .top-bar > *, #topbar > *{ align-self:center !important; margin-top:0 !important; margin-bottom:0 !important; }
+#homeUserChip{ margin:0 !important; transform:none !important; top:0 !important; align-self:center !important; }

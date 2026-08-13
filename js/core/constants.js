@@ -93,11 +93,32 @@ export const ADMIN_EMAIL = "2008kauapedro@gmail.com";
 let CUSTOM_COLOR = "#22c55e";
 export function setCustomColor(c){ if (c) CUSTOM_COLOR = c; }
 export function getCustomColor(){ return CUSTOM_COLOR; }
-export function pieceSwatch(id){ if (id==="p-custom") return [CUSTOM_COLOR, "#3b82f6"]; const i=SKIN_CATALOG.find(x=>x.cat==="piece"&&x.id===id); return i?i.swatch:["#ef4444","#3b82f6"]; }
+function hexHue(h){
+  const m = /^#?([0-9a-f]{6})$/i.exec(h);
+  if (!m) return 0;
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  let x = 0;
+  if (d){ if (mx === r) x = ((g - b) / d) % 6; else if (mx === g) x = (b - r) / d + 2; else x = (r - g) / d + 4; }
+  return (x * 60 + 360) % 360;
+}
+export function contrastColor(hex){
+  const opts = ["#ef4444", "#3b82f6", "#22c55e", "#f59e0b", "#a855f7", "#ec4899"];
+  const h = hexHue(hex);
+  let best = opts[0], bd = -1;
+  for (const o of opts){
+    const oh = hexHue(o);
+    let d = Math.abs(oh - h); d = Math.min(d, 360 - d);
+    if (d > bd){ bd = d; best = o; }
+  }
+  return best;
+}
+export function pieceSwatch(id){ if (id==="p-custom") return [CUSTOM_COLOR, contrastColor(CUSTOM_COLOR)]; const i=SKIN_CATALOG.find(x=>x.cat==="piece"&&x.id===id); return i?i.swatch:["#ef4444","#3b82f6"]; }
 export function pieceColorFor(id,color,online=false){ const s=pieceSwatch(id); if(online&&id!=="p-classic")return s[0]; return s[color==="red"?0:1]; }
 
 export function pieceBgFor(id, color, online = false){
-  if (id === "p-custom") return CUSTOM_COLOR;
+  if (id === "p-custom") return (online || color === "red") ? CUSTOM_COLOR : contrastColor(CUSTOM_COLOR);
   const it = SKIN_CATALOG.find((i) => i.cat === "piece" && i.id === id);
   if (it && it.badge) return (online || color === "red") ? it.badge : "radial-gradient(circle at 35% 30%, #60a5fa 0%, #2563eb 95%)";
   const sw = pieceSwatch(id);

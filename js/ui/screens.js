@@ -1,5 +1,5 @@
 ﻿/* =============================================================
-   Quoridor Arena — ui/screens.js (v6 — apoio + QR PIX)
+   Quoridor Arena — ui/screens.js (v7 — corrigido + sync cloud)
    ============================================================= */
 import {
   TEXTS, NAMES, AI_LEVELS, SKINS, ACHIEVEMENTS, SKIN_CATALOG, ADMIN_EMAIL,
@@ -13,7 +13,7 @@ import { createBoard } from "./board.js";
 import { SFX, toast, confetti } from "./effects.js";
 import {
   getSettings, setSettings, getStats, recordMatch, getUnlocked,
-  getSnapshot, setSnapshot, clearSnapshot, setLastReplay
+  getSnapshot, setSnapshot, clearSnapshot, setLastReplay, syncCloudData
 } from "../services/storage.js";
 import {
   isConfigured, getSession, onAuthChange,
@@ -102,7 +102,7 @@ function pixPayload(key, name, city){
 }
 function openDonateModal(){
   const pixKey = "theragearenaa@gmail.com";
-  const payload = pixPayload(pixKey, "PEDRO KAUA", "BRASILIA");
+  const payload = pixPayload(pixKey, "PEDRO KAUA", "PLANALTINA");
   const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=2&data=" + encodeURIComponent(payload);
   const modal = document.createElement("div");
   modal.className = "modal-overlay";
@@ -123,7 +123,7 @@ function openDonateModal(){
         <button id="copyPasteBtn" style="flex:1;background:#22c55e;color:#fff;border:none;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">📄 Copia e Cola</button>
         <button id="copyPixBtn" style="flex:1;background:#0ea5e9;color:#fff;border:none;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">🔑 Copiar chave</button>
       </div>
-      <button id="openBankBtn" style="width:100%;background:#8b5cf6;color:#fff;border:none;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px">💳 Abrir app do banco</button>
+      <button id="openBankBtn" style="width:100%;background:#8b5cf6;color:#fff;border:none;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px">💳 Copiar código e abrir meu banco</button>
       <button id="closeDonateModal" style="width:100%;background:transparent;color:#94a3b8;border:1px solid #334155;padding:10px;border-radius:10px;font-size:13px;cursor:pointer">Fechar</button>
     </div>
   `;
@@ -139,7 +139,10 @@ function openDonateModal(){
   };
   document.getElementById("copyPasteBtn").onclick = (e) => copy(payload, e.currentTarget);
   document.getElementById("copyPixBtn").onclick = (e) => copy(pixKey, e.currentTarget);
-  document.getElementById("openBankBtn").onclick = () => window.open("pix://" + encodeURIComponent(pixKey), "_blank");
+  document.getElementById("openBankBtn").onclick = async (e) => {
+    try { await navigator.clipboard.writeText(payload); } catch (_){}
+    flash(e.currentTarget, "✅ Copiado! Abra seu banco e cole no PIX", "#16a34a");
+  };
   document.getElementById("closeDonateModal").onclick = () => modal.remove();
   modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 }
@@ -263,6 +266,7 @@ export function startGame(opts){
     banner.classList.add("hidden");
     if (S){ S.locked = false; maybeAI(); }
   }, 2000);
+  setTimeout(() => { if (S) S.locked = false; }, 4000);
 }
 
 function startTimer(){
@@ -307,7 +311,7 @@ function afterAction(ev, kind){
   board.sync(S.state);
   updateHUD();
   if (S.mode !== "online") setSnapshot({ mode: S.mode, level: S.level, state: S.state, seconds: S.seconds });
-  else { net.sendAction(ev); sendMyProfile(); }
+  else { try { net.sendAction(ev); sendMyProfile(); } catch (_){ toast("Conexão instável — jogada aplicada."); } }
   if (S.state.over) return endGame();
   maybeAI();
 }
@@ -723,7 +727,6 @@ async function refreshProfile(){
   ].map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join("");
 
   const unlocked = getUnlocked();
-  /* ═══════════ BOTÃO DE APOIO NO PERFIL (antes das conquistas) ═══════════ */
   const btnDonateProfile = document.createElement("button");
   btnDonateProfile.textContent = "💝 Apoiar o Desenvolvimento";
   btnDonateProfile.style.cssText = "display:block;margin:16px auto;padding:12px 24px;background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#1e293b;font-weight:700;border:none;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(251,191,36,.3);transition:transform .2s;font-size:14px";
@@ -850,7 +853,6 @@ export function initScreens(){
   $("sidebarBackdrop").onclick = sbClose;
   document.querySelectorAll(".side-link").forEach((b) => b.addEventListener("click", sbClose));
 
-  /* ═══════════ BOTÃO DE APOIO NA SIDEBAR ═══════════ */
   if ($("sidebar") && !document.getElementById("btnDonateSide")){
     const btnDonate = document.createElement("button");
     btnDonate.id = "btnDonateSide";
@@ -861,7 +863,6 @@ export function initScreens(){
     $("sidebar").appendChild(btnDonate);
   }
 
-  /* ═══════════ BOTÃO DE APOIO NO LOBBY ═══════════ */
   if ($("btnFindMatch") && !document.getElementById("btnDonateLobby")){
     const btnDonateLobby = document.createElement("button");
     btnDonateLobby.id = "btnDonateLobby";
@@ -1062,8 +1063,9 @@ export function initScreens(){
   window.addEventListener("resize", refit);
   window.addEventListener("orientationchange", refit);
 
-  onAuthChange((session) => {
+  onAuthChange(async (session) => {
     const logged = !!session;
+    if (logged) await syncCloudData();
     const admin = (session?.user?.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase();
     const adminRow = $("setAdmin")?.closest(".set-row");
     if (adminRow) adminRow.classList.toggle("hidden", !admin);
@@ -1082,7 +1084,6 @@ export function initScreens(){
     }
   });
 
-  /* ═══ INSTALAR APP ═══ */
   window.addEventListener("qa-install-help", () => {
     $("modalTitle").textContent = "📲 Instalar o jogo";
     $("modalBody").innerHTML =
@@ -1158,6 +1159,11 @@ export function initScreens(){
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
   buildArenaHud();
   initWorkshop();
+  (function(){
+    const st = document.createElement("style");
+    st.textContent = "#reconnect{pointer-events:none}";
+    document.head.appendChild(st);
+  })();
 
   $("btnLogout").onclick = async () => {
     SFX.click();
@@ -1171,10 +1177,12 @@ export function initScreens(){
   if (bla) bla.onclick = () => $("btnLogout").click();
 
   net.onEvent((msg) => {
-    if (msg.kind === "action"){ handleSkinMsg(msg.piece); handleRemoteEvent(msg.ev); }
-    if (msg.kind === "skin")   handleSkinMsg(msg.piece);
-    if (msg.kind === "skinreq") sendMyProfile();
-    if (msg.kind === "chat")   feedBubble(msg.text, false);
+    try {
+      if (msg.kind === "action"){ handleSkinMsg(msg.piece); handleRemoteEvent(msg.ev); }
+      if (msg.kind === "skin")   handleSkinMsg(msg.piece);
+      if (msg.kind === "skinreq") sendMyProfile();
+      if (msg.kind === "chat")   feedBubble(msg.text, false);
+    } catch (err){ console.warn("evento ignorado:", err); }
   });
 }
 

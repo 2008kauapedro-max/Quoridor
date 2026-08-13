@@ -1,12 +1,8 @@
 /* =============================================================
-   Quoridor Arena — services/storage.js
-   -------------------------------------------------------------
-   Persistência local GRATUITA (LocalStorage), com prefixo "qa_".
-   Tudo que é "do aparelho" vive aqui; o que é "da conta" vai
-   pro Supabase (services/supabase.js).
+   Quoridor Arena — services/storage.js (v2 — sincronização cloud)
    ============================================================= */
 import { LS_PREFIX, ELO_START, XP_WIN, XP_LOSS, ACHIEVEMENTS } from "../core/constants.js";
-import { reportMatch as cloudReport, isConfigured, getSession } from "./supabase.js";
+import { reportMatch as cloudReport, isConfigured, getSession, sbClient } from "./supabase.js";
 
 /* helpers seguros (JSON nunca quebra o jogo) */
 function read(key, fallback){
@@ -21,14 +17,14 @@ function write(key, value){
 
 /* ═══════════ CONFIGURAÇÕES ═══════════ */
 export const DEFAULT_SETTINGS = {
-  theme: "auto",        // claro | escuro | auto
-  lang: "pt",           // pt | en
-  volume: 80,           // 0–100
+  theme: "auto",
+  lang: "pt",
+  volume: 80,
   sound: true,
   music: false,
   animations: true,
-  quality: "high",      // high | low
-  skin: "classic"       // classic | neon | pastel
+  quality: "high",
+  skin: "classic"
 };
 export function getSettings(){ return { ...DEFAULT_SETTINGS, ...read("settings", {}) }; }
 export function setSettings(s){ write("settings", s); }
@@ -46,6 +42,28 @@ export function getStats(){ return { ...DEFAULT_STATS, ...read("stats", {}) }; }
 /* ═══════════ CONQUISTAS ═══════════ */
 export function getUnlocked(){ return read("ach", []); }
 
+/* ═══════════ SINCRONIZAÇÃO CLOUD ═══════════ */
+export async function syncCloudData(){
+  if (!isConfigured() || !getSession() || !sbClient) return;
+  try {
+    const { data } = await sbClient.from("profiles")
+      .select("stats, achievements")
+      .eq("id", getSession().user.id)
+      .maybeSingle();
+    if (data?.stats) write("stats", { ...DEFAULT_STATS, ...data.stats });
+    if (data?.achievements) write("ach", data.achievements);
+  } catch (_) {}
+}
+
+async function saveCloudData(){
+  if (!isConfigured() || !getSession() || !sbClient) return;
+  try {
+    await sbClient.from("profiles")
+      .update({ stats: getStats(), achievements: getUnlocked() })
+      .eq("id", getSession().user.id);
+  } catch (_) {}
+}
+
 /* Registra o fim de uma partida → retorna { xp, eloDelta, unlocked[] } */
 export function recordMatch(sum){
   const st = getStats();
@@ -56,7 +74,6 @@ export function recordMatch(sum){
   let xp = 0, eloDelta = 0;
   const unlocked = [];
 
-  /* modo local (sofá) conta só tempo/movimentos/paredes */
   if (sum.mode !== "local"){
     const win = sum.winner === sum.myColor;
     st.games++;
@@ -71,16 +88,14 @@ export function recordMatch(sum){
       xp += XP_LOSS;
     }
 
-    /* Elo espelhado offline (o oficial vem do Supabase no login) */
     if (sum.mode === "online"){
       eloDelta = win ? 16 : -16;
       st.elo = Math.max(100, st.elo + eloDelta);
       if (isConfigured() && getSession()){
-        try { cloudReport(sum); } catch (_) {}   // fire-and-forget
+        try { cloudReport(sum); } catch (_) {}
       }
     }
 
-    /* —— conquistas —— */
     const already = getUnlocked();
     const grant = (key) => {
       if (already.includes(key) || unlocked.includes(key)) return;
@@ -102,17 +117,18 @@ export function recordMatch(sum){
   }
 
   write("stats", st);
+  if (unlocked.length || sum.mode === "online") saveCloudData();
   return { xp, eloDelta, unlocked };
 }
 
-/* ═══════════ AUTOSAVE ("deseja continuar?") ═══════════ */
+/* ═══════════ AUTOSAVE ═══════════ */
 export function setSnapshot(data){
   write("snapshot", { ...data, at: Date.now() });
 }
 export function getSnapshot(){
   const snap = read("snapshot", null);
   if (!snap) return null;
-  if (Date.now() - snap.at > 7 * 24 * 3600 * 1000){   // expira em 7 dias
+  if (Date.now() - snap.at > 7 * 24 * 3600 * 1000){
     clearSnapshot();
     return null;
   }

@@ -1,5 +1,5 @@
 ﻿/* =============================================================
-   Quoridor Arena — ui/screens.js (v5 — cards de jogador completos)
+   Quoridor Arena — ui/screens.js (v6 — apoio + QR PIX)
    ============================================================= */
 import {
   TEXTS, NAMES, AI_LEVELS, SKINS, ACHIEVEMENTS, SKIN_CATALOG, ADMIN_EMAIL,
@@ -82,6 +82,68 @@ export function openModal(title, choices, bodyHTML = ""){
 }
 export function closeModal(){ $("modal").classList.add("hidden"); }
 
+/* ═══════════ MODAL DE APOIO (QR Code PIX) ═══════════ */
+function emv(id, value){ return id + String(value.length).padStart(2, "0") + value; }
+function crc16(s){
+  let crc = 0xFFFF;
+  for (let i = 0; i < s.length; i++){
+    crc ^= s.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++)
+      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF;
+  }
+  return crc.toString(16).toUpperCase().padStart(4, "0");
+}
+function pixPayload(key, name, city){
+  const acc = emv("26", emv("00", "BR.GOV.BCB.PIX") + emv("01", key));
+  let p = emv("00", "01") + acc + emv("52", "0000") + emv("53", "986") + emv("58", "BR") +
+          emv("59", name.slice(0, 25)) + emv("60", city.slice(0, 15)) + emv("62", emv("05", "***"));
+  p += "6304";
+  return p + crc16(p);
+}
+function openDonateModal(){
+  const pixKey = "2008kauapedro@gmail.com";
+  const payload = pixPayload(pixKey, "KAUA PEDRO", "BRASILIA");
+  const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=2&data=" + encodeURIComponent(payload);
+  const modal = document.createElement("div");
+  modal.className = "modal-overlay";
+  modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px";
+  modal.innerHTML = `
+    <div style="background:#1e293b;color:#fff;padding:22px;border-radius:16px;max-width:400px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);max-height:92vh;overflow:auto">
+      <div style="font-size:40px;margin-bottom:10px">💝</div>
+      <h2 style="margin:0 0 10px;font-size:21px">Apoie o Quoridor Arena!</h2>
+      <p style="margin:0 0 14px;line-height:1.55;font-size:13px;color:#cbd5e1">
+        Qualquer valor já ajuda <strong style="color:#fbbf24">demais</strong>! Todo o apoio vai direto pro
+        <strong style="color:#22d3ee">desenvolvimento do game</strong>: novidades, skins, servidores e melhorias. 🙏
+      </p>
+      <div style="background:#fff;padding:10px;border-radius:14px;display:inline-block;margin-bottom:6px">
+        <img src="${qrUrl}" alt="QR Code PIX" style="width:200px;height:200px;display:block;border-radius:8px">
+      </div>
+      <p style="margin:0 0 14px;font-size:11px;color:#94a3b8">Escaneie com o app do seu banco 📷</p>
+      <div style="display:flex;gap:10px;margin-bottom:10px">
+        <button id="copyPasteBtn" style="flex:1;background:#22c55e;color:#fff;border:none;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">📄 Copia e Cola</button>
+        <button id="copyPixBtn" style="flex:1;background:#0ea5e9;color:#fff;border:none;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">🔑 Copiar chave</button>
+      </div>
+      <button id="openBankBtn" style="width:100%;background:#8b5cf6;color:#fff;border:none;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px">💳 Abrir app do banco</button>
+      <button id="closeDonateModal" style="width:100%;background:transparent;color:#94a3b8;border:1px solid #334155;padding:10px;border-radius:10px;font-size:13px;cursor:pointer">Fechar</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  const flash = (btn, txt, bg) => {
+    const old = btn.innerHTML, ob = btn.style.background;
+    btn.innerHTML = txt; btn.style.background = bg;
+    setTimeout(() => { btn.innerHTML = old; btn.style.background = ob; }, 1800);
+  };
+  const copy = async (txt, btn) => {
+    try { await navigator.clipboard.writeText(txt); flash(btn, "✅ Copiado!", "#16a34a"); }
+    catch (_){ prompt("Copie manualmente:", txt); }
+  };
+  document.getElementById("copyPasteBtn").onclick = (e) => copy(payload, e.currentTarget);
+  document.getElementById("copyPixBtn").onclick = (e) => copy(pixKey, e.currentTarget);
+  document.getElementById("openBankBtn").onclick = () => window.open("pix://" + encodeURIComponent(pixKey), "_blank");
+  document.getElementById("closeDonateModal").onclick = () => modal.remove();
+  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+}
+
 /* ═══════════ SESSÃO DE JOGO ═══════════ */
 let S = null;
 let board = null;
@@ -121,7 +183,6 @@ function updateStrips(){
   board.setGoalColors(red, blue);
 }
 
-/* ── troca de perfil entre os jogadores (nome, foto, elo, nível, moldura) ── */
 function sendMyProfile(){
   try {
     const s = getSettings();
@@ -214,7 +275,6 @@ function startTimer(){
 function stopTimer(){ if (S?.timerId) clearInterval(S.timerId); }
 const fmt = (s) => String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
 
-/* ---------- controller ---------- */
 const controller = {
   canPlaceWall(o, r, c){
     return S && !S.locked && myTurn() &&
@@ -265,7 +325,6 @@ function maybeAI(){
   }, 700);
 }
 
-/* ---------- eventos remotos ---------- */
 function applyOppSkin(piece){
   if (!S || S.mode !== "online" || !S.myColor || !piece) return;
   if (S.oppPiece === piece) return;
@@ -286,7 +345,7 @@ export function handleRemoteEvent(ev){
   if (S.state.over) endGame();
 }
 
-/* ---------- HUD / ARENA (turno em cima · barreiras embaixo de cada card) ---------- */
+/* ---------- HUD / ARENA ---------- */
 (function(){
   let st = document.getElementById("ahCss");
   if (!st){ st = document.createElement("style"); st.id = "ahCss"; document.head.appendChild(st); }
@@ -437,7 +496,6 @@ async function loadRaceFriends(){
     </div>`).join("");
 }
 
-/* ---------- fim de jogo ---------- */
 function endGame(){
   stopTimer();
   const w = S.state.winner;
@@ -581,7 +639,6 @@ async function renderBellBody(reqs){
   body.innerHTML = html;
 }
 
-/* ---------- TELA DE AMIGOS ---------- */
 async function renderFriendsScreen(){
   const list = $("friendsList2");
   if (!list) return;
@@ -597,7 +654,6 @@ async function renderFriendsScreen(){
     </div>`).join("");
 }
 
-/* ═══════════ PERFIL / RANKING ═══════════ */
 async function refreshRanking(period){
   const list = $("rankingList");
   list.innerHTML = '<li class="queue-status"><span class="spinner"></span> carregando…</li>';
@@ -667,6 +723,15 @@ async function refreshProfile(){
   ].map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join("");
 
   const unlocked = getUnlocked();
+  /* ═══════════ BOTÃO DE APOIO NO PERFIL (antes das conquistas) ═══════════ */
+  const btnDonateProfile = document.createElement("button");
+  btnDonateProfile.textContent = "💝 Apoiar o Desenvolvimento";
+  btnDonateProfile.style.cssText = "display:block;margin:16px auto;padding:12px 24px;background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#1e293b;font-weight:700;border:none;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(251,191,36,.3);transition:transform .2s;font-size:14px";
+  btnDonateProfile.onmouseover = () => btnDonateProfile.style.transform = "scale(1.05)";
+  btnDonateProfile.onmouseout = () => btnDonateProfile.style.transform = "scale(1)";
+  btnDonateProfile.onclick = openDonateModal;
+  $("achievementsList").parentNode.insertBefore(btnDonateProfile, $("achievementsList"));
+
   $("achievementsList").innerHTML = ACHIEVEMENTS.map((a) => `
     <div class="ach ${unlocked.includes(a.key) ? "" : "locked"}" title="${a.desc}">
       <span class="ach-icon">${a.icon}</span>${a.name}
@@ -697,7 +762,6 @@ async function refreshProfile(){
 
 const isAdmin = () => (getSession()?.user?.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
-/* ═══════════ SKINS ═══════════ */
 const CAT_KEY = { board:"skin", piece:"piece", frame:"frame" };
 let skinCat = "piece";
 const extraStats = () => ({ ...getStats(), ...(JSON.parse(localStorage.getItem("qa_extra")||"{}")) });
@@ -785,6 +849,29 @@ export function initScreens(){
   $("btnSidebarClose").onclick = sbClose;
   $("sidebarBackdrop").onclick = sbClose;
   document.querySelectorAll(".side-link").forEach((b) => b.addEventListener("click", sbClose));
+
+  /* ═══════════ BOTÃO DE APOIO NA SIDEBAR ═══════════ */
+  if ($("sidebar") && !document.getElementById("btnDonateSide")){
+    const btnDonate = document.createElement("button");
+    btnDonate.id = "btnDonateSide";
+    btnDonate.textContent = "💝 Apoiar o Projeto";
+    btnDonate.className = "side-link";
+    btnDonate.style.cssText = "margin-top:8px;color:#fbbf24;font-weight:600";
+    btnDonate.onclick = () => { sbClose(); openDonateModal(); };
+    $("sidebar").appendChild(btnDonate);
+  }
+
+  /* ═══════════ BOTÃO DE APOIO NO LOBBY ═══════════ */
+  if ($("btnFindMatch") && !document.getElementById("btnDonateLobby")){
+    const btnDonateLobby = document.createElement("button");
+    btnDonateLobby.id = "btnDonateLobby";
+    btnDonateLobby.textContent = "💝 Apoiar o Jogo";
+    btnDonateLobby.style.cssText = "display:block;margin:12px auto 0;padding:10px 20px;background:transparent;border:2px solid #fbbf24;color:#fbbf24;font-weight:600;border-radius:12px;cursor:pointer;transition:all .2s";
+    btnDonateLobby.onmouseover = () => { btnDonateLobby.style.background = "#fbbf24"; btnDonateLobby.style.color = "#1e293b"; };
+    btnDonateLobby.onmouseout = () => { btnDonateLobby.style.background = "transparent"; btnDonateLobby.style.color = "#fbbf24"; };
+    btnDonateLobby.onclick = openDonateModal;
+    $("btnFindMatch").parentNode.appendChild(btnDonateLobby);
+  }
 
   const goOnline = async (fn) => {
     if (!isConfigured()){ toast("Configure o Supabase em js/config.js."); return; }
@@ -1023,7 +1110,6 @@ export function initScreens(){
     $("msgBubble").classList.add("hidden");
   });
 
-  /* ═══ TELA DE AMIGOS ═══ */
   $("btnFriends").onclick = () => { SFX.click(); showScreen("friends"); renderFriendsScreen(); };
   $("btnFriendSearch2").onclick = async () => {
     const q = $("friendSearch2").value.trim();
@@ -1047,7 +1133,6 @@ export function initScreens(){
     if (add){ await sendFriendRequest(add); toast("Pedido enviado! 📨"); }
   });
 
-  /* ═══ SININHO ═══ */
   $("btnBell").onclick = () => { SFX.click(); const p = $("bellPanel"); p.classList.toggle("hidden"); if (!p.classList.contains("hidden")){ if (cachedAnns.length) localStorage.setItem("qa_ann_seen", Math.max(...cachedAnns.map((a) => a.id), 0)); renderBellBody(); refreshBell(); } };
   $("btnBellClose").onclick = () => $("bellPanel").classList.add("hidden");
   $("bellBody").addEventListener("click", async (e) => {
@@ -1061,7 +1146,6 @@ export function initScreens(){
   });
   setInterval(refreshBell, 15000);
 
-  /* ═══ MODO RUSH ═══ */
   $("btnRace").onclick = () => { SFX.click(); showScreen("race"); };
   $("btnRaceOnline").onclick = () => { SFX.click(); startRaceOnline(); };
   $("btnRaceFriends").onclick = () => { SFX.click(); loadRaceFriends(); };
@@ -1075,7 +1159,6 @@ export function initScreens(){
   buildArenaHud();
   initWorkshop();
 
-  /* btnLogout v5 */
   $("btnLogout").onclick = async () => {
     SFX.click();
     $("sidebar").classList.remove("open");

@@ -1,4 +1,6 @@
-
+// =============================================================
+// Quoridor Arena — core/constants.js
+// =============================================================
 export const SIZE = 9;
 export const WALLS_PER_PLAYER = 10;
 export const G = 0.19;
@@ -53,7 +55,7 @@ export const LS_PREFIX = "qa_";
 
 /* ═══════════ SKINS — bandeiras/times usam SEUS PNGs em img/flags/ ═══════════ */
 const F = (f) => 'url("img/flags/' + f + '.png") center / cover no-repeat';
-const TM = (f, c1, c2) => 'url("img/flags/' + f + '.png") center / 135% no-repeat, radial-gradient(circle at 35% 30%, ' + c1 + ' 0%, ' + c2 + ' 95%)';
+const TM = (f, c1, c2, z) => 'url("img/flags/' + f + '.png") center / ' + (z || 135) + '% no-repeat, radial-gradient(circle at 35% 30%, ' + c1 + ' 0%, ' + c2 + ' 95%)';
 
 export const SKIN_CATALOG = [
   { id:"p-classic", cat:"piece", name:"Clássica", swatch:["#ef4444","#3b82f6"], free:true },
@@ -71,9 +73,9 @@ export const SKIN_CATALOG = [
   { id:"p-paraguai",   cat:"piece", name:"Paraguai",   swatch:["#dc2626","#2563eb"], img:"img/flags/paraguai.png",   badge:F("paraguai"),   wall:"repeating-linear-gradient(45deg,#d52b1e 0 8px,#ffffff 8px 16px,#0038a8 16px 24px)", unlock:{desc:"Vença 1 partida vs IA.",cur:s=>s.wins,target:1} },
   { id:"p-portugal",   cat:"piece", name:"Portugal",   swatch:["#16a34a","#dc2626"], img:"img/flags/portugal.png",   badge:F("portugal"),   wall:"repeating-linear-gradient(45deg,#046a38 0 8px,#da291c 8px 16px)", unlock:{desc:"Sequência de 2 vitórias.",cur:s=>s.bestWinStreak,target:2} },
 
-  { id:"p-flamengo", cat:"piece", name:"Flamengo", swatch:["#c8102e","#000000"], img:"img/flags/flamengo.png", badge:TM("flamengo","#c8102e","#000000"), wall:"repeating-linear-gradient(45deg,#c8102e 0 8px,#000000 8px 16px)", unlock:{desc:"Vença 1 partida.",cur:s=>s.wins,target:1} },
+  { id:"p-flamengo", cat:"piece", name:"Flamengo", swatch:["#c8102e","#000000"], img:"img/flags/flamengo.png", badge:TM("flamengo","#c8102e","#000000",160), wall:"repeating-linear-gradient(45deg,#c8102e 0 8px,#000000 8px 16px)", unlock:{desc:"Vença 1 partida.",cur:s=>s.wins,target:1} },
   { id:"p-vasco",    cat:"piece", name:"Vasco",    swatch:["#000000","#ffffff"], img:"img/flags/vasco.png",    badge:TM("vasco","#3a3a3a","#000000"), wall:"repeating-linear-gradient(45deg,#000000 0 8px,#ffffff 8px 16px)", unlock:{desc:"Vença 2 partidas.",cur:s=>s.wins,target:2} },
-  { id:"p-paysandu", cat:"piece", name:"Paysandu", swatch:["#003da5","#ffffff"], img:"img/flags/paysandu.png", badge:TM("paysandu","#003da5","#00205b"), wall:"repeating-linear-gradient(45deg,#003da5 0 8px,#ffffff 8px 16px)", unlock:{desc:"Alcance o nível 2.",cur:(s,l)=>l,target:2} },
+  { id:"p-paysandu", cat:"piece", name:"Paysandu", swatch:["#003da5","#ffffff"], img:"img/flags/paysandu.png", badge:TM("paysandu","#003da5","#00205b",150), wall:"repeating-linear-gradient(45deg,#003da5 0 8px,#ffffff 8px 16px)", unlock:{desc:"Alcance o nível 2.",cur:(s,l)=>l,target:2} },
 
   { id:"classic", cat:"board", name:"Clássico", swatch:["#b98a5a","#e9d7b7"], free:true },
   { id:"f-none",  cat:"frame", name:"Sem moldura", swatch:["#888","#444"], free:true }

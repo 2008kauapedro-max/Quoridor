@@ -65,7 +65,7 @@ export const SKIN_CATALOG = [
   { id:"p-fire",    cat:"piece", name:"Fogo",     swatch:["#fde047","#f97316"], free:true },
   { id:"p-ice",     cat:"piece", name:"Gelo",     swatch:["#a5f3fc","#60a5fa"], free:true },
   { id:"p-galaxy",  cat:"piece", name:"Galáxia",  swatch:["#c7d2fe","#0f172a"], unlock:{desc:"Alcance o nível 5.",cur:(s,l)=>l,target:5} },
-  { id:"p-gold",    cat:"piece", name:"Dourada",  swatch:["#fef08a","#b45309"], unlock:{desc:"Vença a IA Especialista 1 vez.",cur:s=>s.iaExpertWins||0,target:1} },
+  { id:"p-gold",    cat:"piece", name:"Dourada",  swatch:["#fef08a","#b45309"], ...P("dourada","#f59e0b","#b45309",135,"repeating-linear-gradient(45deg,#fef08a 0 8px,#f59e0b 8px 16px,#b45309 16px 24px)"), unlock:{desc:"Vença a IA Especialista 1 vez.",cur:s=>s.iaExpertWins||0,target:1} },
 
   /* 🌍 PAÍSES */
   { id:"p-brasil", sub:"pais",     cat:"piece", name:"Brasil",     swatch:["#22c55e","#facc15"], ...P("brasil","#009c3b","#002776",118,"repeating-linear-gradient(45deg,#009c3b 0 8px,#ffdf00 8px 11px,#002776 11px 19px)"), unlock:{desc:"Vença 1 partida.",cur:s=>s.wins,target:1} },
@@ -81,6 +81,7 @@ export const SKIN_CATALOG = [
   { id:"p-flamengo", sub:"time", cat:"piece", name:"Flamengo", swatch:["#c8102e","#000000"], ...P("flamengo","#c8102e","#000000",160,"repeating-linear-gradient(45deg,#c8102e 0 8px,#000000 8px 16px)"), unlock:{desc:"Vença 1 partida.",cur:s=>s.wins,target:1} },
   { id:"p-vasco", sub:"time",    cat:"piece", name:"Vasco",    swatch:["#000000","#ffffff"], ...P("vasco","#3a3a3a","#000000",145,"repeating-linear-gradient(45deg,#000000 0 8px,#ffffff 8px 16px)"), unlock:{desc:"Vença 2 partidas.",cur:s=>s.wins,target:2} },
   { id:"p-paysandu", sub:"time", cat:"piece", name:"Paysandu", swatch:["#003da5","#ffffff"], ...P("paysandu","#003da5","#00205b",165,"repeating-linear-gradient(45deg,#003da5 0 8px,#ffffff 8px 16px)"), unlock:{desc:"Alcance o nível 2.",cur:(s,l)=>l,target:2} },
+  { id:"p-corinthians", cat:"piece", name:"Corinthians", sub:"time", swatch:["#000000","#ffffff"], ...P("corinthians","#3a3a3a","#000000",145,"repeating-linear-gradient(45deg,#000000 0 8px,#ffffff 8px 16px)"), unlock:{desc:"Vença 3 partidas.",cur:s=>s.wins,target:3} },
 
   { id:"classic", cat:"board", name:"Clássico", swatch:["#b98a5a","#e9d7b7"], free:true },
   { id:"f-none",  cat:"frame", name:"Sem moldura", swatch:["#888","#444"], free:true }

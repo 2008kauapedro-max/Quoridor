@@ -33,7 +33,6 @@ export function createBoard(boardEl, controller = null, flipped = false, state =
     }
   }
 
-  /* ═══ FAIXAS DE META ═══ */
   const strips = {};
   for (const k of ["top", "bot"]){
     const d = document.createElement("div");
@@ -289,5 +288,5 @@ export function createBoard(boardEl, controller = null, flipped = false, state =
         window.removeEventListener("orientationchange", doFit);
       };
     }
-  },
+  };
 }

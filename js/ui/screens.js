@@ -392,6 +392,14 @@ export function handleRemoteEvent(ev){
     resetTurnTimer();
     return;
   }
+    if (ev && ev.t === "resign"){
+    if (S.state.over) return;
+    S.state.winner = S.myColor;
+    S.state.over = true;
+    toast("🏳️ O rival abandonou a partida — vitória sua!");
+    endGame();
+    return;
+  }
   const applied = applyEvent(S.state, ev);
   if (!applied){ toast("Jogada inválida recebida — ignorada."); return; }
   (applied.t === "m" ? SFX.move() : SFX.wall());
@@ -597,6 +605,20 @@ export function endSession(goHome = true){
   stopTimer();
   stopTurnTimer();
   if (S?.aiTimer) clearTimeout(S.aiTimer);
+  if (S?.mode === "online" && S.state && !S.state.over){
+    try {
+      net.sendAction({ t: "resign" });
+      const other = S.myColor === "red" ? "blue" : "red";
+      recordMatch({
+        mode: "online", winner: other, myColor: S.myColor,
+        durationSec: S.seconds,
+        wallsUsed: S.state.stats.walls[S.myColor],
+        movesUsed: S.state.stats.moves[S.myColor],
+        wasBehind: S.state.stats.wasBehind[S.myColor]
+      });
+      toast("🏳️ Você abandonou — derrota contabilizada.");
+    } catch (_){}
+  }
   if (S?.mode === "online") net.leaveRoom();
   if (board){ board.destroy(); board = null; }
   S = null;
@@ -1117,7 +1139,14 @@ export function initScreens(){
     if (e.key === "3") setUiMode("v");
   });
 
-  const refit = () => { if (S && board) board.fit($("stage"), $("boardFrame")); };
+    const refit = () => { if (S && board) board.fit($("stage"), $("boardFrame")); };
+  const antiQuit = () => {
+    if (S && S.mode === "online" && !S.state.over){
+      try { net.sendAction({ t: "resign" }); } catch (_){}
+    }
+  };
+  window.addEventListener("beforeunload", antiQuit);
+  window.addEventListener("pagehide", antiQuit);
   window.addEventListener("resize", refit);
   window.addEventListener("orientationchange", refit);
 

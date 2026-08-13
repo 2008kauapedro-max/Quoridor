@@ -27,7 +27,12 @@ export const DEFAULT_SETTINGS = {
   skin: "classic"
 };
 export function getSettings(){ return { ...DEFAULT_SETTINGS, ...read("settings", {}) }; }
-export function setSettings(s){ write("settings", s); }
+let _saveT = null;
+export function setSettings(s){
+  write("settings", s);
+  clearTimeout(_saveT);
+  _saveT = setTimeout(() => saveCloudData(), 800);
+}
 
 /* ═══════════ ESTATÍSTICAS ═══════════ */
 export const DEFAULT_STATS = {
@@ -42,40 +47,50 @@ export function getStats(){ return { ...DEFAULT_STATS, ...read("stats", {}) }; }
 /* ═══════════ CONQUISTAS ═══════════ */
 export function getUnlocked(){ return read("ach", []); }
 
-/* ═══════════ SINCRONIZAÇÃO CLOUD (merge nos dois sentidos) ═══════════ */
-function mergeStats(local, cloud){
-  const m = { ...DEFAULT_STATS, ...cloud };
-  for (const k of Object.keys(DEFAULT_STATS)){
-    if (typeof DEFAULT_STATS[k] === "number")
-      m[k] = Math.max(Number(local[k]) || 0, Number(cloud[k]) || 0);
+/* ═══════════ SINCRONIZAÇÃO CLOUD TOTAL (stats+conquistas+extra+prefs) ═══════════ */
+function mergeNums(a, b){
+  const m = { ...a, ...b };
+  for (const k of new Set([...Object.keys(a), ...Object.keys(b)])){
+    if (typeof a[k] === "number" || typeof b[k] === "number")
+      m[k] = Math.max(Number(a[k]) || 0, Number(b[k]) || 0);
   }
   return m;
+}
+function mergeStats(local, cloud){
+  return mergeNums({ ...DEFAULT_STATS, ...local }, cloud || {});
 }
 export async function syncCloudData(){
   if (!isConfigured() || !getSession() || !sbClient) return;
   try {
     const id = getSession().user.id;
     const { data } = await sbClient.from("profiles")
-      .select("stats, achievements").eq("id", id).maybeSingle();
-    const cloudStats = data?.stats || {};
-    const cloudAch = Array.isArray(data?.achievements) ? data.achievements : [];
-    const mStats = mergeStats(getStats(), cloudStats);
-    const mAch = [...new Set([...getUnlocked(), ...cloudAch])];
+      .select("stats, achievements, extra, prefs").eq("id", id).maybeSingle();
+    const mStats = mergeStats(getStats(), data?.stats || {});
+    const mExtra = mergeNums(read("extra", {}), data?.extra || {});
+    const mAch = [...new Set([...getUnlocked(), ...(Array.isArray(data?.achievements) ? data.achievements : [])])];
+    const mPrefs = { ...getSettings(), ...(data?.prefs || {}) };
     write("stats", mStats);
+    write("extra", mExtra);
     write("ach", mAch);
-    await sbClient.from("profiles")
-      .update({ stats: mStats, achievements: mAch }).eq("id", id);
+    write("settings", mPrefs);
+    await sbClient.from("profiles").update({
+      stats: mStats, achievements: mAch, extra: mExtra,
+      prefs: { piece: mPrefs.piece, frame: mPrefs.frame, wall: mPrefs.wall, title: mPrefs.title, skin: mPrefs.skin }
+    }).eq("id", id);
   } catch (_) {}
 }
 
 async function saveCloudData(){
   if (!isConfigured() || !getSession() || !sbClient) return;
   try {
-    await sbClient.from("profiles")
-      .update({ stats: getStats(), achievements: getUnlocked() })
-      .eq("id", getSession().user.id);
+    const s = getSettings();
+    await sbClient.from("profiles").update({
+      stats: getStats(), achievements: getUnlocked(), extra: read("extra", {}),
+      prefs: { piece: s.piece, frame: s.frame, wall: s.wall, title: s.title, skin: s.skin }
+    }).eq("id", getSession().user.id);
   } catch (_) {}
 }
+export function saveCloudNow(){ return saveCloudData(); }
 
 /* Registra o fim de uma partida → retorna { xp, eloDelta, unlocked[] } */
 export function recordMatch(sum){

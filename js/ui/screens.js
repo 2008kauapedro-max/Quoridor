@@ -1152,7 +1152,12 @@ export function initScreens(){
 
   onAuthChange(async (session) => {
     const logged = !!session;
-    if (logged) await syncCloudData();
+        if (logged){
+      await syncCloudData();
+      applySettings(getSettings());
+      applyUserBoard();
+      applyUserFrames();
+    }
     const admin = (session?.user?.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase();
     const adminRow = $("setAdmin")?.closest(".set-row");
     if (adminRow) adminRow.classList.toggle("hidden", !admin);

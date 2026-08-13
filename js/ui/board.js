@@ -1,5 +1,5 @@
 /* =============================================================
-   Quoridor Arena — ui/board.js (v10 — bandeiras sem borda)
+   Quoridor Arena — ui/board.js (v11 — zoom das imagens respeitado)
    ============================================================= */
 import { SIZE, G } from "../core/constants.js";
 import { legalMoves } from "../core/rules.js";
@@ -93,7 +93,7 @@ export function createBoard(boardEl, controller = null, flipped = false, state =
   function colorFor(p){ return pieceColors[p] || null; }
   function wallFor(p){ return wallColors[p] || pieceColors[p] || null; }
 
-    function paintPiece(id){
+  function paintPiece(id){
     const col = colorFor(id);
     const core = pieces[id].querySelector(".core");
     if (!core || !col) return;
@@ -103,7 +103,6 @@ export function createBoard(boardEl, controller = null, flipped = false, state =
       core.style.setProperty("border", "none", "important");
       core.style.setProperty("box-shadow", "none", "important");
     }
-  }
   }
   function paintWalls(){
     for (const el of wallLayer.children){

@@ -1,6 +1,4 @@
-// =============================================================
-// Quoridor Arena — core/constants.js
-// =============================================================
+
 export const SIZE = 9;
 export const WALLS_PER_PLAYER = 10;
 export const G = 0.19;
@@ -55,7 +53,7 @@ export const LS_PREFIX = "qa_";
 
 /* ═══════════ SKINS — bandeiras/times usam SEUS PNGs em img/flags/ ═══════════ */
 const F = (f) => 'url("img/flags/' + f + '.png") center / cover no-repeat';
-const TM = (f, c1, c2) => 'url("img/flags/' + f + '.png") center / 150% no-repeat, radial-gradient(circle at 35% 30%, ' + c1 + ' 0%, ' + c2 + ' 95%)';
+const TM = (f, c1, c2) => 'url("img/flags/' + f + '.png") center / 135% no-repeat, radial-gradient(circle at 35% 30%, ' + c1 + ' 0%, ' + c2 + ' 95%)';
 
 export const SKIN_CATALOG = [
   { id:"p-classic", cat:"piece", name:"Clássica", swatch:["#ef4444","#3b82f6"], free:true },

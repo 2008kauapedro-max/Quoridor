@@ -195,3 +195,33 @@ body::before{
   .home-menu .primary{ grid-column:1 / -1; }
   .home-menu .ghost{ grid-column:1 / -1; }
 }
+/* ═══════════ THE RAGE ARENA — PALETA OFICIAL ═══════════
+   #080B14 fundo · #F5F7FA texto · #246BCE primária · #63B8FF detalhe */
+:root,
+html[data-theme="dark"],
+html[data-theme="light"],
+html[data-theme="auto"]{
+  --bg:#080B14; --bg2:#0B1120; --bg-2:#0B1120;
+  --card:#0C1322; --card2:#101A30; --card-2:#101A30;
+  --line:#16233C; --border:#16233C;
+  --text:#F5F7FA; --fg:#F5F7FA; --muted:#7E93B4;
+  --accent:#246BCE; --primary:#246BCE; --blue:#246BCE;
+  --accent2:#63B8FF; --accent-2:#63B8FF; --gold:#63B8FF;
+}
+html,body{ background:#080B14 !important; color:#F5F7FA !important; }
+header,.topbar,.top-bar,#topbar{ background:#0B1120 !important; border-bottom:1px solid #16233C !important; }
+.menu-btn,.btn,.btn-secondary,.choice-btn{ background:#0C1322 !important; color:#F5F7FA !important; border:1px solid #16233C !important; }
+.menu-btn.primary,.btn-primary,.choice-btn.primary,button.primary{ background:#246BCE !important; border-color:#246BCE !important; color:#F5F7FA !important; }
+.menu-btn:hover,.btn:hover,.choice-btn:hover{ border-color:#63B8FF !important; box-shadow:0 0 0 1px #63B8FF33 !important; }
+.tab.active,.skin-card.active,.rank-item.me{ border-color:#246BCE !important; box-shadow:0 0 0 1px #246BCE66 !important; }
+.tab.active{ color:#63B8FF !important; }
+.input,input,select,textarea{ background:#0C1322 !important; color:#F5F7FA !important; border-color:#16233C !important; }
+.input:focus,input:focus,select:focus{ border-color:#63B8FF !important; box-shadow:0 0 0 2px #63B8FF2E !important; outline:none; }
+::selection{ background:#246BCE; color:#F5F7FA; }
+::-webkit-scrollbar{ width:10px; height:10px; }
+::-webkit-scrollbar-track{ background:#080B14; }
+::-webkit-scrollbar-thumb{ background:#246BCE66; border-radius:6px; }
+::-webkit-scrollbar-thumb:hover{ background:#63B8FF99; }
+.hint{ color:#7E93B4 !important; }
+#sidebar,.sidebar{ background:#0B1120 !important; }
+.overlay-card,.modal-card{ background:#0C1322 !important; color:#F5F7FA !important; border-color:#16233C !important; }

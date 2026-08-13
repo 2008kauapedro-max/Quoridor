@@ -289,5 +289,4 @@ export function createBoard(boardEl, controller = null, flipped = false, state =
         window.removeEventListener("orientationchange", doFit);
       };
     }
-  };
-}
+  },

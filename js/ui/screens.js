@@ -250,10 +250,11 @@ export function startGame(opts){
   updateStrips();
 
   $("btnRestart").classList.toggle("hidden", S.mode === "online");
-  updateHUD();
+    updateHUD();
   board.sync(S.state);
   startTimer();
-
+  startTurnTimer();
+  resetTurnTimer();
   const first = S.state.turn;
   const banner = $("turnBanner");
   banner.textContent = (first === "red" ? "🔴 " : "🔵 ") + NAMES[first] + " começa";
@@ -274,6 +275,52 @@ function startTimer(){
 }
 function stopTimer(){ if (S?.timerId) clearInterval(S.timerId); }
 const fmt = (s) => String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+
+/* ---------- TIMER DE TURNO (30s por jogada) ---------- */
+const TURN_SECONDS = 30;
+function humanTurn(){
+  if (!S || S.state.over) return false;
+  if (S.mode === "local") return true;
+  if (S.mode === "ai") return S.state.turn === "red";
+  return S.state.turn === S.myColor;
+}
+function paintTimer(){
+  if (!S) return;
+  const pct = Math.max(0, (S.turnLeft / TURN_SECONDS) * 100);
+  const cur = S.state.turn;
+  const barR = $("ahTrBar"), barB = $("ahTbBar");
+  if (barR) barR.style.width = (cur === "red" ? pct : 100) + "%";
+  if (barB) barB.style.width = (cur === "blue" ? pct : 100) + "%";
+  const tR = $("ahTrTxt"), tB = $("ahTbTxt");
+  if (tR) tR.textContent = cur === "red" ? Math.ceil(S.turnLeft) + "s" : "";
+  if (tB) tB.textContent = cur === "blue" ? Math.ceil(S.turnLeft) + "s" : "";
+}
+function resetTurnTimer(){ if (S){ S.turnLeft = TURN_SECONDS; paintTimer(); } }
+function stopTurnTimer(){ if (S?.turnInt) clearInterval(S.turnInt); if (S) S.turnInt = null; }
+function startTurnTimer(){
+  stopTurnTimer();
+  S.turnInt = setInterval(() => {
+    if (!S || S.state.over){ stopTurnTimer(); return; }
+    if (!humanTurn()){ S.turnLeft = TURN_SECONDS; paintTimer(); return; }
+    S.turnLeft -= 0.25;
+    if (S.turnLeft <= 0){
+      stopTurnTimer();
+      toast("⏱ Tempo esgotado — vez passada!");
+      doSkip();
+      return;
+    }
+    paintTimer();
+  }, 250);
+}
+function doSkip(){
+  if (!S || S.state.over) return;
+  S.state.turn = S.state.turn === "red" ? "blue" : "red";
+  board.sync(S.state);
+  updateHUD();
+  if (S.mode === "online"){ try { net.sendAction({ t: "skip" }); } catch (_){} }
+  resetTurnTimer();
+  maybeAI();
+}
 
 const controller = {
   canPlaceWall(o, r, c){
@@ -303,9 +350,10 @@ const controller = {
 };
 
 function afterAction(ev, kind){
-  kind === "move" ? SFX.move() : SFX.wall();
+   kind === "move" ? SFX.move() : SFX.wall();
   board.sync(S.state);
   updateHUD();
+  resetTurnTimer();
   if (S.mode !== "online") setSnapshot({ mode: S.mode, level: S.level, state: S.state, seconds: S.seconds });
   else { try { net.sendAction(ev); sendMyProfile(); } catch (_){ toast("Conexão instável — jogada aplicada."); } }
   if (S.state.over) return endGame();
@@ -337,6 +385,13 @@ function applyOppSkin(piece){
 
 export function handleRemoteEvent(ev){
   if (!S || S.mode !== "online") return;
+  if (ev && ev.t === "skip"){
+    S.state.turn = S.state.turn === "red" ? "blue" : "red";
+    board.sync(S.state);
+    updateHUD();
+    resetTurnTimer();
+    return;
+  }
   const applied = applyEvent(S.state, ev);
   if (!applied){ toast("Jogada inválida recebida — ignorada."); return; }
   (applied.t === "m" ? SFX.move() : SFX.wall());
@@ -359,7 +414,11 @@ export function handleRemoteEvent(ev){
     "#arenaHud .ah-card img{width:34px;height:34px;border-radius:50%;flex:0 0 auto;object-fit:cover;background:#333}" +
     "#arenaHud .ah-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text,#eee)}" +
     "#arenaHud .ah-sub{font-size:9px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text,#eee)}" +
-    "#arenaHud .ah-walls{font-size:10px;font-weight:700;opacity:.9;color:var(--text,#eee)}" +
+       "#arenaHud .ah-walls{font-size:10px;font-weight:700;opacity:.9;color:var(--text,#eee)}" +
+    "#arenaHud .ah-time{width:100%;height:8px;background:rgba(255,255,255,.10);border-radius:5px;position:relative;overflow:hidden}" +
+    "#arenaHud .ah-time i{position:absolute;left:0;top:0;bottom:0;width:100%;border-radius:5px;transition:width .25s linear}" +
+    "#arenaHud #ahTrBar{background:#f87171}#arenaHud #ahTbBar{background:#60a5fa}" +
+    "#arenaHud .ah-time span{position:absolute;right:3px;top:0;font-size:7px;font-weight:800;color:#fff;text-shadow:0 1px 2px #000}" +
     "@media (min-width:768px){#arenaHud{max-width:680px}#arenaHud .ah-card img{width:38px;height:38px}#arenaHud .ah-name{font-size:13px}#arenaHud .ah-sub{font-size:10px}}";
 })();
 
@@ -375,6 +434,7 @@ function buildArenaHud(){
           '<img id="ahRedImg" src="icons/icon.svg" alt="">' +
           '<div style="min-width:0"><div class="ah-name" id="ahRedName">—</div><div class="ah-sub" id="ahRedSub">—</div></div>' +
         '</div>' +
+                '<div class="ah-time"><i id="ahTrBar"></i><span id="ahTrTxt"></span></div>' +
         '<div class="ah-walls" id="ahWr"></div>' +
       '</div>' +
       '<div class="ah-col">' +
@@ -382,6 +442,7 @@ function buildArenaHud(){
           '<img id="ahBlueImg" src="icons/icon.svg" alt="">' +
           '<div style="min-width:0"><div class="ah-name" id="ahBlueName">—</div><div class="ah-sub" id="ahBlueSub">—</div></div>' +
         '</div>' +
+                '<div class="ah-time"><i id="ahTbBar"></i><span id="ahTbTxt"></span></div>' +
         '<div class="ah-walls" id="ahWb"></div>' +
       '</div>' +
     '</div>';
@@ -498,6 +559,7 @@ async function loadRaceFriends(){
 
 function endGame(){
   stopTimer();
+  stopTurnTimer();
   const w = S.state.winner;
   confetti(w);
   SFX.win();
@@ -531,9 +593,9 @@ function endGame(){
   $("overlay").classList.remove("hidden");
   clearSnapshot();
 }
-
 export function endSession(goHome = true){
   stopTimer();
+  stopTurnTimer();
   if (S?.aiTimer) clearTimeout(S.aiTimer);
   if (S?.mode === "online") net.leaveRoom();
   if (board){ board.destroy(); board = null; }

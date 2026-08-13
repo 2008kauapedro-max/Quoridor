@@ -93,21 +93,17 @@ export function createBoard(boardEl, controller = null, flipped = false, state =
   function colorFor(p){ return pieceColors[p] || null; }
   function wallFor(p){ return wallColors[p] || pieceColors[p] || null; }
 
-  function paintPiece(id){
+    function paintPiece(id){
     const col = colorFor(id);
     const core = pieces[id].querySelector(".core");
     if (!core || !col) return;
     core.style.setProperty("background", col, "important");
     core.style.setProperty("border-radius", "50%", "important");
     if (col.indexOf("url(") >= 0){
-      core.style.setProperty("background-size", "cover", "important");
-      core.style.setProperty("background-position", "center", "important");
       core.style.setProperty("border", "none", "important");
       core.style.setProperty("box-shadow", "none", "important");
-    } else {
-      core.style.setProperty("background-size", "100% 100%", "important");
-      core.style.setProperty("background-position", "center", "important");
     }
+  }
   }
   function paintWalls(){
     for (const el of wallLayer.children){

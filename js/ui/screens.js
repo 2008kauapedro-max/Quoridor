@@ -123,7 +123,6 @@ function openDonateModal(){
         <button id="copyPasteBtn" style="flex:1;background:#22c55e;color:#fff;border:none;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">📄 Copia e Cola</button>
         <button id="copyPixBtn" style="flex:1;background:#0ea5e9;color:#fff;border:none;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">🔑 Copiar chave</button>
       </div>
-      <button id="openBankBtn" style="width:100%;background:#8b5cf6;color:#fff;border:none;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px">💳 Copiar código e abrir meu banco</button>
       <button id="closeDonateModal" style="width:100%;background:transparent;color:#94a3b8;border:1px solid #334155;padding:10px;border-radius:10px;font-size:13px;cursor:pointer">Fechar</button>
     </div>
   `;
@@ -139,10 +138,7 @@ function openDonateModal(){
   };
   document.getElementById("copyPasteBtn").onclick = (e) => copy(payload, e.currentTarget);
   document.getElementById("copyPixBtn").onclick = (e) => copy(pixKey, e.currentTarget);
-  document.getElementById("openBankBtn").onclick = async (e) => {
-    try { await navigator.clipboard.writeText(payload); } catch (_){}
-    flash(e.currentTarget, "✅ Copiado! Abra seu banco e cole no PIX", "#16a34a");
-  };
+ 
   document.getElementById("closeDonateModal").onclick = () => modal.remove();
   modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 }

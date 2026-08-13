@@ -1,5 +1,5 @@
 /* =============================================================
-   Quoridor Arena — core/ai.js
+   The Rage Arena — core/ai.js
    -------------------------------------------------------------
    Inteligência artificial LOCAL (nenhuma API paga).
    Técnicas: BFS (distâncias), ganância, busca 1–2 plies com poda.

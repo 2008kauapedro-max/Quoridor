@@ -1,5 +1,5 @@
 ﻿/* =============================================================
-   Quoridor Arena — ui/screens.js (v7 — corrigido + sync cloud)
+   The Rage Arena — ui/screens.js (v7 — corrigido + sync cloud)
    ============================================================= */
 import {
   TEXTS, NAMES, AI_LEVELS, SKINS, ACHIEVEMENTS, SKIN_CATALOG, ADMIN_EMAIL,
@@ -110,7 +110,7 @@ function openDonateModal(){
   modal.innerHTML = `
     <div style="background:#1e293b;color:#fff;padding:22px;border-radius:16px;max-width:400px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);max-height:92vh;overflow:auto">
       <div style="font-size:40px;margin-bottom:10px">💝</div>
-      <h2 style="margin:0 0 10px;font-size:21px">Apoie o Quoridor Arena!</h2>
+      <h2 style="margin:0 0 10px;font-size:21px">Apoie o The Rage Arena!</h2>
       <p style="margin:0 0 14px;line-height:1.55;font-size:13px;color:#cbd5e1">
         Qualquer valor já ajuda <strong style="color:#fbbf24">demais</strong>! Todo o apoio vai direto pro
         <strong style="color:#22d3ee">desenvolvimento do game</strong>: novidades, skins, servidores e melhorias. 🙏
@@ -1084,7 +1084,7 @@ export function initScreens(){
     $("modalTitle").textContent = "📲 Instalar o jogo";
     $("modalBody").innerHTML =
       '<p class="hint" style="margin:6px 0;text-align:left">📱 <b>Celular (Chrome):</b> toque nos ⋮ (três pontinhos) → "Instalar app" ou "Adicionar à tela inicial".</p>' +
-      '<p class="hint" style="margin:6px 0;text-align:left">💻 <b>PC (Chrome/Edge):</b> ⋮ → "Instalar Quoridor Arena" (ou no ícone da barra de endereço).</p>' +
+      '<p class="hint" style="margin:6px 0;text-align:left">💻 <b>PC (Chrome/Edge):</b> ⋮ → "Instalar The Rage Arena" (ou no ícone da barra de endereço).</p>' +
       '<p class="hint" style="margin:6px 0;text-align:left">✅ Depois o jogo vira um app com ícone na tela!</p>';
     $("modalActions").innerHTML = '<button class="menu-btn primary" id="modalInstallOk">Entendi!</button>';
     $("modal").classList.remove("hidden");

@@ -1,5 +1,5 @@
 /* =============================================================
-   Quoridor Arena — services/storage.js (v2 — sincronização cloud)
+   The Rage Arena — services/storage.js (v2 — sincronização cloud)
    ============================================================= */
 import { LS_PREFIX, ELO_START, XP_WIN, XP_LOSS, ACHIEVEMENTS } from "../core/constants.js";
 import { reportMatch as cloudReport, isConfigured, getSession, sbClient } from "./supabase.js";
@@ -42,16 +42,29 @@ export function getStats(){ return { ...DEFAULT_STATS, ...read("stats", {}) }; }
 /* ═══════════ CONQUISTAS ═══════════ */
 export function getUnlocked(){ return read("ach", []); }
 
-/* ═══════════ SINCRONIZAÇÃO CLOUD ═══════════ */
+/* ═══════════ SINCRONIZAÇÃO CLOUD (merge nos dois sentidos) ═══════════ */
+function mergeStats(local, cloud){
+  const m = { ...DEFAULT_STATS, ...cloud };
+  for (const k of Object.keys(DEFAULT_STATS)){
+    if (typeof DEFAULT_STATS[k] === "number")
+      m[k] = Math.max(Number(local[k]) || 0, Number(cloud[k]) || 0);
+  }
+  return m;
+}
 export async function syncCloudData(){
   if (!isConfigured() || !getSession() || !sbClient) return;
   try {
+    const id = getSession().user.id;
     const { data } = await sbClient.from("profiles")
-      .select("stats, achievements")
-      .eq("id", getSession().user.id)
-      .maybeSingle();
-    if (data?.stats) write("stats", { ...DEFAULT_STATS, ...data.stats });
-    if (data?.achievements) write("ach", data.achievements);
+      .select("stats, achievements").eq("id", id).maybeSingle();
+    const cloudStats = data?.stats || {};
+    const cloudAch = Array.isArray(data?.achievements) ? data.achievements : [];
+    const mStats = mergeStats(getStats(), cloudStats);
+    const mAch = [...new Set([...getUnlocked(), ...cloudAch])];
+    write("stats", mStats);
+    write("ach", mAch);
+    await sbClient.from("profiles")
+      .update({ stats: mStats, achievements: mAch }).eq("id", id);
   } catch (_) {}
 }
 

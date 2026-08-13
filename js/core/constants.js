@@ -1,5 +1,5 @@
 // =============================================================
-// Quoridor Arena — core/constants.js
+// The Rage Arena — core/constants.js
 // =============================================================
 export const SIZE = 9;
 export const WALLS_PER_PLAYER = 10;

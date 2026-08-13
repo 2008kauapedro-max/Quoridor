@@ -1,4 +1,4 @@
-const CACHE = "quoridor-arena-v4";
+const CACHE = "theRage-arena-v4";
 const CORE = [
   "/", "/index.html", "/manifest.webmanifest", "/icons/icon.svg",
   "/css/theme.css", "/css/main.css", "/css/components.css", "/css/animations.css",

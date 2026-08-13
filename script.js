@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   QUORIDOR — lógica completa em JavaScript puro (versão final)
+   THE RAGE — lógica completa em JavaScript puro (versão final)
    ═══════════════════════════════════════════════════════════════════ */
 "use strict";
 

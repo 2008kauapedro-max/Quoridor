@@ -1,5 +1,5 @@
 /* =============================================================
-   Quoridor Arena — Configuração (MODELO / EXEMPLO)
+   The Rage Arena — Configuração (MODELO / EXEMPLO)
    -------------------------------------------------------------
    ⚠️ Este arquivo é só o EXEMPLO. Quem o jogo lê de verdade é:
       js/config.js   (mesmo formato, mesmos campos)

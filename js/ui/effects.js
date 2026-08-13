@@ -1,5 +1,5 @@
 /* =============================================================
-   Quoridor Arena — ui/effects.js
+   The Rage Arena — ui/effects.js
    -------------------------------------------------------------
    • Sons 100% sintetizados (Web Audio API) — nenhum asset.
    • Música ambiente opcional (pad suave gerado ao vivo).

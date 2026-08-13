@@ -1,5 +1,5 @@
 /* =============================================================
-   Quoridor Arena — ui/board.js (v11 — zoom das imagens respeitado)
+   The Rage Arena — ui/board.js (v11 — zoom das imagens respeitado)
    ============================================================= */
 import { SIZE, G } from "../core/constants.js";
 import { legalMoves } from "../core/rules.js";

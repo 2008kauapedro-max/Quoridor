@@ -1,5 +1,5 @@
 /* =============================================================
-   Quoridor Arena — core/rules.js
+   The Rage Arena — core/rules.js
    -------------------------------------------------------------
    Lógica PURA da partida (zero DOM). Suporta:
    - Modo clássico (9x9, 10 barreiras)

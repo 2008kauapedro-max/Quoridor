@@ -1,5 +1,5 @@
 ﻿/* =============================================================
-   Quoridor Arena — services/supabase.js
+   The Rage Arena — services/supabase.js
    -------------------------------------------------------------
    Cliente Supabase (plano 100% gratuito) carregado via CDN esm.sh
    (sem build, sem Node). Sem chaves configuradas → tudo retorna

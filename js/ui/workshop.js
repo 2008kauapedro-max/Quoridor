@@ -1,5 +1,5 @@
 /* =============================================================
-   Quoridor Arena — ui/workshop.js (stub — personalização desativada)
+   The Rage Arena — ui/workshop.js (stub — personalização desativada)
    Mantém as funções que o screens.js importa, sem adicionar UI.
    ============================================================= */
 import { SKIN_CATALOG } from "../core/constants.js";

@@ -1,5 +1,5 @@
 /* =============================================================
-   Quoridor Arena — ui/customizer.js
+   The Rage Arena — ui/customizer.js
    Personaliza a bolinha: cores, foto com zoom/posição e escudos
    ============================================================= */
 import { getCustomPiece, pieceBgFrom, TEAM_LOGOS } from "../core/constants.js";

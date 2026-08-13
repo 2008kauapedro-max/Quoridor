@@ -1,5 +1,5 @@
 ﻿/* =============================================================
-   Quoridor Arena — js/main.js (BOOT + auto-update)
+   The Rage Arena — js/main.js (BOOT + auto-update)
    ============================================================= */
 import { initScreens, showScreen, openModal, startGame } from "./ui/screens.js";
 import { hasSnapshot, getSnapshot, clearSnapshot } from "./services/storage.js";

@@ -37,7 +37,7 @@ export function showScreen(name){
     s.classList.toggle("active", s.dataset.screen === name));
   current = name;
   if (name === "ranking") refreshRanking("global");
-  if (name === "skins") renderSkins();
+   if (name === "skins"){ pieceSub = "classic"; renderSkins(); }
   if (name === "profile") refreshProfile();
 }
 
@@ -847,6 +847,7 @@ const isAdmin = () => (getSession()?.user?.email || "").toLowerCase() === ADMIN_
 
 const CAT_KEY = { board:"skin", piece:"piece", frame:"frame" };
 let skinCat = "piece";
+let pieceSub = "classic";
 const extraStats = () => ({ ...getStats(), ...(JSON.parse(localStorage.getItem("qa_extra")||"{}")) });
 function skinUnlocked(it){
   if (isAdmin() && localStorage.getItem("qa_admin") !== "0") return true;
@@ -857,7 +858,15 @@ function skinUnlocked(it){
 export function renderSkins(cat){
   skinCat = cat || skinCat;
   const equipped = getSettings()[CAT_KEY[skinCat]];
-  $("skinsList").innerHTML = SKIN_CATALOG.filter((i)=>i.cat===skinCat && !i.hide).map((it)=>{
+  let items = SKIN_CATALOG.filter((i)=>i.cat===skinCat && !i.hide);
+  if (skinCat === "piece") items = items.filter((i)=>(i.sub || "classic") === pieceSub);
+  const subTabs = skinCat === "piece"
+    ? '<div style="display:flex;gap:8px;justify-content:center;margin:0 0 12px">' +
+      [["classic","Clássicas"],["pais","Países"],["time","Times"]].map(([k,n]) =>
+        '<button data-psub="' + k + '" style="padding:8px 16px;border-radius:999px;border:1px solid ' + (pieceSub===k?"#3b82f6":"var(--line,#2a2f3a)") + ';background:' + (pieceSub===k?"#3b82f622":"transparent") + ';color:' + (pieceSub===k?"#60a5fa":"var(--text,#eee)") + ';font-weight:700;font-size:12px;cursor:pointer">' + n + '</button>').join("") +
+      '</div>'
+    : "";
+  $("skinsList").innerHTML = subTabs + items.map((it)=>{
     const un = skinUnlocked(it);
     return `<button class="skin-card ${equipped===it.id?"active":""} ${un?"":"locked"}" data-skinid="${it.id}">
             <span class="skin-swatch" style="background:${it.badge ? it.badge : 'linear-gradient(135deg,' + it.swatch[0] + ' 50%,' + it.swatch[1] + ' 50%)'};border-radius:50%"></span>
@@ -915,9 +924,11 @@ export function initScreens(){
   if ($("btnOpenSkins")) $("btnOpenSkins").onclick = () => { SFX.click(); showScreen("skins"); };
   document.querySelectorAll(".skin-tabs .tab").forEach((t)=>t.addEventListener("click",()=>{
     document.querySelectorAll(".skin-tabs .tab").forEach((x)=>x.classList.remove("active"));
-    t.classList.add("active"); renderSkins(t.dataset.cat);
+       t.classList.add("active"); if (t.dataset.cat === "piece") pieceSub = "classic"; renderSkins(t.dataset.cat);
   }));
-  $("skinsList").addEventListener("click",(e)=>{
+   $("skinsList").addEventListener("click",(e)=>{
+    const p = e.target.closest("[data-psub]");
+    if (p){ pieceSub = p.dataset.psub; renderSkins(); return; }
     const b = e.target.closest(".skin-card"); if (b) clickSkin(b.dataset.skinid);
   });
   $("btnRanking").onclick  = () => { SFX.click(); showScreen("ranking"); };

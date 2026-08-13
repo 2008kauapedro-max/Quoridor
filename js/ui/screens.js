@@ -101,8 +101,8 @@ function pixPayload(key, name, city){
   return p + crc16(p);
 }
 function openDonateModal(){
-  const pixKey = "2008kauapedro@gmail.com";
-  const payload = pixPayload(pixKey, "KAUA PEDRO", "BRASILIA");
+  const pixKey = "theragearenaa@gmail.com";
+  const payload = pixPayload(pixKey, "PEDRO KAUA", "BRASILIA");
   const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=2&data=" + encodeURIComponent(payload);
   const modal = document.createElement("div");
   modal.className = "modal-overlay";

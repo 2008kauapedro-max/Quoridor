@@ -37,10 +37,10 @@ async function readRoom(code){
   return data||null;
 }
 async function findWaitingOther(){
-  const cutoff=new Date(Date.now()-90000).toISOString();
+  const cutoff=new Date(Date.now()-20000).toISOString();
   const {data}=await sbClient.from("rooms").select("code")
     .eq("is_public",true).eq("status","waiting").neq("host_id",me())
-    .gte("created_at",cutoff).limit(1).maybeSingle();
+    .gte("last_seen",cutoff).limit(1).maybeSingle();
   return data||null;
 }
 async function tryJoin(code){
@@ -83,6 +83,7 @@ export async function startQueue(onMatched, mode){
   pollRoom(code,onMatched);
   every(1500,async()=>{
     if(matched)return;
+    await sbClient?.from("rooms").update({last_seen:new Date().toISOString()}).eq("code",code).eq("status","waiting");
     const mine=await readRoom(code);
     if(mine&&mine.status==="waiting"){
       const o=await findWaitingOther();

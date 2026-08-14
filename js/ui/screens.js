@@ -201,7 +201,8 @@ function freshSession(mode, level){
     uiMode: "move",
     locked: true,
     seconds: 0, timerId: null, aiTimer: null,
-    myColor: null, oppPiece: null, oppProfile: null, oppId: null
+    myColor: null, oppPiece: null, oppProfile: null, oppId: null,
+    oppSeen: false, ghostTimer: null
   };
 }
 
@@ -245,6 +246,7 @@ function sendMyProfile(){
 }
 function handleSkinMsg(raw){
   if (!S || S.mode !== "online" || !raw) return;
+  S.oppSeen = true; if (S.ghostTimer){ clearTimeout(S.ghostTimer); S.ghostTimer = null; }
   if (String(raw).charAt(0) === "{"){
     try {
       const d = JSON.parse(raw);
@@ -314,6 +316,22 @@ export function startGame(opts){
     if (S){ S.locked = false; maybeAI(); }
   }, 2000);
   setTimeout(() => { if (S) S.locked = false; }, 4000);
+  if (S.mode === "online"){
+    S.ghostTimer = setTimeout(() => {
+      if (!S || S.mode !== "online" || S.state.over || S.oppSeen) return;
+      openModal("👻 Rival não conectou", [
+        { label: "🔁 Buscar nova partida", onClick: () => {
+            endSession(false);
+            $("searchOverlay").classList.remove("hidden");
+            net.startQueue((info) => {
+              $("searchOverlay").classList.add("hidden");
+              startGame({ mode: "online", ...info });
+            });
+          } },
+        { label: "⏳ Esperar mais", onClick: null }
+      ], '<p style="padding:8px 0;text-align:center">O rival dessa sala parece desconectado.<br>Busque outra partida ou aguarde mais um pouco.</p>');
+    }, 15000);
+  }
 }
 
 function startTimer(){
@@ -434,6 +452,7 @@ function applyOppSkin(piece){
 
 export function handleRemoteEvent(ev){
   if (!S || S.mode !== "online") return;
+  S.oppSeen = true; if (S.ghostTimer){ clearTimeout(S.ghostTimer); S.ghostTimer = null; }
   if (ev && ev.t === "skip"){
     S.state.turn = S.state.turn === "red" ? "blue" : "red";
     board.sync(S.state);
@@ -666,6 +685,7 @@ export function endSession(goHome = true){
   stopTimer();
   stopTurnTimer();
   if (S?.aiTimer) clearTimeout(S.aiTimer);
+  if (S?.ghostTimer) clearTimeout(S.ghostTimer);
   if (S?.mode === "online" && S.state && !S.state.over){
     try {
       net.sendAction({ t: "resign" });

@@ -146,26 +146,30 @@ function readList(k){ try { return JSON.parse(localStorage.getItem(k) || "[]"); 
 function writeList(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch (_){} }
 const isBought = (id) => readList("qa_paid").includes(id);
 const hasPending = (id) => readList("qa_pending").includes(id);
+const WHATS_ZAP = "5561993148848"; // ← TROQUE pelo seu: 55 + DDD + número (só dígitos)
 
 function openBuyModal(it){
   const pixKey = "theragearenaa@gmail.com";
   const payload = pixPayload(pixKey, "PEDRO KAUA", "PLANALTINA", it.price || 1);
   const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=2&data=" + encodeURIComponent(payload);
   openModal("⚽ " + it.name + " — R$ " + (it.price || 1).toFixed(2), [
-    { label: "✅ Já paguei — enviar confirmação", onClick: async () => {
+       { label: "📤 Enviar comprovante no WhatsApp", onClick: async () => {
         const r = await requestPurchase(it.id);
         const pend = readList("qa_pending");
         if (!pend.includes(it.id)) pend.push(it.id);
         writeList("qa_pending", pend);
-        toast(r?.error ? "Erro ao enviar pedido." : "📨 Pedido enviado! A skin libera quando o PIX for confirmado.");
+        const nome = getSession()?.user?.user_metadata?.name || "Jogador";
+        const msg = "🏆 THE RAGE ARENA — compra da skin " + it.name + " (R$ " + (it.price || 1).toFixed(2) + ")\n👤 Nome no jogo: " + nome + "\n💸 Acabei de pagar o PIX! Segue o comprovante 👇";
+        window.open("https://wa.me/" + WHATS_ZAP + "?text=" + encodeURIComponent(msg), "_blank");
+        toast(r?.error ? "Erro ao registrar pedido." : "📨 Pedido registrado! Envie o comprovante no WhatsApp.");
         renderSkins(it.cat);
       } },
     { label: "Agora não", onClick: null }
   ], '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0">' +
      (TRIONDA_ART ? '<img src="' + TRIONDA_ART + '" style="width:110px;height:110px;border-radius:50%;box-shadow:0 8px 24px #0008;object-fit:cover">' : '') +
-     '<p style="margin:0;font-size:13px;line-height:1.5;color:#cbd5e1;text-align:center">🔥 <b>LANÇAMENTO MUNDIAL!</b> A bola da Copa 2026 na sua bolinha — por só <b style="color:#22c55e">R$ 1,00</b>! 🏆<br><span style="font-size:11px;color:#94a3b8">Liberação após confirmação do pagamento.</span></p>' +
+     '<p style="margin:0;font-size:13px;line-height:1.5;color:#cbd5e1;text-align:center">🔥 <b>LANÇAMENTO MUNDIAL!</b> A bola da Copa 2026 na sua bolinha — por só <b style="color:#22c55e">R$ 1,00</b>! 🏆<br><span style="font-size:11px;color:#94a3b8">Pague o PIX e envie o <b>COMPROVANTE</b> no WhatsApp 📲<br>A skin é liberada após a confirmação ✔️</span></p>' +
      '<div style="background:#fff;padding:8px;border-radius:12px"><img src="' + qrUrl + '" style="width:170px;height:170px;display:block;border-radius:6px"></div>' +
-     '<p style="margin:0;font-size:11px;color:#94a3b8">Escaneie o PIX de R$ 1,00 e toque em "Já paguei" 🙏</p></div>');
+     '<p style="margin:0;font-size:11px;color:#94a3b8">Escaneie o PIX de R$ 1,00, pague e envie o comprovante no WhatsApp 🙏</p></div>');
   const cp = document.createElement("button");
   cp.textContent = "📄 Copiar PIX copia-e-cola";
   cp.style.cssText = "margin:8px auto 0;display:block;background:#0ea5e9;color:#fff;border:none;padding:10px 18px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer";

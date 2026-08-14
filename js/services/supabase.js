@@ -240,7 +240,7 @@ export async function approvePurchase(id){
   const { error } = await sb.from("purchases").update({ status: "paid" }).eq("id", id);
   return error ? err(error) : {};
 }
-
+{
   if (!sb) return [];
   const { data } = await sb.from("announcements")
     .select("id, title, body, created_at")

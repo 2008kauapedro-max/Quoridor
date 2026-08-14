@@ -20,7 +20,7 @@ import {
   loginEmail, registerEmail, loginGoogle, logout, resetPassword,
   getProfile, updateProfile, uploadAvatar, getRanking, searchPlayers, getFriends,
   getFriendRequests, respondFriendRequest, removeFriend, sendFriendRequest, getAnnouncements, postAnnouncement,
-  pairCount, logMatch, requestPurchase, listPendingPurchases, approvePurchase
+    pairCount, logMatch, requestPurchase, listPendingPurchases, approvePurchase, rejectPurchase
 } from "../services/supabase.js";
 import { net } from "../services/realtime.js";
 import {
@@ -734,7 +734,9 @@ async function refreshBell(){
   cachedAnns = anns || [];
   const seen = +(localStorage.getItem("qa_ann_seen") || 0);
   const fresh = cachedAnns.filter((a) => a.id > seen);
-  const n = (reqs || []).length + fresh.length;
+     let salesN = 0;
+  if (isAdmin()){ try { salesN = (await listPendingPurchases()).length; } catch (_){} }
+  const n = (reqs || []).length + fresh.length + salesN;
   badge.textContent = n;
   badge.classList.toggle("hidden", n === 0);
   if (fresh.length && $("msgBubble") && fresh[0].id !== bubbleFor){ bubbleFor = fresh[0].id;
@@ -776,15 +778,21 @@ async function renderBellBody(reqs){
         '<input id="annBody" class="input" placeholder="Mensagem pra todos os jogadores">' +
         '<button class="mini-btn" data-annsend="1">📤 Enviar pra todos</button></div>';
     }
-  } else if (bellTab === "sales"){
+    } else if (bellTab === "sales"){
     const rows = await listPendingPurchases();
+    html += '<p class="hint">💰 Pedidos aguardando confirmação do PIX:</p>';
     html += rows?.length
       ? rows.map((r) => `
-        <div class="friend-row">
-          <span class="rank-name">💰 ${escapeHtml(r.username || "Jogador")} → ${r.skin_id}</span>
-          <button class="mini-btn" data-approve="${r.id}">✅ Liberar</button>
+        <div class="friend-row" style="align-items:center;flex-wrap:wrap;gap:8px">
+          <img class="rank-avatar" src="${r.avatar_url || "icons/icon.svg"}" alt="">
+          <div style="min-width:0;flex:1">
+            <div class="rank-name">${escapeHtml(r.username || "Jogador")} · ${r.elo ?? 0} Elo</div>
+            <div class="hint" style="font-size:10px">⚽ ${r.skin_id} · R$ 1,00 ·  ${new Date(r.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</div>
+          </div>
+          <button class="mini-btn" data-approve="${r.id}">✅</button>
+          <button class="mini-btn" data-reject="${r.id}">❌</button>
         </div>`).join("")
-      : '<p class="hint">nenhum pedido pendente</p>';
+      : '<p class="hint">nenhum pedido pendente 🎉</p>';
   } else {
     html += '<p class="hint">🔄 Semanal zera segunda · mensal dia 1º · global em 1º/01 e 1º/07.</p>';
     html += '<p class="hint">🏁 Modo Rush: corrida lado a lado disponível!</p>';
@@ -1348,7 +1356,8 @@ export function initScreens(){
   $("bellBody").addEventListener("click", async (e) => {
     const tab = e.target.dataset.belltab; if (tab){ bellTab = tab; if (tab === "ann" && cachedAnns.length) localStorage.setItem("qa_ann_seen", Math.max(...cachedAnns.map((a) => a.id), 0)); renderBellBody(); refreshBell(); return; }
     if (e.target.dataset.annsend){ await postAnnouncement($("annTitle").value || "📢 Aviso", $("annBody").value || ""); toast("Mensagem enviada pra todos! 📢"); renderBellBody(); refreshBell(); return; }
-    if (e.target.dataset.approve){ await approvePurchase(e.target.dataset.approve); toast("✅ Skin liberada! O jogador recebe no próximo login."); renderBellBody(); return; }
+       if (e.target.dataset.approve){ await approvePurchase(e.target.dataset.approve); toast("✅ Skin liberada! O jogador recebe no próximo login."); renderBellBody(); refreshBell(); return; }
+    if (e.target.dataset.reject){ await rejectPurchase(e.target.dataset.reject); toast("❌ Pedido recusado."); renderBellBody(); refreshBell(); return; }
     const acc = e.target.dataset.accept, dec = e.target.dataset.decline, rem = e.target.dataset.removefriend;
     if (acc){ await respondFriendRequest(acc, true); toast("Agora vocês são amigos! 🎉"); }
     if (dec){ await respondFriendRequest(dec, false); toast("Pedido recusado."); }

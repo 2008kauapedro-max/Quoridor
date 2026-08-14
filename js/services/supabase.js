@@ -165,11 +165,20 @@ export async function reportMatch(sum){
 /* ═══════════ LOJA — pedidos de compra ═══════════ */
 export async function requestPurchase(skinId){
   if (!sb || !currentSession) return need();
+  const { data: prof } = await sb.from("profiles")
+    .select("avatar_url, elo").eq("id", currentSession.user.id).maybeSingle();
   const { error } = await sb.from("purchases").insert({
     user_id: currentSession.user.id,
     username: currentSession.user.user_metadata?.name || "Jogador",
+    avatar_url: prof?.avatar_url || "",
+    elo: prof?.elo ?? 0,
     skin_id: skinId, status: "pending"
   });
+  return error ? err(error) : {};
+}
+export async function rejectPurchase(id){
+  if (!sb || !currentSession) return need();
+  const { error } = await sb.from("purchases").delete().eq("id", id);
   return error ? err(error) : {};
 }
 export async function listPendingPurchases(){

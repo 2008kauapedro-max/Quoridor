@@ -752,7 +752,7 @@ async function renderBellBody(reqs){
   let html = '<div class="tabs">' +
     '<button class="tab' + (bellTab === "req" ? " active" : "") + '" data-belltab="req">📨 Pedidos</button>' +
     '<button class="tab' + (bellTab === "ann" ? " active" : "") + '" data-belltab="ann">📢 Avisos</button>' +
-    (getSettings().admin ? '<button class="tab' + (bellTab === "sales" ? " active" : "") + '" data-belltab="sales">💰 Vendas</button>' : "") +
+    (isAdmin() ? '<button class="tab' + (bellTab === "sales" ? " active" : "") + '" data-belltab="sales">💰 Vendas</button>' : "") +
     '<button class="tab' + (bellTab === "info" ? " active" : "") + '" data-belltab="info">ℹ️ Info</button></div>';
   if (bellTab === "req"){
     if (!reqs?.length) html += '<p class="hint">nenhum pedido pendente</p>';
@@ -770,7 +770,7 @@ async function renderBellBody(reqs){
         <div class="msg-avatar" style="width:34px;height:34px;font-size:16px">📢</div>
         <div class="msg-text"><b>${escapeHtml(a.title)}</b><span>${escapeHtml(a.body)}</span></div>
       </div>`).join("");
-    if (getSettings().admin){
+       if (isAdmin()){
       html += '<div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">' +
         '<input id="annTitle" class="input" placeholder="Título do aviso">' +
         '<input id="annBody" class="input" placeholder="Mensagem pra todos os jogadores">' +

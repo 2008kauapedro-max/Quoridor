@@ -936,6 +936,9 @@ function skinUnlocked(it){
 }
 export function renderSkins(cat){
   skinCat = cat || skinCat;
+  if (skinCat !== "piece") skinQuery = "";
+  const ss = document.getElementById("skinSearch");
+  if (ss){ ss.style.display = skinCat === "piece" ? "" : "none"; if (ss.value !== skinQuery) ss.value = skinQuery; }
   const equipped = getSettings()[CAT_KEY[skinCat]];
   let items = SKIN_CATALOG.filter((i)=>i.cat===skinCat && !i.hide);
   if (skinCat === "piece") items = items.filter((i)=>(i.sub || "classic") === pieceSub);

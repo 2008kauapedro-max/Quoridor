@@ -220,7 +220,27 @@ export async function removeFriend(otherId){
     .or(`and(user_a.eq.${me},user_b.eq.${otherId}),and(user_a.eq.${otherId},user_b.eq.${me})`);
   return error ? err(error) : {};
 }
-export async function getAnnouncements(){
+/* ═══════════ LOJA — pedidos de compra ═══════════ */
+export async function requestPurchase(skinId){
+  if (!sb || !currentSession) return need();
+  const { error } = await sb.from("purchases").insert({
+    user_id: currentSession.user.id,
+    username: currentSession.user.user_metadata?.name || "Jogador",
+    skin_id: skinId, status: "pending"
+  });
+  return error ? err(error) : {};
+}
+export async function listPendingPurchases(){
+  if (!sb || !currentSession) return [];
+  const { data } = await sb.from("purchases").select("*").eq("status", "pending").order("id", { ascending: false }).limit(50);
+  return data || [];
+}
+export async function approvePurchase(id){
+  if (!sb || !currentSession) return need();
+  const { error } = await sb.from("purchases").update({ status: "paid" }).eq("id", id);
+  return error ? err(error) : {};
+}
+
   if (!sb) return [];
   const { data } = await sb.from("announcements")
     .select("id, title, body, created_at")

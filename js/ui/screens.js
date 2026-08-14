@@ -20,7 +20,7 @@ import {
   loginEmail, registerEmail, loginGoogle, logout, resetPassword,
   getProfile, updateProfile, uploadAvatar, getRanking, searchPlayers, getFriends,
   getFriendRequests, respondFriendRequest, removeFriend, sendFriendRequest, getAnnouncements, postAnnouncement,
-  pairCount, logMatch
+  pairCount, logMatch, requestPurchase, listPendingPurchases, approvePurchase
 } from "../services/supabase.js";
 import { net } from "../services/realtime.js";
 import {
@@ -139,40 +139,110 @@ function openDonateModal(){
   modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 }
 
-/* ═══════════ LOJA — SKINS PAGAS (R$) ═══════════ */
+/* ═══════════ LOJA — SKINS PAGAS COM CONFIRMAÇÃO ═══════════ */
 let TRIONDA_ART = null;
 (function(){ const im = new Image(); im.onload = () => { TRIONDA_ART = "img/trionda.png"; }; im.src = "img/trionda.png"; })();
-function getBought(){ try { return JSON.parse(localStorage.getItem("qa_bought") || "[]"); } catch (_){ return []; } }
-function setBought(list){ try { localStorage.setItem("qa_bought", JSON.stringify(list)); } catch (_){} }
-function isBought(id){ return getBought().includes(id); }
+function readList(k){ try { return JSON.parse(localStorage.getItem(k) || "[]"); } catch (_){ return []; } }
+function writeList(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch (_){} }
+const isBought = (id) => readList("qa_paid").includes(id);
+const hasPending = (id) => readList("qa_pending").includes(id);
+
 function openBuyModal(it){
   const pixKey = "theragearenaa@gmail.com";
   const payload = pixPayload(pixKey, "PEDRO KAUA", "PLANALTINA", it.price || 1);
   const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=2&data=" + encodeURIComponent(payload);
   openModal("⚽ " + it.name + " — R$ " + (it.price || 1).toFixed(2), [
-    { label: "✅ Já paguei — desbloquear!", onClick: () => {
-        const list = getBought();
-        if (!list.includes(it.id)) list.push(it.id);
-        setBought(list);
-        const st = getSettings();
-        st[it.cat === "piece" ? "piece" : "skin"] = it.id;
-        setSettings(st); applySettings(st); renderSkins(it.cat);
-        SFX.win(); toast("⚽ " + it.name + " desbloqueada! Estilo de campeão!");
+    { label: "✅ Já paguei — enviar confirmação", onClick: async () => {
+        const r = await requestPurchase(it.id);
+        const pend = readList("qa_pending");
+        if (!pend.includes(it.id)) pend.push(it.id);
+        writeList("qa_pending", pend);
+        toast(r?.error ? "Erro ao enviar pedido." : "📨 Pedido enviado! A skin libera quando o PIX for confirmado.");
+        renderSkins(it.cat);
       } },
     { label: "Agora não", onClick: null }
   ], '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0">' +
      (TRIONDA_ART ? '<img src="' + TRIONDA_ART + '" style="width:110px;height:110px;border-radius:50%;box-shadow:0 8px 24px #0008">' : '') +
-     '<p style="margin:0;font-size:13px;line-height:1.5;color:#cbd5e1;text-align:center">🔥 <b>LANÇAMENTO MUNDIAL!</b> A bola da Copa 2026 na sua bolinha — por só <b style="color:#22c55e">R$ 1,00</b>! 🏆</p>' +
+     '<p style="margin:0;font-size:13px;line-height:1.5;color:#cbd5e1;text-align:center">🔥 <b>LANÇAMENTO MUNDIAL!</b> A bola da Copa 2026 na sua bolinha — por só <b style="color:#22c55e">R$ 1,00</b>! 🏆<br><span style="font-size:11px;color:#94a3b8">Liberação após confirmação do pagamento.</span></p>' +
      '<div style="background:#fff;padding:8px;border-radius:12px"><img src="' + qrUrl + '" style="width:170px;height:170px;display:block;border-radius:6px"></div>' +
-     '<p style="margin:0;font-size:11px;color:#94a3b8">Escaneie o PIX de R$ 1,00 e confirme abaixo 🙏</p></div>');
+     '<p style="margin:0;font-size:11px;color:#94a3b8">Escaneie o PIX de R$ 1,00 e toque em "Já paguei" 🙏</p></div>');
   const cp = document.createElement("button");
   cp.textContent = "📄 Copiar PIX copia-e-cola";
   cp.style.cssText = "margin:8px auto 0;display:block;background:#0ea5e9;color:#fff;border:none;padding:10px 18px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer";
   cp.onclick = async () => { try { await navigator.clipboard.writeText(payload); cp.textContent = "✅ Copiado!"; } catch (_){ prompt("Copie:", payload); } };
   $("modalBody").appendChild(cp);
 }
+
+/* ═══════════ LOJA — SKINS PAGAS COM CONFIRMAÇÃO ═══════════ */
+let TRIONDA_ART = null;
+(function(){ const im = new Image(); im.onload = () => { TRIONDA_ART = "img/trionda.png"; }; im.src = "img/trionda.png"; })();
+function readList(k){ try { return JSON.parse(localStorage.getItem(k) || "[]"); } catch (_){ return []; } }
+function writeList(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch (_){} }
+const isBought = (id) => readList("qa_paid").includes(id);
+const hasPending = (id) => readList("qa_pending").includes(id);
+
+function openBuyModal(it){
+  const pixKey = "theragearenaa@gmail.com";
+  const payload = pixPayload(pixKey, "PEDRO KAUA", "PLANALTINA", it.price || 1);
+  const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=2&data=" + encodeURIComponent(payload);
+  openModal("⚽ " + it.name + " — R$ " + (it.price || 1).toFixed(2), [
+    { label: "✅ Já paguei — enviar confirmação", onClick: async () => {
+        const r = await requestPurchase(it.id);
+        const pend = readList("qa_pending");
+        if (!pend.includes(it.id)) pend.push(it.id);
+        writeList("qa_pending", pend);
+        toast(r?.error ? "Erro ao enviar pedido." : "📨 Pedido enviado! A skin libera quando o PIX for confirmado.");
+        renderSkins(it.cat);
+      } },
+    { label: "Agora não", onClick: null }
+  ], '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0">' +
+     (TRIONDA_ART ? '<img src="' + TRIONDA_ART + '" style="width:110px;height:110px;border-radius:50%;box-shadow:0 8px 24px #0008">' : '') +
+     '<p style="margin:0;font-size:13px;line-height:1.5;color:#cbd5e1;text-align:center">🔥 <b>LANÇAMENTO MUNDIAL!</b> A bola da Copa 2026 na sua bolinha — por só <b style="color:#22c55e">R$ 1,00</b>! 🏆<br><span style="font-size:11px;color:#94a3b8">Liberação após confirmação do pagamento.</span></p>' +
+     '<div style="background:#fff;padding:8px;border-radius:12px"><img src="' + qrUrl + '" style="width:170px;height:170px;display:block;border-radius:6px"></div>' +
+     '<p style="margin:0;font-size:11px;color:#94a3b8">Escaneie o PIX de R$ 1,00 e toque em "Já paguei" 🙏</p></div>');
+  const cp = document.createElement("button");
+  cp.textContent = "📄 Copiar PIX copia-e-cola";
+  cp.style.cssText = "margin:8px auto 0;display:block;background:#0ea5e9;color:#fff;border:none;padding:10px 18px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer";
+  cp.onclick = async () => { try { await navigator.clipboard.writeText(payload); cp.textContent = "✅ Copiado!"; } catch (_){ prompt("Copie:", payload); } };
+  $("modalBody").appendChild(cp);
+}
+
+/* ═══════════ LOJA — SKINS PAGAS COM CONFIRMAÇÃO ═══════════ */
+let TRIONDA_ART = null;
+(function(){ const im = new Image(); im.onload = () => { TRIONDA_ART = "img/trionda.png"; }; im.src = "img/trionda.png"; })();
+function readList(k){ try { return JSON.parse(localStorage.getItem(k) || "[]"); } catch (_){ return []; } }
+function writeList(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch (_){} }
+const isBought = (id) => readList("qa_paid").includes(id);
+const hasPending = (id) => readList("qa_pending").includes(id);
+
+function openBuyModal(it){
+  const pixKey = "theragearenaa@gmail.com";
+  const payload = pixPayload(pixKey, "PEDRO KAUA", "PLANALTINA", it.price || 1);
+  const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=2&data=" + encodeURIComponent(payload);
+  openModal("⚽ " + it.name + " — R$ " + (it.price || 1).toFixed(2), [
+    { label: "✅ Já paguei — enviar confirmação", onClick: async () => {
+        const r = await requestPurchase(it.id);
+        const pend = readList("qa_pending");
+        if (!pend.includes(it.id)) pend.push(it.id);
+        writeList("qa_pending", pend);
+        toast(r?.error ? "Erro ao enviar pedido." : "📨 Pedido enviado! A skin libera quando o PIX for confirmado.");
+        renderSkins(it.cat);
+      } },
+    { label: "Agora não", onClick: null }
+  ], '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0">' +
+     (TRIONDA_ART ? '<img src="' + TRIONDA_ART + '" style="width:110px;height:110px;border-radius:50%;box-shadow:0 8px 24px #0008">' : '') +
+     '<p style="margin:0;font-size:13px;line-height:1.5;color:#cbd5e1;text-align:center">🔥 <b>LANÇAMENTO MUNDIAL!</b> A bola da Copa 2026 na sua bolinha — por só <b style="color:#22c55e">R$ 1,00</b>! 🏆<br><span style="font-size:11px;color:#94a3b8">Liberação após confirmação do pagamento.</span></p>' +
+     '<div style="background:#fff;padding:8px;border-radius:12px"><img src="' + qrUrl + '" style="width:170px;height:170px;display:block;border-radius:6px"></div>' +
+     '<p style="margin:0;font-size:11px;color:#94a3b8">Escaneie o PIX de R$ 1,00 e toque em "Já paguei" 🙏</p></div>');
+  const cp = document.createElement("button");
+  cp.textContent = "📄 Copiar PIX copia-e-cola";
+  cp.style.cssText = "margin:8px auto 0;display:block;background:#0ea5e9;color:#fff;border:none;padding:10px 18px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer";
+  cp.onclick = async () => { try { await navigator.clipboard.writeText(payload); cp.textContent = "✅ Copiado!"; } catch (_){ prompt("Copie:", payload); } };
+  $("modalBody").appendChild(cp);
+}
+
 function maybeShowLaunch(){
-  if (localStorage.getItem("qa_trionda_seen") || isBought("p-bolacopa")) return;
+  if (localStorage.getItem("qa_trionda_seen") || isBought("p-bolacopa") || hasPending("p-bolacopa")) return;
   localStorage.setItem("qa_trionda_seen", "1");
   const it = SKIN_CATALOG.find((i) => i.id === "p-bolacopa");
   if (!it) return;
@@ -745,7 +815,8 @@ async function renderBellBody(reqs){
   reqs = reqs || await getFriendRequests();
   let html = '<div class="tabs">' +
     '<button class="tab' + (bellTab === "req" ? " active" : "") + '" data-belltab="req">📨 Pedidos</button>' +
-    '<button class="tab' + (bellTab === "ann" ? " active" : "") + '" data-belltab="ann">📢 Avisos</button>' +
+        '<button class="tab' + (bellTab === "ann" ? " active" : "") + '" data-belltab="ann">📢 Avisos</button>' +
+    (getSettings().admin ? '<button class="tab' + (bellTab === "sales" ? " active" : "") + '" data-belltab="sales">💰 Vendas</button>' : "") +
     '<button class="tab' + (bellTab === "info" ? " active" : "") + '" data-belltab="info">ℹ️ Info</button></div>';
   if (bellTab === "req"){
     if (!reqs?.length) html += '<p class="hint">nenhum pedido pendente</p>';
@@ -769,6 +840,15 @@ async function renderBellBody(reqs){
         '<input id="annBody" class="input" placeholder="Mensagem pra todos os jogadores">' +
         '<button class="mini-btn" data-annsend="1">📤 Enviar pra todos</button></div>';
     }
+    } else if (bellTab === "sales"){
+    const rows = await listPendingPurchases();
+    html += rows?.length
+      ? rows.map((r) => `
+        <div class="friend-row">
+          <span class="rank-name">💰 ${escapeHtml(r.username || "Jogador")} → ${r.skin_id}</span>
+          <button class="mini-btn" data-approve="${r.id}">✅ Liberar</button>
+        </div>`).join("")
+      : '<p class="hint">nenhum pedido pendente</p>';
   } else {
     html += '<p class="hint">🔄 Semanal zera segunda · mensal dia 1º · global em 1º/01 e 1º/07.</p>';
     html += '<p class="hint">🏁 Modo Rush: corrida lado a lado disponível!</p>';
@@ -935,7 +1015,7 @@ export function renderSkins(cat){
     return `<button class="skin-card ${equipped===it.id?"active":""} ${un?"":"locked"}" data-skinid="${it.id}">
             <span class="skin-swatch" style="background:${it.badge ? it.badge : 'linear-gradient(135deg,' + it.swatch[0] + ' 50%,' + it.swatch[1] + ' 50%)'};border-radius:50%"></span>
       <span class="skin-name">${it.name}</span>
-           <span class="skin-state">${equipped===it.id?"✔ Equipada":un?"Livre":it.price?"R$ "+it.price.toFixed(2):"🔒"}</span>
+              <span class="skin-state">${equipped===it.id?"✔ Equipada":un?"Livre":it.price?(hasPending(it.id)?"⏳ Aguardando":"R$ "+it.price.toFixed(2)):"🔒"}</span>
     </button>`;
   }).join("");
 }
@@ -1332,6 +1412,7 @@ export function initScreens(){
   $("bellBody").addEventListener("click", async (e) => {
     const tab = e.target.dataset.belltab; if (tab){ bellTab = tab; if (tab === "ann" && cachedAnns.length) localStorage.setItem("qa_ann_seen", Math.max(...cachedAnns.map((a) => a.id), 0)); renderBellBody(); refreshBell(); return; }
     if (e.target.dataset.annsend){ await postAnnouncement($("annTitle").value || "📢 Aviso", $("annBody").value || ""); toast("Mensagem enviada pra todos! 📢"); renderBellBody(); refreshBell(); return; }
+    if (e.target.dataset.approve){ await approvePurchase(e.target.dataset.approve); toast("✅ Skin liberada! O jogador recebe no próximo login."); renderBellBody(); return; }
     const acc = e.target.dataset.accept, dec = e.target.dataset.decline, rem = e.target.dataset.removefriend;
     if (acc){ await respondFriendRequest(acc, true); toast("Agora vocês são amigos! 🎉"); }
     if (dec){ await respondFriendRequest(dec, false); toast("Pedido recusado."); }

@@ -62,10 +62,14 @@ export async function syncCloudData(){
     write("extra", mExtra);
     write("ach", mAch);
     write("settings", mPrefs);
-    await sbClient.from("profiles").update({
+        await sbClient.from("profiles").update({
       stats: mStats, achievements: mAch, extra: mExtra,
       prefs: { piece: mPrefs.piece, frame: mPrefs.frame, wall: mPrefs.wall, title: mPrefs.title, skin: mPrefs.skin, customColor: mPrefs.customColor }
     }).eq("id", id);
+    const { data: paid } = await sbClient.from("purchases").select("skin_id").eq("user_id", id).eq("status", "paid");
+    const paidList = (paid || []).map((p) => p.skin_id);
+    write("paid", paidList);
+    write("pending", read("pending", []).filter((k) => !paidList.includes(k)));
   } catch (_) {}
 }
 

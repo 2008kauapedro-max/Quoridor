@@ -1,15 +1,9 @@
 ﻿/* =============================================================
-   The Rage Arena — services/supabase.js
-   -------------------------------------------------------------
-   Cliente Supabase (plano 100% gratuito) carregado via CDN esm.sh
-   (sem build, sem Node). Sem chaves configuradas → tudo retorna
-   null/{error} e o jogo segue em modo local.
+   The Rage Arena — services/supabase.js (v2 — loja integrada)
    ============================================================= */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ELO_START } from "../core/constants.js";
 
-/* Config opcional: se js/config.js não existir ou estiver vazio,
-   o import falha SEM DERRUBAR o app e seguimos desconfigurados. */
 let CONFIG = { SUPABASE_URL: "", SUPABASE_ANON_KEY: "" };
 try {
   const m = await import("../config.js");
@@ -19,15 +13,13 @@ try {
 export const isConfigured = () =>
   !!(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY);
 
-/* Cliente único (criado só se configurado) */
 const sb = isConfigured()
   ? createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
       auth: { persistSession: true, autoRefreshToken: true }
     })
   : null;
-  export { sb as sbClient };
+export { sb as sbClient };
 
-/* Sessão em memória (leituras síncronas pelo app) */
 let currentSession = null;
 if (sb){
   sb.auth.getSession().then(({ data }) => { currentSession = data.session || null; });
@@ -58,7 +50,7 @@ export async function registerEmail(name, email, pass){
     options: { data: { name: name || "Jogador" } }
   });
   if (error) return err(error);
-  if (!data.session) return { pending: true };   // precisa confirmar e-mail
+  if (!data.session) return { pending: true };
   return {};
 }
 
@@ -79,7 +71,7 @@ export async function resetPassword(email){
 
 export async function logout(){
   if (!sb) return;
-  try { await sb.signOut({ scope: "local" }); } catch (_){ }
+  try { await sb.signOut({ scope: "local" }); } catch (_){}
   currentSession = null;
 }
 
@@ -98,7 +90,6 @@ export async function updateProfile(patch){
   return error ? err(error) : {};
 }
 
-/* Foto → bucket "avatars" (Storage gratuito) → URL pública no perfil */
 export async function uploadAvatar(file){
   if (!sb || !currentSession) return need();
   const id = currentSession.user.id;
@@ -136,9 +127,9 @@ export async function searchPlayers(q){
 export async function sendFriendRequest(otherId){
   if (!sb || !currentSession) return need();
   const me = currentSession.user.id;
-  const a = me;         // par ordenado = sem duplicata
+  const a = me;
   const b = otherId;
-    const { error } = await sb.from("friendships")
+  const { error } = await sb.from("friendships")
     .upsert({ user_a: a, user_b: b, status: "pending" },
             { onConflict: "user_a,user_b" });
   return error ? err(error) : {};
@@ -158,36 +149,41 @@ export async function getFriends(){
   return (profs || []).map((p) => ({ ...p, online: false }));
 }
 
-/* ═══════════ REPORTE DE PARTIDA (Elo/stats oficiais) ═══════════
-   Chama a função SQL report_match() — RLS garante permissão. */
+/* ═══════════ REPORTE DE PARTIDA ═══════════ */
 export async function reportMatch(sum){
   if (!sb || !currentSession) return;
-      await sb.rpc("report_match", { payload: {
+  await sb.rpc("report_match", { payload: {
     winner_color: sum.winner,
     my_color: sum.myColor,
     duration_sec: sum.durationSec || 0,
     moves_me: sum.movesUsed || 0,
     walls_me: sum.wallsUsed || 0,
     replay: sum.replay || []
-  } }).then(() => {}, () => {});   // silencioso: offline não trava o jogo
+  } }).then(() => {}, () => {});
 }
-/* ═══════════ ANTIFARM — detecta partidas repetidas do mesmo par ═══════════ */
-export async function pairCount(otherId){
-  if (!sb || !currentSession || !otherId) return 0;
-  const me = currentSession.user.id;
-  const a = me < otherId ? me : otherId, b = me < otherId ? otherId : me;
-  const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-  const { count } = await sb.from("match_log")
-    .select("*", { count: "exact", head: true })
-    .eq("a", a).eq("b", b).gte("at", since);
-  return count || 0;
+
+/* ═══════════ LOJA — pedidos de compra ═══════════ */
+export async function requestPurchase(skinId){
+  if (!sb || !currentSession) return need();
+  const { error } = await sb.from("purchases").insert({
+    user_id: currentSession.user.id,
+    username: currentSession.user.user_metadata?.name || "Jogador",
+    skin_id: skinId, status: "pending"
+  });
+  return error ? err(error) : {};
 }
-export async function logMatch(otherId){
-  if (!sb || !currentSession || !otherId) return;
-  const me = currentSession.user.id;
-  if (me >= otherId) return;   // só um dos dois registra a partida
-  await sb.from("match_log").insert({ a: me, b: otherId });
+export async function listPendingPurchases(){
+  if (!sb || !currentSession) return [];
+  const { data } = await sb.from("purchases").select("*")
+    .eq("status", "pending").order("id", { ascending: false }).limit(50);
+  return data || [];
 }
+export async function approvePurchase(id){
+  if (!sb || !currentSession) return need();
+  const { error } = await sb.from("purchases").update({ status: "paid" }).eq("id", id);
+  return error ? err(error) : {};
+}
+
 export async function getFriendRequests(){
   if (!sb || !currentSession) return [];
   const me = currentSession.user.id;
@@ -220,27 +216,8 @@ export async function removeFriend(otherId){
     .or(`and(user_a.eq.${me},user_b.eq.${otherId}),and(user_a.eq.${otherId},user_b.eq.${me})`);
   return error ? err(error) : {};
 }
-/* ═══════════ LOJA — pedidos de compra ═══════════ */
-export async function requestPurchase(skinId){
-  if (!sb || !currentSession) return need();
-  const { error } = await sb.from("purchases").insert({
-    user_id: currentSession.user.id,
-    username: currentSession.user.user_metadata?.name || "Jogador",
-    skin_id: skinId, status: "pending"
-  });
-  return error ? err(error) : {};
-}
-export async function listPendingPurchases(){
-  if (!sb || !currentSession) return [];
-  const { data } = await sb.from("purchases").select("*").eq("status", "pending").order("id", { ascending: false }).limit(50);
-  return data || [];
-}
-export async function approvePurchase(id){
-  if (!sb || !currentSession) return need();
-  const { error } = await sb.from("purchases").update({ status: "paid" }).eq("id", id);
-  return error ? err(error) : {};
-}
-{
+
+export async function getAnnouncements(){
   if (!sb) return [];
   const { data } = await sb.from("announcements")
     .select("id, title, body, created_at")
@@ -249,7 +226,7 @@ export async function approvePurchase(id){
 }
 
 export async function postAnnouncement(title, body){
-  if (!sb || !currentSession) return need();
+  if (!sb) return need();
   const { error } = await sb.from("announcements").insert({ title, body });
   return error ? err(error) : {};
 }

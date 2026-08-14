@@ -90,9 +90,10 @@ function crc16(s){
   }
   return crc.toString(16).toUpperCase().padStart(4, "0");
 }
-function pixPayload(key, name, city){
+function pixPayload(key, name, city, amount){
   const acc = emv("26", emv("00", "BR.GOV.BCB.PIX") + emv("01", key));
-  let p = emv("00", "01") + acc + emv("52", "0000") + emv("53", "986") + emv("58", "BR") +
+  let p = emv("00", "01") + acc + emv("52", "0000") + emv("53", "986") +
+          (amount ? emv("54", amount.toFixed(2)) : "") + emv("58", "BR") +
           emv("59", name.slice(0, 25)) + emv("60", city.slice(0, 15)) + emv("62", emv("05", "***"));
   p += "6304";
   return p + crc16(p);
@@ -136,6 +137,51 @@ function openDonateModal(){
   document.getElementById("copyPixBtn").onclick = (e) => copy(pixKey, e.currentTarget);
   document.getElementById("closeDonateModal").onclick = () => modal.remove();
   modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+}
+
+/* ═══════════ LOJA — SKINS PAGAS (R$) ═══════════ */
+let TRIONDA_ART = null;
+(function(){ const im = new Image(); im.onload = () => { TRIONDA_ART = "img/trionda.png"; }; im.src = "img/trionda.png"; })();
+function getBought(){ try { return JSON.parse(localStorage.getItem("qa_bought") || "[]"); } catch (_){ return []; } }
+function setBought(list){ try { localStorage.setItem("qa_bought", JSON.stringify(list)); } catch (_){} }
+function isBought(id){ return getBought().includes(id); }
+function openBuyModal(it){
+  const pixKey = "theragearenaa@gmail.com";
+  const payload = pixPayload(pixKey, "PEDRO KAUA", "PLANALTINA", it.price || 1);
+  const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=2&data=" + encodeURIComponent(payload);
+  openModal("⚽ " + it.name + " — R$ " + (it.price || 1).toFixed(2), [
+    { label: "✅ Já paguei — desbloquear!", onClick: () => {
+        const list = getBought();
+        if (!list.includes(it.id)) list.push(it.id);
+        setBought(list);
+        const st = getSettings();
+        st[it.cat === "piece" ? "piece" : "skin"] = it.id;
+        setSettings(st); applySettings(st); renderSkins(it.cat);
+        SFX.win(); toast("⚽ " + it.name + " desbloqueada! Estilo de campeão!");
+      } },
+    { label: "Agora não", onClick: null }
+  ], '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0">' +
+     (TRIONDA_ART ? '<img src="' + TRIONDA_ART + '" style="width:110px;height:110px;border-radius:50%;box-shadow:0 8px 24px #0008">' : '') +
+     '<p style="margin:0;font-size:13px;line-height:1.5;color:#cbd5e1;text-align:center">🔥 <b>LANÇAMENTO MUNDIAL!</b> A bola da Copa 2026 na sua bolinha — por só <b style="color:#22c55e">R$ 1,00</b>! 🏆</p>' +
+     '<div style="background:#fff;padding:8px;border-radius:12px"><img src="' + qrUrl + '" style="width:170px;height:170px;display:block;border-radius:6px"></div>' +
+     '<p style="margin:0;font-size:11px;color:#94a3b8">Escaneie o PIX de R$ 1,00 e confirme abaixo 🙏</p></div>');
+  const cp = document.createElement("button");
+  cp.textContent = "📄 Copiar PIX copia-e-cola";
+  cp.style.cssText = "margin:8px auto 0;display:block;background:#0ea5e9;color:#fff;border:none;padding:10px 18px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer";
+  cp.onclick = async () => { try { await navigator.clipboard.writeText(payload); cp.textContent = "✅ Copiado!"; } catch (_){ prompt("Copie:", payload); } };
+  $("modalBody").appendChild(cp);
+}
+function maybeShowLaunch(){
+  if (localStorage.getItem("qa_trionda_seen") || isBought("p-bolacopa")) return;
+  localStorage.setItem("qa_trionda_seen", "1");
+  const it = SKIN_CATALOG.find((i) => i.id === "p-bolacopa");
+  if (!it) return;
+  setTimeout(() => openModal("🚀 LANÇAMENTO — Trionda 2026!", [
+    { label: "⚽ Quero por R$ 1,00!", onClick: () => openBuyModal(it) },
+    { label: "Depois", onClick: null }
+  ], '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0">' +
+     (TRIONDA_ART ? '<img src="' + TRIONDA_ART + '" style="width:120px;height:120px;border-radius:50%;box-shadow:0 10px 30px #0009">' : '<div style="font-size:64px">⚽</div>') +
+     '<p style="margin:0;font-size:14px;line-height:1.55;color:#cbd5e1;text-align:center">A <b style="color:#F5F7FA">bola oficial da Copa 2026</b> aterrissou no The Rage Arena! ⚽✨<br>Jogue com a <b>Trionda</b> e deixe os rivais no chão — por apenas <b style="color:#22c55e">R$ 1,00</b>! 😱🏆</p></div>'), 1500);
 }
 
 let S = null;
@@ -859,6 +905,7 @@ let pieceSub = "classic";
 const extraStats = () => ({ ...getStats(), ...(JSON.parse(localStorage.getItem("qa_extra")||"{}")) });
 function skinUnlocked(it){
   if (isAdmin() && localStorage.getItem("qa_admin") !== "0") return true;
+  if (it.price) return isBought(it.id);
   if (it.free) return true;
   const s = extraStats();
   return it.unlock.cur(s, levelFromXp(s.xp)) >= it.unlock.target;
@@ -888,7 +935,7 @@ export function renderSkins(cat){
     return `<button class="skin-card ${equipped===it.id?"active":""} ${un?"":"locked"}" data-skinid="${it.id}">
             <span class="skin-swatch" style="background:${it.badge ? it.badge : 'linear-gradient(135deg,' + it.swatch[0] + ' 50%,' + it.swatch[1] + ' 50%)'};border-radius:50%"></span>
       <span class="skin-name">${it.name}</span>
-      <span class="skin-state">${equipped===it.id?"✔ Equipada":un?"Livre":"🔒"}</span>
+           <span class="skin-state">${equipped===it.id?"✔ Equipada":un?"Livre":it.price?"R$ "+it.price.toFixed(2):"🔒"}</span>
     </button>`;
   }).join("");
 }
@@ -896,7 +943,8 @@ function clickSkin(id){
   if (id === "p-custom"){ openColorPicker(); return; }
   const it = SKIN_CATALOG.find((i)=>i.id===id);
   if (!it) return;
-  if (!skinUnlocked(it)){
+    if (!skinUnlocked(it)){
+    if (it.price){ openBuyModal(it); return; }
     const s = extraStats();
     const cur = it.unlock.cur(s, levelFromXp(s.xp));
     openModal(`🔒 ${it.name}`, [{ label:"Fechar", onClick:null }],
@@ -1302,8 +1350,9 @@ export function initScreens(){
   });
 
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
-  buildArenaHud();
+    buildArenaHud();
   initWorkshop();
+  maybeShowLaunch();
   (function(){
     const st = document.createElement("style");
     st.textContent = "#reconnect{pointer-events:none}";

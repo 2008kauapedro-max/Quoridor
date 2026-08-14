@@ -79,7 +79,7 @@ export const SKIN_CATALOG = [
   { id:"p-portugal", sub:"pais",   cat:"piece", name:"Portugal",   swatch:["#16a34a","#dc2626"], ...P("portugal","#046a38","#da291c",115,"repeating-linear-gradient(45deg,#046a38 0 8px,#da291c 8px 16px)"), unlock:{desc:"Sequência de 2 vitórias.",cur:s=>s.bestWinStreak,target:2} },
 
   /* ⚽ TIMES */
-  { id:"p-bolacopa", cat:"piece", sub:"time", name:"Bola Copa", swatch:["#f8fafc","#0f172a"], free:true, ...P("bolacopa","#e2e8f0","#0f172a",180,"repeating-linear-gradient(45deg,#009c3b 0 8px,#ffdf00 8px 16px)") },
+  { id:"p-bolacopa", cat:"piece", sub:"time", name:"Trionda 2026", swatch:["#f8fafc","#0f172a"], price:1, ...P("bolacopa","#e2e8f0","#0f172a",180,"repeating-linear-gradient(45deg,#009c3b 0 8px,#ffdf00 8px 16px)") },
   { id:"p-flamengo", sub:"time", cat:"piece", name:"Flamengo", swatch:["#c8102e","#000000"], ...P("flamengo","#c8102e","#000000",160,"repeating-linear-gradient(45deg,#c8102e 0 8px,#000000 8px 16px)"), unlock:{desc:"Vença 1 partida.",cur:s=>s.wins,target:1} },
   { id:"p-vasco", sub:"time",    cat:"piece", name:"Vasco",    swatch:["#000000","#ffffff"], ...P("vasco","#3a3a3a","#000000",145,"repeating-linear-gradient(45deg,#000000 0 8px,#ffffff 8px 16px)"), unlock:{desc:"Vença 2 partidas.",cur:s=>s.wins,target:2} },
   { id:"p-paysandu", sub:"time", cat:"piece", name:"Paysandu", swatch:["#003da5","#ffffff"], ...P("paysandu","#003da5","#00205b",165,"repeating-linear-gradient(45deg,#003da5 0 8px,#ffffff 8px 16px)"), unlock:{desc:"Alcance o nível 2.",cur:(s,l)=>l,target:2} },

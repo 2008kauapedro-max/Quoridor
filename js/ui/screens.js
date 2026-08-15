@@ -21,7 +21,7 @@ import {
   loginEmail, registerEmail, loginGoogle, logout, resetPassword,
   getProfile, updateProfile, uploadAvatar, getRanking, searchPlayers, getFriends,
   getFriendRequests, respondFriendRequest, removeFriend, sendFriendRequest, getAnnouncements, postAnnouncement,
-    pairCount, logMatch, requestPurchase, listPendingPurchases, approvePurchase, rejectPurchase, getRankedRanking, claimRankedMatch, submitRankedResult, getRankedResult, autoWinRanked, getMyRanked, getRankedBoard, getRankedHistory
+    pairCount, logMatch, requestPurchase, listPendingPurchases, approvePurchase, rejectPurchase, getRankedRanking, claimRankedMatch, submitRankedResult, getRankedResult, autoWinRanked, getMyRanked, getRankedBoard, getRankedHistory, listPendingRanked
 } from "../services/supabase.js";
 import { net } from "../services/realtime.js";
 import {
@@ -370,8 +370,8 @@ function paintTimer(){
   if (barR) barR.style.width = (cur === "red" ? pct : 100) + "%";
   if (barB) barB.style.width = (cur === "blue" ? pct : 100) + "%";
   const tR = $("ahTrTxt"), tB = $("ahTbTxt");
-  if (tR) tR.textContent = cur === "red" ? Math.ceil(S.turnLeft) + "s" : "";
-  if (tB) tB.textContent = cur === "blue" ? Math.ceil(S.turnLeft) + "s" : "";
+  if (tR) tR.textContent = cur === "red" ? Math.max(0, Math.ceil(S.turnLeft)) + "s" : "";
+  if (tB) tB.textContent = cur === "blue" ? Math.max(0, Math.ceil(S.turnLeft)) + "s" : "";
 }
 function resetTurnTimer(){ if (S){ S.turnLeft = TURN_SECONDS; paintTimer(); } }
 function stopTurnTimer(){ if (S?.turnInt) clearInterval(S.turnInt); if (S) S.turnInt = null; }
@@ -379,7 +379,18 @@ function startTurnTimer(){
   stopTurnTimer();
   S.turnInt = setInterval(() => {
     if (!S || S.state.over){ stopTurnTimer(); return; }
-    if (!humanTurn()){ S.turnLeft = TURN_SECONDS; paintTimer(); return; }
+    const mine = humanTurn();
+    if (S.mode === "online" && !mine){
+      S.turnLeft -= 0.25;
+      if (S.turnLeft <= -10){
+        toast("⏱ Rival estourou o tempo — vez passada!");
+        doSkip();
+        return;
+      }
+      paintTimer();
+      return;
+    }
+    if (!mine){ S.turnLeft = TURN_SECONDS; paintTimer(); return; }
     S.turnLeft -= 0.25;
     if (S.turnLeft <= 0){
       stopTurnTimer();
@@ -697,7 +708,7 @@ async function endGame(){
         const impacts = analyzeWallImpacts(st, my);
         let rr = await submitRankedResult({ matchId: mid, iWon: won, abandoned: !!st.abandoned,
           impacts, wallsUsed: st.stats.walls[my], wallsLeft: st.players[my].walls, durationSec: sec });
-        for (let i = 0; i < 20 && rr?.status === "pending"; i++){
+        for (let i = 0; i < 32 && rr?.status === "pending"; i++){
           await new Promise(r2 => setTimeout(r2, 3000));
           rr = await getRankedResult(mid);
         }
@@ -1645,7 +1656,7 @@ export function initScreens(){
     try {
       const chip = $("homeUserChip");
       if (!chip) return;
-      chip.style.cssText = "position:fixed;top:10px;right:12px;z-index:60;margin:0;width:auto";
+      chip.style.cssText = "position:absolute;top:14px;right:14px;z-index:60;margin:0;height:46px;box-sizing:border-box";
     } catch (e){ console.warn("chip-pos ignorado:", e); }
   })();
   (function fixOrder4(){
@@ -1717,6 +1728,7 @@ export function initScreens(){
   initWorkshop();
   maybeShowLaunch();
   setTimeout(maybeShowNews, 1500);
+  setTimeout(cleanupPendingRanked, 2500);
   (function buildRanked(){
     if (!$("rankedScreen")){
       const scr = document.createElement("div");
@@ -1958,4 +1970,12 @@ function tierIconHtml(t, size){
     Esmeralda: "esmeralda", Mestre: "mestre", "Lendário": "lendario", "Cósmico": "cosmico" }[t.name] || "bronze";
   return '<img src="img/ranks/' + file + '.png" alt="' + t.name + '" style="width:' + size + 'px;height:' + size +
     'px;object-fit:contain;vertical-align:middle;display:inline-block" onerror="this.outerHTML=\'' + t.icon + '\'">';
+}
+
+async function cleanupPendingRanked(){
+  try {
+    const pend = await listPendingRanked();
+    for (const m of pend.slice(0, 5)) await autoWinRanked(m.id);
+    if (pend.length) setTimeout(() => showScreen("ranked"), 800);
+  } catch (_){}
 }

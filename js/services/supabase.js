@@ -308,3 +308,12 @@ export async function getRankedHistory(){
     .eq("user_id", ses.user.id).order("created_at", { ascending: false }).limit(10);
   return data || null;
 }
+
+export async function listPendingRanked(){
+  const ses = getSession();
+  if (!sb || !ses) return [];
+  const { data } = await sb.from("ranked_matches").select("id,player_a,player_b,rep_a,rep_b").eq("status", "pending");
+  return (data || []).filter((m) =>
+    (m.player_a === ses.user.id && m.rep_a && !m.rep_b) ||
+    (m.player_b === ses.user.id && m.rep_b && !m.rep_a));
+}

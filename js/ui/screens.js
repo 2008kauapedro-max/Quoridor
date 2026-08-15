@@ -1677,8 +1677,8 @@ export function initScreens(){
       const chip = $("homeUserChip");
       if (!chip) return;
       const bell = document.querySelector(".hamburger.bell") || document.querySelector(".hamburger");
-      const r = bell ? bell.getBoundingClientRect() : { top: 14, height: 46 };
-      chip.style.cssText = "position:fixed;top:" + r.top + "px;right:14px;z-index:60;margin:0;height:" + r.height + "px;box-sizing:border-box";
+      if (bell && chip.parentElement !== bell.parentElement) bell.parentElement.appendChild(chip);
+      chip.style.cssText = "position:absolute;top:14px;right:14px;z-index:60;margin:0;height:46px;box-sizing:border-box";
     } catch (e){ console.warn("chip-pos ignorado:", e); }
   })();
   (function fixOrder4(){

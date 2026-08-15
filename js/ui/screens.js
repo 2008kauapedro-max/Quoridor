@@ -1618,6 +1618,13 @@ export function initScreens(){
       if (banner && banner.parentElement === wrap.parentNode) wrap.parentNode.insertBefore(banner, wrap);
     } catch (e){ console.warn("apoio-last ignorado:", e); }
   })();
+  (function fixChipPos(){
+    try {
+      const chip = $("homeUserChip");
+      if (!chip) return;
+      chip.style.cssText = "position:fixed;top:10px;right:12px;z-index:60;margin:0;width:auto";
+    } catch (e){ console.warn("chip-pos ignorado:", e); }
+  })();
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
   buildArenaHud();
   initWorkshop();

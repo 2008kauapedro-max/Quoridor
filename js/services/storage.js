@@ -169,3 +169,6 @@ export function hasSnapshot(){ return !!getSnapshot(); }
 
 export function setLastReplay(list){ write("lastReplay", list || []); }
 export function getLastReplay(){ return read("lastReplay", []); }
+export function getClips(){ try { return JSON.parse(localStorage.getItem("qa_clips") || "[]"); } catch (_){ return []; } }
+export function saveClip(clip){ const arr = getClips(); arr.unshift(clip); try { localStorage.setItem("qa_clips", JSON.stringify(arr.slice(0, 10))); } catch (_){} }
+export function deleteClip(id){ localStorage.setItem("qa_clips", JSON.stringify(getClips().filter((c) => c.id !== id))); }

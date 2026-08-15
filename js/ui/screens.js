@@ -14,7 +14,7 @@ import { createBoard } from "./board.js";
 import { SFX, toast, confetti } from "./effects.js";
 import {
   getSettings, setSettings, getStats, recordMatch, getUnlocked,
-  getSnapshot, setSnapshot, clearSnapshot, setLastReplay, syncCloudData
+  getSnapshot, setSnapshot, clearSnapshot, setLastReplay, syncCloudData, getClips, saveClip, deleteClip
 } from "../services/storage.js";
 import {
   isConfigured, getSession, onAuthChange,
@@ -41,6 +41,7 @@ export function showScreen(name){
   if (name === "skins"){ pieceSub = "classic"; renderSkins(); }
   if (name === "profile") refreshProfile();
   if (name === "ranked") refreshRanked2();
+  if (name === "clips") refreshClips();
 }
 
 export function applySettings(s){
@@ -664,6 +665,18 @@ async function endGame(){
 
   const humanColor = S.mode === "ai" ? "red" : (S.mode === "online" ? S.myColor : w);
   const humanWon = humanColor === w;
+  try {
+    const oppC = humanColor === "red" ? "blue" : "red";
+    const myPiece = getSettings().piece || "p-classic";
+    const oppPiece = S.oppProfile?.piece || S.oppPiece || "p-classic";
+    saveClip({ id: Date.now(), date: Date.now(), events: S.state.replay, mode: S.mode,
+      won: humanWon, myColor: humanColor,
+      oppName: S.oppProfile?.username || NAMES[oppC],
+      nameRed: humanColor === "red" ? "Você" : (S.oppProfile?.username || NAMES[oppC]),
+      nameBlue: humanColor === "blue" ? "Você" : (S.oppProfile?.username || NAMES[oppC]),
+      skinRed: humanColor === "red" ? myPiece : oppPiece,
+      skinBlue: humanColor === "blue" ? myPiece : oppPiece });
+  } catch (_){}
   const extra = JSON.parse(localStorage.getItem("qa_extra") || "{}");
   if (humanWon){
     if (S.mode === "online") extra.onlineWins = (extra.onlineWins||0)+1;
@@ -756,13 +769,20 @@ export function endSession(goHome = true){
 
 const RP = { events: [], idx: 0, playing: false, timer: null, state: null };
 
-export function openReplay(events){
+export function openReplay(events, meta){
   if (!events?.length){ toast("Nenhum replay disponível."); return; }
   RP.events = events; RP.idx = 0; RP.playing = false; RP.state = newGame();
   if (replayBoard) replayBoard.destroy();
   replayBoard = createBoard($("replayBoard"), null, false);
   replayBoard.sync(RP.state);
   $("btnReplayPlay").textContent = "▶";
+  const cm = $("clipMeta");
+  if (meta){
+    try {
+      replayBoard.setPieceColors({ red: pieceBgFor(meta.skinRed || "p-classic", "red", true), blue: pieceBgFor(meta.skinBlue || "p-classic", "blue", true) });
+      if (cm) cm.innerHTML = clipMetaHtml(meta);
+    } catch (_){}
+  } else if (cm) cm.innerHTML = "";
   showScreen("replay");
 }
 function rpStep(dir){
@@ -1982,3 +2002,69 @@ async function cleanupPendingRanked(){
     }
   } catch (_){}
 }
+
+function clipMetaHtml(meta){
+  const sk = (id) => SKIN_CATALOG.find((i) => i.id === id)?.name || "Clássica";
+  const card = (name, skinId, color) => '<div style="flex:1;display:flex;align-items:center;gap:6px;justify-content:center;flex-wrap:wrap">' +
+    '<span style="width:18px;height:18px;border-radius:50%;background:' + pieceBgFor(skinId, color, true) + ';display:inline-block;border:1px solid #0006"></span>' +
+    '<span style="font-weight:700">' + escapeHtml(name) + '</span>' +
+    '<span style="color:#7E93B4;font-size:11px">🎨 ' + sk(skinId) + '</span></div>';
+  return '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:6px;flex-wrap:wrap">' +
+    card(meta.nameRed || "Vermelho", meta.skinRed || "p-classic", "red") +
+    card(meta.nameBlue || "Azul", meta.skinBlue || "p-classic", "blue") + '</div>' +
+    '<p style="text-align:center;margin:0 0 8px;font-size:12px;color:#7E93B4">' + (meta.won ? "✅ Vitória" : "❌ Derrota") + " · " + new Date(meta.date).toLocaleString("pt-BR") + '</p>';
+}
+function downloadClip(c){
+  const blob = new Blob([JSON.stringify(c)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "clip-rage-" + c.id + ".json";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  toast("💾 Clipe salvo no aparelho!");
+}
+function openClip(c){ openReplay(c.events, c); }
+function refreshClips(){
+  const list = $("clipsList");
+  if (!list) return;
+  const arr = getClips();
+  if (!arr.length){ list.innerHTML = '<p class="hint">Sem clipes ainda — termine uma partida pra gravar o primeiro! 🎬</p>'; return; }
+  list.innerHTML = "";
+  arr.forEach((c) => {
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;align-items:center;gap:8px;padding:10px;border:1px solid var(--line,#16233C);border-radius:12px;margin-bottom:8px;background:var(--card,#0C1322)";
+    row.innerHTML = '<span style="font-size:18px">' + (c.won ? "✅" : "❌") + '</span>' +
+      '<span style="flex:1;font-size:12px;font-weight:700">vs ' + escapeHtml(c.oppName || "Rival") + '<br><span style="color:#7E93B4;font-weight:400">' + new Date(c.date).toLocaleString("pt-BR") + '</span></span>';
+    const bW = document.createElement("button"); bW.textContent = "▶"; bW.className = "mini-btn";
+    bW.onclick = () => openClip(c);
+    const bS = document.createElement("button"); bS.textContent = "💾"; bS.className = "mini-btn";
+    bS.onclick = () => downloadClip(c);
+    const bD = document.createElement("button"); bD.textContent = "🗑️"; bD.className = "mini-btn";
+    bD.onclick = () => { deleteClip(c.id); refreshClips(); toast("🗑️ Clipe excluído."); };
+    row.append(bW, bS, bD);
+    list.appendChild(row);
+  });
+}
+(function buildClipsScreen(){
+  if ($("screenClips")) return;
+  const sec = document.createElement("section");
+  sec.id = "screenClips"; sec.className = "screen"; sec.dataset.screen = "clips";
+  sec.innerHTML = '<div style="max-width:520px;margin:0 auto;padding:16px">' +
+    '<h2 style="text-align:center;margin:8px 0 12px">📼 Meus Clipes</h2>' +
+    '<div id="clipsList"></div>' +
+    '<button id="btnClipsBack" class="menu-btn" style="width:100%;margin-top:10px">⬅️ Voltar</button></div>';
+  document.body.appendChild(sec);
+  setTimeout(() => { const b = $("btnClipsBack"); if (b) b.onclick = () => showScreen("home"); }, 0);
+  const cm = document.createElement("div");
+  cm.id = "clipMeta";
+  const rb = $("replayBoard");
+  if (rb) rb.parentNode.insertBefore(cm, rb);
+  const sb = $("sidebar");
+  if (sb){
+    const item = document.createElement("button");
+    item.textContent = "📼 Meus Clipes";
+    item.style.cssText = "width:100%;text-align:left;padding:12px;border:none;background:transparent;color:var(--text,#E9F2FF);font-weight:700;cursor:pointer;font-size:14px";
+    item.onclick = () => { sb.classList.remove("open"); const bd = $("sidebarBackdrop"); if (bd) bd.classList.add("hidden"); showScreen("clips"); };
+    sb.appendChild(item);
+  }
+})();

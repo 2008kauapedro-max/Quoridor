@@ -1678,7 +1678,8 @@ export function initScreens(){
       if (!chip || chip.dataset.posFix) return;
       const bell = document.querySelector(".hamburger.bell") || document.querySelector(".hamburger");
       if (bell && chip.parentElement !== bell.parentElement) bell.parentElement.appendChild(chip);
-      chip.style.cssText = "position:absolute;top:14px;right:14px;z-index:60;margin:0;height:46px;box-sizing:border-box";
+      const t = bell ? bell.offsetTop : 14, h = bell ? bell.offsetHeight : 46;
+      chip.style.cssText = "position:absolute;top:" + t + "px;right:14px;z-index:60;margin:0;height:" + h + "px;box-sizing:border-box";
       chip.dataset.posFix = "1";
     };
     apply();

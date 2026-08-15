@@ -1452,6 +1452,37 @@ export function initScreens(){
     if ($("btnCreateRoomHome")) $("btnCreateRoomHome").style.display = "none";
     if ($("btnJoinCodeHome")) $("btnJoinCodeHome").style.display = "none";
   })();
+  (function reorgLobby(){
+    const online = $("btnOnline");
+    if (!online || $("qaLobby")) return;
+    const parent = online.parentElement;
+    const wrap = document.createElement("div");
+    wrap.id = "qaLobby";
+    wrap.style.cssText = "display:flex;flex-direction:column;gap:12px;width:100%;max-width:430px;margin:0 auto;box-sizing:border-box";
+    parent.insertBefore(wrap, online);
+    const big = (b, bg, fg) => { b.style.cssText = "width:100%;margin:0;padding:15px;font-size:16px;font-weight:800;border:none;border-radius:14px;cursor:pointer;color:" + (fg || "#fff") + ";" + bg; };
+    const smallB = (b) => { b.style.cssText = "width:100%;margin:0;padding:13px 6px;font-size:13px;font-weight:700;border:1px solid var(--line,#16233C);border-radius:12px;background:var(--card,#0C1322);color:var(--text,#E9F2FF);cursor:pointer"; };
+    const grid = $("qaHomeGrid");
+    if (grid) grid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0";
+    const apoia = Array.from(parent.querySelectorAll("button")).find(b => (b.textContent || "").includes("Apoiar"));
+    big($("btnOnline"), "background:linear-gradient(135deg,#246BCE,#63B8FF);box-shadow:0 6px 18px rgba(36,107,206,.35)");
+    wrap.appendChild($("btnOnline"));
+    if ($("btnRankedHome")){
+      big($("btnRankedHome"), "background:linear-gradient(135deg,#8a5a2b,#F5C033);box-shadow:0 6px 18px rgba(245,192,51,.25)", "#1e293b");
+      wrap.appendChild($("btnRankedHome"));
+    }
+    if (grid) wrap.appendChild(grid);
+    Array.from(parent.querySelectorAll("button")).forEach(b => {
+      if (b.parentElement === wrap || b.parentElement === grid) return;
+      if (b === apoia) return;
+      if (getComputedStyle(b).display === "none") return;
+      smallB(b); wrap.appendChild(b);
+    });
+    if (apoia){
+      apoia.style.cssText = "width:100%;margin:4px 0 0;padding:10px;background:transparent;border:1px dashed #fbbf2466;color:#fbbf24;font-weight:600;border-radius:12px;cursor:pointer;font-size:12px";
+      wrap.appendChild(apoia);
+    }
+  })();
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
   buildArenaHud();
   initWorkshop();

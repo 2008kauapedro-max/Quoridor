@@ -1673,13 +1673,16 @@ export function initScreens(){
     } catch (e){ console.warn("apoio-last ignorado:", e); }
   })();
   (function fixChipPos(){
-    try {
+    const apply = () => {
       const chip = $("homeUserChip");
-      if (!chip) return;
+      if (!chip || chip.dataset.posFix) return;
       const bell = document.querySelector(".hamburger.bell") || document.querySelector(".hamburger");
       if (bell && chip.parentElement !== bell.parentElement) bell.parentElement.appendChild(chip);
-      chip.style.cssText = "position:absolute;top:100px;right:14px;z-index:60;margin:0;height:46px;box-sizing:border-box";
-    } catch (e){ console.warn("chip-pos ignorado:", e); }
+      chip.style.cssText = "position:absolute;top:14px;right:14px;z-index:60;margin:0;height:46px;box-sizing:border-box";
+      chip.dataset.posFix = "1";
+    };
+    apply();
+    setInterval(apply, 500);
   })();
   (function fixOrder4(){
     try {

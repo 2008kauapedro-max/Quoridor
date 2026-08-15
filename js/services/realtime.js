@@ -61,7 +61,7 @@ function finalize(row,onMatched){
   const isHost=row.host_id===me();
   const myColor=isHost?row.host_color:(row.host_color==="red"?"blue":"red");
   openRoomChannel(row.code);
-  onMatched({code:row.code,myColor,firstTurn:row.first_turn,race:row.mode==="race",ranked:row.mode==="ranked"});
+  onMatched({code:row.code,myColor,firstTurn:row.first_turn,race:row.mode==="race",ranked:row.mode==="ranked",set:row.settings||null});
 }
 function pollRoom(code,onMatched){
   currentRoom=code;
@@ -99,9 +99,9 @@ export async function cancelQueue(){
   if(currentRoom)await sbClient?.from("rooms").delete().eq("code",currentRoom).is("guest_id",null);
   currentRoom=null;
 }
-export async function createRoom(isPublic, mode){
+export async function createRoom(isPublic, mode, settings){
   const code=rndCode();
-  await sbClient.from("rooms").insert({code,host_id:me(),is_public:!!isPublic,status:"waiting",mode:mode||"classic"});
+  await sbClient.from("rooms").insert({code,host_id:me(),is_public:!!isPublic,status:"waiting",mode:mode||"classic",settings:settings||null});
   currentRoom=code;return code;
 }
 export async function joinRoom(code,onMatched){

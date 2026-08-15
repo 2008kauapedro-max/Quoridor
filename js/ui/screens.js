@@ -6,7 +6,7 @@ import {
   levelFromXp, xpForLevel, leagueOf, ELO_START, pieceBgFor, pieceWallFor, setCustomColor, rankOf, nextRank
 } from "../core/constants.js";
 import {
-  newGame, newGameRace, applyMove, applyWall, validateWall, randomFirstTurn, applyEvent
+  newGame, newGameRace, newGameCustom, applyMove, applyWall, validateWall, randomFirstTurn, applyEvent
 } from "../core/rules.js";
 import { chooseAiAction } from "../core/ai.js";
 import { createBoard } from "./board.js";
@@ -267,6 +267,7 @@ export function startGame(opts){
   S.race = !!opts.race;
   if (opts.state){ S.state = opts.state; S.seconds = opts.seconds || 0; }
   else if (S.race){ S.state = newGameRace(); }
+  else if (opts.set && opts.set.size){ S.state = newGameCustom(opts.set.size, opts.set.walls ?? 10); }
   if (opts.myColor) S.myColor = opts.myColor;
   S.private = !!opts.private;
   S.ranked = !!opts.ranked;
@@ -1234,7 +1235,8 @@ export function initScreens(){
     $("btnQueue").classList.remove("hidden");
   };
   $("btnCreateRoom").onclick = async () => {
-    const code = await net.createRoom(false);
+    const set = window.QA_CUSTOM_SET || null;
+    const code = await net.createRoom(false, set?.rush ? "race" : "classic", set);
     $("roomCodeDisplay").classList.remove("hidden");
     $("roomCodeDisplay").querySelector("b").textContent = code;
     net.hostRoom(code, (info) => startGame({ mode: "online", private: true, ...info }));
@@ -1442,7 +1444,7 @@ export function initScreens(){
         if (!getSession()){ const ok = await net.ensureAnon(); if (!ok){ toast("Entre na sua conta."); showScreen("auth"); return; } }
         net.joinRoom(code, (info) => startGame({ mode: "online", private: true, ...info }));
       };
-      $("qaCreateRoom2").onclick = () => { closeModal(); $("btnCreateRoomHome").click(); };
+      $("qaCreateRoom2").onclick = () => { closeModal(); openCustomRoom(); };
     };
     grid.appendChild(alt);
     if ($("btnRace")){ small($("btnRace")); if ($("btnRace").parentNode !== grid) grid.appendChild($("btnRace")); }
@@ -1482,6 +1484,48 @@ export function initScreens(){
       apoia.style.cssText = "width:100%;margin:4px 0 0;padding:10px;background:transparent;border:1px dashed #fbbf2466;color:#fbbf24;font-weight:600;border-radius:12px;cursor:pointer;font-size:12px";
       wrap.appendChild(apoia);
     }
+  })();
+  (function reorgLobby2(){
+    const oldWrap = $("qaLobby");
+    const online = $("btnOnline");
+    if (!online) return;
+    const parent = online.parentElement;
+    if (oldWrap){ while (oldWrap.firstChild) parent.appendChild(oldWrap.firstChild); oldWrap.remove(); }
+    for (const id of ["btnDismissBanner", "msgBubbleClose"]){ const b = $(id); if (b) b.style.display = "none"; }
+    if ($("btnInstallBanner") && $("installBanner")) $("installBanner").appendChild($("btnInstallBanner"));
+    const wrap = document.createElement("div");
+    wrap.id = "qaLobby";
+    wrap.style.cssText = "display:flex;flex-direction:column;gap:12px;width:100%;max-width:430px;margin:0 auto;box-sizing:border-box";
+    parent.insertBefore(wrap, online);
+    const big = (b, bg, fg) => { b.style.cssText = "width:100%;margin:0;padding:15px;font-size:16px;font-weight:800;border:none;border-radius:14px;cursor:pointer;color:" + (fg || "#fff") + ";" + bg; };
+    const smallB = (b) => { b.style.cssText = "width:100%;margin:0;padding:12px 6px;font-size:12px;font-weight:700;border:1px solid var(--line,#16233C);border-radius:12px;background:var(--card,#0C1322);color:var(--text,#E9F2FF);cursor:pointer"; };
+    big(online, "background:linear-gradient(135deg,#246BCE,#63B8FF);box-shadow:0 6px 18px rgba(36,107,206,.35)");
+    wrap.appendChild(online);
+    if ($("btnRankedHome")){ big($("btnRankedHome"), "background:linear-gradient(135deg,#8a5a2b,#F5C033);box-shadow:0 6px 18px rgba(245,192,51,.25)", "#1e293b"); wrap.appendChild($("btnRankedHome")); }
+    let grid = $("qaHomeGrid");
+    if (!grid){ grid = document.createElement("div"); grid.id = "qaHomeGrid"; }
+    grid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0";
+    grid.innerHTML = "";
+    wrap.appendChild(grid);
+    if ($("btnRace")){ smallB($("btnRace")); grid.appendChild($("btnRace")); }
+    if ($("qaAltBtn")){ smallB($("qaAltBtn")); grid.appendChild($("qaAltBtn")); }
+    const nav = document.createElement("div");
+    nav.id = "qaNavGrid";
+    nav.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:8px";
+    for (const id of ["btnProfile", "btnFriends", "btnSkins", "btnRanking", "btnSettings", "btnHowTo"]){
+      const b = $(id); if (b){ smallB(b); nav.appendChild(b); }
+    }
+    wrap.appendChild(nav);
+    const apoia = Array.from(parent.querySelectorAll("button")).find(b => (b.textContent || "").includes("Apoiar"));
+    if (apoia){
+      apoia.style.cssText = "width:100%;margin:4px 0 0;padding:10px;background:transparent;border:1px dashed #fbbf2466;color:#fbbf24;font-weight:600;border-radius:12px;cursor:pointer;font-size:12px";
+      wrap.appendChild(apoia);
+    }
+    Array.from(parent.querySelectorAll("button")).forEach(b => {
+      if (b.closest("#qaLobby")) return;
+      if (getComputedStyle(b).display === "none") return;
+      b.style.display = "none";
+    });
   })();
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
   buildArenaHud();
@@ -1584,4 +1628,57 @@ async function refreshRanked(){
       '<span class="rank-name" style="flex:1">' + rk2.icon + " " + escapeHtml(r.username) + '</span>' +
       '<span class="rank-elo">' + r.elo_ranked + ' PR</span></li>';
   }).join("");
+}
+
+function openCustomRoom(){
+  const MAXW = { 8: 10, 9: 14, 10: 20 };
+  let size = 9, walls = 10;
+  openModal("🎛️ Sala Personalizada", [
+    { label: "🏠 Criar Sala", onClick: () => {
+        window.QA_CUSTOM_SET = size === "rush" ? { rush: true } : { size, walls };
+        $("btnCreateRoomHome").click();
+      } },
+    { label: "Cancelar", onClick: null }
+  ], '<div style="display:flex;flex-direction:column;gap:12px;padding:6px 0">' +
+     '<p class="hint" style="margin:0;text-align:center">📐 Tamanho do tabuleiro</p>' +
+     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">' +
+     [8, 9, 10].map(n => '<button class="mini-btn qa-size" data-size="' + n + '" style="padding:10px 0">' + n + "×" + n + "</button>").join("") +
+     '<button class="mini-btn qa-size" data-size="rush" style="padding:10px 0">🏁 RUSH</button></div>' +
+     '<p class="hint" style="margin:0;text-align:center">🧱 Barreiras por jogador</p>' +
+     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">' +
+     [5, 10, 15, 20].map(n => '<button class="mini-btn qa-walls" data-walls="' + n + '" style="padding:10px 0">' + n + "</button>").join("") + "</div>" +
+     '<input id="qaWallsCustom" class="input" type="number" min="1" max="20" placeholder="✏️ Ou digite o número de barreiras">' +
+     '<p id="qaWallWarn" class="hint" style="margin:0;text-align:center;color:#63B8FF"></p></div>');
+  const warn = () => {
+    const w = $("qaWallWarn");
+    if (!w) return;
+    w.textContent = size === "rush"
+      ? "🏁 RUSH usa a pista de corrida (14×9 · 14 barreiras fixas)"
+      : "📐 Tabuleiro " + size + "×" + size + " · máximo permitido: " + MAXW[size] + " barreiras por jogador";
+  };
+  const mark = () => {
+    document.querySelectorAll(".qa-size").forEach(b => { b.style.background = (b.dataset.size == size) ? "#246BCE" : ""; b.style.color = (b.dataset.size == size) ? "#fff" : ""; });
+    document.querySelectorAll(".qa-walls").forEach(b => { b.style.background = (+b.dataset.walls === walls) ? "#246BCE" : ""; b.style.color = (+b.dataset.walls === walls) ? "#fff" : ""; });
+    const inp = $("qaWallsCustom"); if (inp) inp.value = walls;
+  };
+  document.querySelectorAll(".qa-size").forEach(b => b.onclick = () => {
+    size = b.dataset.size === "rush" ? "rush" : +b.dataset.size;
+    if (size !== "rush") walls = Math.min(walls, MAXW[size]);
+    mark(); warn();
+  });
+  document.querySelectorAll(".qa-walls").forEach(b => b.onclick = () => {
+    if (size === "rush"){ toast("🏁 RUSH tem barreiras fixas!"); return; }
+    walls = Math.min(+b.dataset.walls, MAXW[size]);
+    mark(); warn();
+  });
+  const inp = $("qaWallsCustom");
+  if (inp) inp.oninput = () => {
+    if (size === "rush") return;
+    const v = parseInt(inp.value, 10);
+    if (!v || v < 1) return;
+    if (v > MAXW[size]){ walls = MAXW[size]; toast("⚠️ Pra esse tabuleiro o máximo são " + MAXW[size] + " barreiras!"); }
+    else walls = v;
+    mark(); warn();
+  };
+  mark(); warn();
 }

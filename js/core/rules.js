@@ -181,8 +181,8 @@ export function setWallSegments(state, type, r, c, on){
 export function validateWall(state, type, r, c){
   const rows = state.rows || SIZE;
   const cols = state.cols || SIZE;
-  const goalRed = state.mode === "race" ? GOAL_RACE : GOAL.red;
-  const goalBlue = state.mode === "race" ? GOAL_RACE : GOAL.blue;
+  const __g = state.mode === "race" ? { red: GOAL_RACE, blue: GOAL_RACE } : (state.goals || { red: GOAL.red, blue: GOAL.blue });
+  const goalRed = __g.red, goalBlue = __g.blue;
 
   if (r < 0 || c < 0 || r > rows - 2 || c > cols - 2)
     return { ok: false, reason: "fora" };
@@ -262,8 +262,8 @@ export function bfsDistance(state, startR, startC, goalRow){
 /* ═══════════ VITÓRIA & UTILIDADES ═══════════ */
 
 export function checkVictory(state){
-  const goalRed = state.mode === "race" ? GOAL_RACE : GOAL.red;
-  const goalBlue = state.mode === "race" ? GOAL_RACE : GOAL.blue;
+  const __g = state.mode === "race" ? { red: GOAL_RACE, blue: GOAL_RACE } : (state.goals || { red: GOAL.red, blue: GOAL.blue });
+  const goalRed = __g.red, goalBlue = __g.blue;
   if (state.players.red.r  === goalRed){  state.over = true; state.winner = "red";  }
   if (state.players.blue.r === goalBlue){ state.over = true; state.winner = "blue"; }
   return state.over;
@@ -272,8 +272,8 @@ export function checkVictory(state){
 /* Marca se o jogador estava ATRÁS em algum momento (conquista virada) */
 function trackBehind(state){
   const rows = state.rows || SIZE;
-  const goalRed = state.mode === "race" ? GOAL_RACE : GOAL.red;
-  const goalBlue = state.mode === "race" ? GOAL_RACE : GOAL.blue;
+  const __g = state.mode === "race" ? { red: GOAL_RACE, blue: GOAL_RACE } : (state.goals || { red: GOAL.red, blue: GOAL.blue });
+  const goalRed = __g.red, goalBlue = __g.blue;
   const redDist  = Math.abs(state.players.red.r - goalRed);
   const blueDist = Math.abs(state.players.blue.r - goalBlue);
   if (redDist  > blueDist) state.stats.wasBehind.red  = true;
@@ -283,4 +283,18 @@ function trackBehind(state){
 /* Sorteio 50/50 de quem começa */
 export function randomFirstTurn(){
   return Math.random() < 0.5 ? "red" : "blue";
+}
+
+/* ═══════════ SALA PERSONALIZADA (NxN + barreiras) ═══════════ */
+export function newGameCustom(size, walls){
+  const st = newGame();
+  st.rows = size; st.cols = size;
+  st.goals = { red: 0, blue: size - 1 };
+  st.players.red  = { r: size - 1, c: Math.floor(size / 2), walls };
+  st.players.blue = { r: 0,        c: Math.floor(size / 2), walls };
+  st.hWall = grid(size - 1, size - 1, false);
+  st.vWall = grid(size - 1, size - 1, false);
+  st.hSeg  = grid(size - 1, size, false);
+  st.vSeg  = grid(size, size - 1, false);
+  return st;
 }

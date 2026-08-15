@@ -1527,6 +1527,41 @@ export function initScreens(){
       b.style.display = "none";
     });
   })();
+  (function fixLobbyFinal(){
+    try {
+      const online = $("btnOnline");
+      if (!online || $("qaLobbyFinal")) return;
+      const parent = online.parentElement;
+      const oldWrap = $("qaLobby");
+      if (oldWrap){ while (oldWrap.firstChild) parent.appendChild(oldWrap.firstChild); oldWrap.remove(); }
+      const wrap = document.createElement("div");
+      wrap.id = "qaLobbyFinal";
+      wrap.style.cssText = "display:flex;flex-direction:column;gap:12px;width:100%;max-width:430px;margin:0 auto;box-sizing:border-box";
+      parent.insertBefore(wrap, online);
+      const big = (b, bg, fg) => { b.style.cssText = "width:100%;margin:0;padding:15px;font-size:16px;font-weight:800;border:none;border-radius:14px;cursor:pointer;color:" + (fg || "#fff") + ";" + bg; };
+      const smallB = (b) => { b.style.cssText = "width:100%;margin:0;padding:12px 6px;font-size:12px;font-weight:700;border:1px solid var(--line,#16233C);border-radius:12px;background:var(--card,#0C1322);color:var(--text,#E9F2FF);cursor:pointer"; };
+      big(online, "background:linear-gradient(135deg,#246BCE,#63B8FF);box-shadow:0 6px 18px rgba(36,107,206,.35)");
+      wrap.appendChild(online);
+      if ($("btnRankedHome")){ big($("btnRankedHome"), "background:linear-gradient(135deg,#8a5a2b,#F5C033);box-shadow:0 6px 18px rgba(245,192,51,.25)", "#1e293b"); wrap.appendChild($("btnRankedHome")); }
+      const g1 = document.createElement("div");
+      g1.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:10px";
+      for (const id of ["qaAltBtn", "btnRace"]){ const b = $(id); if (b){ smallB(b); g1.appendChild(b); } }
+      wrap.appendChild(g1);
+      const g2 = document.createElement("div");
+      g2.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:8px";
+      for (const id of ["btnSkins", "btnRanking", "btnProfile", "btnFriends", "btnSettings", "btnHowTo"]){ const b = $(id); if (b){ smallB(b); g2.appendChild(b); } }
+      wrap.appendChild(g2);
+      const apoias = Array.from(parent.querySelectorAll("button")).filter(b => (b.textContent || "").includes("Apoiar") && !b.closest("#qaLobbyFinal"));
+      apoias.forEach((b, i) => {
+        if (i === 0){ b.style.cssText = "width:100%;margin:4px 0 0;padding:10px;background:transparent;border:1px dashed #fbbf2466;color:#fbbf24;font-weight:600;border-radius:12px;cursor:pointer;font-size:12px"; wrap.appendChild(b); }
+        else b.style.display = "none";
+      });
+      Array.from(parent.querySelectorAll("button")).forEach(b => {
+        if (b.closest("#qaLobbyFinal")) return;
+        b.style.display = "none";
+      });
+    } catch (e){ console.warn("lobby fix ignorado:", e); }
+  })();
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
   buildArenaHud();
   initWorkshop();

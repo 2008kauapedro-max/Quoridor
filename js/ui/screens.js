@@ -1527,7 +1527,7 @@ export function initScreens(){
       b.style.display = "none";
     });
   })();
-  (function fixLobbyFinal(){
+  (function fixLobbyFinal(){ return;
     try {
       const online = $("btnOnline");
       if (!online || $("qaLobbyFinal")) return;

@@ -1717,6 +1717,7 @@ export function initScreens(){
   buildArenaHud();
   initWorkshop();
   maybeShowLaunch();
+  setTimeout(maybeShowNews, 1500);
   (function buildRanked(){
     if (!$("rankedScreen")){
       const scr = document.createElement("div");
@@ -1924,4 +1925,31 @@ async function refreshRanked2(){
       '<span style="font-weight:700;color:' + (h.rp_after >= h.rp_before ? "#4ADE80" : "#F87171") + '">' + (h.rp_after - h.rp_before >= 0 ? "+" : "") + (h.rp_after - h.rp_before) + ' RP</span></li>').join("");
   }
   if (list) list.innerHTML = html;
+}
+
+function showCustomNews(){
+  localStorage.setItem("qa_news_custom", "1");
+  setTimeout(() => openModal("🎛️ Sala Personalizada turbinada!", [
+    { label: "🎛️ Criar sala agora", onClick: () => openCustomRoom() },
+    { label: "Depois", onClick: null }
+  ], '<div style="text-align:center;padding:6px 0;display:flex;flex-direction:column;gap:8px">' +
+     '<div style="font-size:40px">📐🏁</div>' +
+     '<p style="margin:0"><b>Tabuleiros 8×8 · 9×9 · 10×10 · RUSH!</b></p>' +
+     '<p style="margin:0">Escolha quantas <b>barreiras</b> cada jogador usa (5/10/15/20 ou digite o número) — com aviso do limite por tamanho!</p>' +
+     '<p style="margin:0;color:#7E93B4;font-size:12px">Quem entra com o código recebe as mesmas configurações. Acesse em 🎮 Modos Alternativos → 🏠 Criar Sala.</p></div>'), 650);
+}
+function maybeShowNews(){
+  if (!localStorage.getItem("qa_news_ranked")){
+    localStorage.setItem("qa_news_ranked", "1");
+    openModal("🏆 RANQUEADA CHEGOU!", [
+      { label: "⚔️ Conhecer a Ranqueada", onClick: () => { showScreen("ranked"); setTimeout(() => { if (!localStorage.getItem("qa_news_custom")) showCustomNews(); }, 700); } },
+      { label: "Depois", onClick: () => { if (!localStorage.getItem("qa_news_custom")) showCustomNews(); } }
+    ], '<div style="text-align:center;padding:6px 0;display:flex;flex-direction:column;gap:8px">' +
+       '<div style="font-size:38px">🥉🥈💠💚👑🌟🌌</div>' +
+       '<p style="margin:0"><b>8 patentes</b> — do Bronze ao Cósmico!</p>' +
+       '<p style="margin:0">Ganhe <b>RP</b> por vitória, matchmaking por <b>MMR</b>, partidas de <b>colocação</b> e leaderboard com <b>TOP 1</b>!</p>' +
+       '<p style="margin:0;color:#7E93B4;font-size:12px">Vitória vale +25 RP (até +40 com bônus) · barreiras estratégicas dão bônus de eficiência!</p></div>');
+    return;
+  }
+  if (!localStorage.getItem("qa_news_custom")) showCustomNews();
 }

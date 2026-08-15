@@ -106,6 +106,7 @@
   .rank-avatar.frm-f-friend{box-shadow:0 0 0 3px #22c55e}
   /* ═══ sininho de notificacoes ═══ */
   .hamburger.bell{left:70px}
+  .user-chip.chip-right{position:absolute;top:14px;right:14px;height:46px;margin:0;z-index:5;box-sizing:border-box}
   .bell-badge{position:absolute;top:-6px;right:-6px;background:#e11d48;color:#fff;border-radius:999px;
     font-size:11px;line-height:1;padding:4px 7px;font-weight:800;box-shadow:0 2px 8px rgba(225,29,72,.5)}
   .bell-panel{position:fixed;top:70px;left:14px;width:min(340px,calc(100vw - 28px));max-height:70vh;
@@ -154,11 +155,11 @@
   <section class="screen" data-screen="home">
     <button id="btnSidebarOpen" class="hamburger" aria-label="Menu">☰</button>
     <button id="btnBell" class="hamburger bell" aria-label="Notificações">🔔<span id="bellBadge" class="bell-badge hidden">0</span></button>
+    <button id="homeUserChip" class="user-chip chip-right hidden">
+      <img id="homeUserAvatar" src="img/logo.png" alt="avatar" class="chip-avatar">
+      <span id="homeUserName">Jogador</span>
+    </button>
     <div class="home-top">
-      <button id="homeUserChip" class="user-chip hidden">
-        <img id="homeUserAvatar" src="img/logo.png" alt="avatar" class="chip-avatar">
-        <span id="homeUserName">Jogador</span>
-      </button>
       <button id="btnLogin" class="mini-btn">🔑 Entrar</button>
     </div>
     <header class="home-hero">

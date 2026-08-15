@@ -1672,19 +1672,7 @@ export function initScreens(){
       if (banner && banner.parentElement === wrap.parentNode) wrap.parentNode.insertBefore(banner, wrap);
     } catch (e){ console.warn("apoio-last ignorado:", e); }
   })();
-  (function fixChipPos(){
-    const apply = () => {
-      const chip = $("homeUserChip");
-      if (!chip || chip.dataset.posFix) return;
-      const bell = document.querySelector(".hamburger.bell") || document.querySelector(".hamburger");
-      if (bell && chip.parentElement !== bell.parentElement) bell.parentElement.appendChild(chip);
-      const t = bell ? bell.offsetTop : 14, h = bell ? bell.offsetHeight : 46;
-      chip.style.cssText = "position:absolute;top:" + t + "px;right:14px;z-index:60;margin:0;height:" + h + "px;box-sizing:border-box";
-      chip.dataset.posFix = "1";
-    };
-    apply();
-    setInterval(apply, 500);
-  })();
+  /* chip alinhado via CSS .chip-right */
   (function fixOrder4(){
     try {
       const apoia = $("btnDonateLobby");

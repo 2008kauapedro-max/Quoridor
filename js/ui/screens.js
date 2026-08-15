@@ -1888,7 +1888,7 @@ async function refreshRanked2(){
   const placing = (meR?.placement ?? 0) < 5;
   if (card) card.innerHTML =
     '<div style="background:var(--card,#0C1322);border:1px solid var(--line,#16233C);border-radius:16px;padding:18px;text-align:center">' +
-    '<div style="font-size:54px">' + t.icon + '</div>' +
+    '<div>' + tierIconHtml(t, 72) + '</div>' +
     '<div style="font-size:20px;font-weight:800;margin:4px 0">' + t.name + '</div>' +
     '<div style="font-size:13px;color:#63B8FF;font-weight:700">' + rp.toLocaleString("pt-BR") + ' RP' +
       (t.name === "Cósmico" && pos > 0 ? ' · 🌌 TOP #' + pos : '') + '</div>' +
@@ -1907,13 +1907,13 @@ async function refreshRanked2(){
   if (top1) html += '<div style="background:linear-gradient(135deg,#3b2b00,#1a1200);border:1px solid #F5C033;border-radius:14px;padding:12px;margin-bottom:10px;text-align:center">' +
     '<div style="font-size:11px;color:#F5C033;font-weight:800">👑 TOP 1 GLOBAL</div>' +
     '<div style="font-size:16px;font-weight:800;margin:2px 0">' + escapeHtml(top1.profiles?.username || "Jogador") + '</div>' +
-    '<div style="font-size:12px;color:#63B8FF">' + rankOf(top1.rp).icon + " " + rankOf(top1.rp).name + " · " + top1.rp.toLocaleString("pt-BR") + ' RP</div></div>';
+    '<div style="font-size:12px;color:#63B8FF">' + tierIconHtml(rankOf(top1.rp), 20) + " " + rankOf(top1.rp).name + " · " + top1.rp.toLocaleString("pt-BR") + ' RP</div></div>';
   html += (board || []).slice(0, 20).map((r, i) => {
     const tk = rankOf(r.rp);
     return '<li style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--line,#16233C);border-radius:12px;margin-bottom:6px;' + (r.user_id === meId ? "background:rgba(36,107,206,.15);" : "") + '">' +
       '<span style="width:26px;font-weight:800">' + (i + 1) + '</span>' +
       '<img src="' + (r.profiles?.avatar_url || "icons/icon.svg") + '" alt="" style="width:32px;height:32px;border-radius:50%">' +
-      '<span style="flex:1;font-weight:700">' + tk.icon + " " + escapeHtml(r.profiles?.username || "Jogador") + (active(r) ? "" : " 💤") + '</span>' +
+      '<span style="flex:1;font-weight:700">' + tierIconHtml(tk, 20) + " " + escapeHtml(r.profiles?.username || "Jogador") + (active(r) ? "" : " 💤") + '</span>' +
       '<span style="color:#63B8FF;font-weight:700">' + r.rp.toLocaleString("pt-BR") + '</span></li>';
   }).join("");
   if (!board?.length) html = '<p class="hint">Nenhuma partida ranqueada ainda — seja o primeiro TOP 1! 👑</p>' + html;
@@ -1952,4 +1952,11 @@ function maybeShowNews(){
     return;
   }
   if (!localStorage.getItem("qa_news_custom")) showCustomNews();
+}
+
+function tierIconHtml(t, size){
+  const file = { Bronze: "bronze", Prata: "prata", Ouro: "ouro", Platina: "platina",
+    Esmeralda: "esmeralda", Mestre: "mestre", "Lendário": "lendario", "Cósmico": "cosmico" }[t.name] || "bronze";
+  return '<img src="img/ranks/' + file + '.png" alt="' + t.name + '" style="width:' + size + 'px;height:' + size +
+    'px;object-fit:contain;vertical-align:middle;display:inline-block" onerror="this.outerHTML=\'' + t.icon + '\'">';
 }

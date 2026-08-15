@@ -1654,6 +1654,16 @@ export function initScreens(){
       if (apoia) apoia.style.cssText = "display:block;width:100%;max-width:460px;margin:0 auto;padding:10px;background:transparent;border:1px dashed #fbbf2466;color:#fbbf24;font-weight:600;border-radius:12px;cursor:pointer;font-size:12px;box-sizing:border-box";
     } catch (e){ console.warn("lobby-widths ignorado:", e); }
   })();
+  (function fixGap6(){
+    try {
+      const grid = $("qaHomeGrid");
+      if (grid) grid.style.cssText += ";margin-top:16px !important";
+      const ranked = $("btnRankedHome");
+      if (ranked) ranked.style.cssText += ";margin-bottom:16px !important";
+      const online = $("btnFindMatch");
+      if (online) online.style.cssText += ";margin-bottom:12px !important";
+    } catch (e){ console.warn("gap6 ignorado:", e); }
+  })();
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
   buildArenaHud();
   initWorkshop();

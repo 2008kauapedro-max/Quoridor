@@ -3,7 +3,7 @@
    ============================================================= */
 import {
   TEXTS, NAMES, AI_LEVELS, SKINS, ACHIEVEMENTS, SKIN_CATALOG, ADMIN_EMAIL,
-  levelFromXp, xpForLevel, leagueOf, ELO_START, pieceBgFor, pieceWallFor, setCustomColor
+  levelFromXp, xpForLevel, leagueOf, ELO_START, pieceBgFor, pieceWallFor, setCustomColor, rankOf, nextRank
 } from "../core/constants.js";
 import {
   newGame, newGameRace, applyMove, applyWall, validateWall, randomFirstTurn, applyEvent
@@ -20,7 +20,7 @@ import {
   loginEmail, registerEmail, loginGoogle, logout, resetPassword,
   getProfile, updateProfile, uploadAvatar, getRanking, searchPlayers, getFriends,
   getFriendRequests, respondFriendRequest, removeFriend, sendFriendRequest, getAnnouncements, postAnnouncement,
-    pairCount, logMatch, requestPurchase, listPendingPurchases, approvePurchase, rejectPurchase
+    pairCount, logMatch, requestPurchase, listPendingPurchases, approvePurchase, rejectPurchase, getRankedRanking
 } from "../services/supabase.js";
 import { net } from "../services/realtime.js";
 import {
@@ -39,6 +39,7 @@ export function showScreen(name){
   if (name === "ranking") refreshRanking("global");
   if (name === "skins"){ pieceSub = "classic"; renderSkins(); }
   if (name === "profile") refreshProfile();
+  if (name === "ranked") refreshRanked();
 }
 
 export function applySettings(s){
@@ -268,6 +269,8 @@ export function startGame(opts){
   else if (S.race){ S.state = newGameRace(); }
   if (opts.myColor) S.myColor = opts.myColor;
   S.private = !!opts.private;
+  S.ranked = !!opts.ranked;
+  if (S.ranked) setTimeout(() => toast("🏆 Ranqueada valendo patente!"), 2200);
   if (S.private) setTimeout(() => toast("🏠 Sala privada vale Elo — farm com o mesmo rival não"), 2200);
   if (opts.firstTurn) S.state.turn = opts.firstTurn;
   else if (!opts.state) S.state.turn = randomFirstTurn();
@@ -649,6 +652,14 @@ async function endGame(){
   }
   if (S.private) extra.privateGames = (extra.privateGames||0)+1;
   localStorage.setItem("qa_extra", JSON.stringify(extra));
+  if (S.ranked && S.mode === "online"){
+    const rDelta = humanWon ? 16 : -16;
+    extra.rankedRp = Math.max(0, (extra.rankedRp ?? 1000) + rDelta);
+    extra.rankedGames = (extra.rankedGames ?? 0) + 1;
+    localStorage.setItem("qa_extra", JSON.stringify(extra));
+    updateProfile({ elo_ranked: extra.rankedRp, ranked_games: extra.rankedGames });
+    toast(humanWon ? "🏆 +" + rDelta + " PR!" : "📉 " + rDelta + " PR");
+  }
 
   let repeated = false;
   if (S.mode === "online" && S.oppId && getSession()){
@@ -1402,6 +1413,38 @@ export function initScreens(){
   buildArenaHud();
   initWorkshop();
   maybeShowLaunch();
+  (function buildRanked(){
+    if (!$("rankedScreen")){
+      const scr = document.createElement("div");
+      scr.className = "screen"; scr.dataset.screen = "ranked"; scr.id = "rankedScreen";
+      scr.innerHTML = '<div style="max-width:640px;margin:0 auto;padding:14px">' +
+        '<button class="mini-btn" data-back="home">← Voltar</button>' +
+        '<h2 style="text-align:center;margin:10px 0 12px">🏆 Modo Ranqueado</h2>' +
+        '<div id="rankedCard"></div>' +
+        '<button id="btnRankedQueue" class="menu-btn primary" style="width:100%;margin:14px 0;padding:14px">⚔️ Buscar Partida Ranqueada</button>' +
+        '<h3 style="text-align:center;margin:6px 0">🏅 Top Ranqueados</h3>' +
+        '<ul id="rankedList" style="list-style:none;padding:0;margin:0"></ul></div>';
+      document.body.appendChild(scr);
+    }
+    if ($("btnOnline") && !$("btnRankedHome")){
+      const hb = document.createElement("button");
+      hb.className = "menu-btn primary"; hb.id = "btnRankedHome";
+      hb.style.background = "linear-gradient(135deg,#246BCE,#63B8FF)";
+      hb.textContent = "🏆 Ranqueada";
+      $("btnOnline").after(hb);
+      hb.onclick = () => { SFX.click(); showScreen("ranked"); };
+    }
+    const rq = $("btnRankedQueue");
+    if (rq) rq.onclick = async () => {
+      SFX.click();
+      if (!isConfigured()){ toast("Configure o Supabase em js/config.js."); return; }
+      if (!getSession()){ const ok = await net.ensureAnon(); if (!ok){ toast("Entre na sua conta."); showScreen("auth"); return; } }
+      $("searchOverlay").classList.remove("hidden");
+      net.startQueue((info) => { $("searchOverlay").classList.add("hidden"); startGame({ mode: "online", ...info }); }, "ranked");
+    };
+    document.querySelectorAll("#rankedScreen [data-back]").forEach((b) =>
+      b.addEventListener("click", () => { SFX.click(); showScreen(b.dataset.back); }));
+  })();
   (function(){
     const st = document.createElement("style");
     st.textContent = "#reconnect{pointer-events:none}";
@@ -1438,4 +1481,33 @@ function feedBubble(text, me){
   feed.appendChild(b);
   while (feed.children.length > 4) feed.removeChild(feed.firstChild);
   setTimeout(() => b.remove(), 4000);
+}
+async function refreshRanked(){
+  const card = $("rankedCard");
+  if (card) card.innerHTML = '<p class="hint">carregando…</p>';
+  const p = await getProfile();
+  const rp = p?.elo_ranked ?? 1000;
+  const games = p?.ranked_games ?? 0;
+  const rk = rankOf(rp), nx = nextRank(rp);
+  const pct = nx ? Math.max(0, Math.min(100, ((rp - rk.min) / (nx.min - rk.min)) * 100)) : 100;
+  if (card) card.innerHTML =
+    '<div style="background:var(--card,#0C1322);border:1px solid var(--line,#16233C);border-radius:16px;padding:18px;text-align:center">' +
+    '<div style="font-size:56px">' + rk.icon + '</div>' +
+    '<div style="font-size:20px;font-weight:800;margin:4px 0">' + rk.name + '</div>' +
+    '<div style="font-size:13px;color:#63B8FF;font-weight:700">' + rp + ' PR · ' + games + ' partidas ranqueadas</div>' +
+    '<div style="height:8px;background:rgba(255,255,255,.1);border-radius:5px;margin:12px 0 4px;overflow:hidden"><i style="display:block;height:100%;width:' + pct + '%;background:linear-gradient(90deg,#246BCE,#63B8FF);border-radius:5px"></i></div>' +
+    '<div style="font-size:10px;color:#7E93B4">' + (nx ? "Faltam " + (nx.min - rp) + " PR pra " + nx.icon + " " + nx.name : "🏆 Patente máxima!") + '</div></div>';
+  const list = $("rankedList");
+  if (list) list.innerHTML = '<p class="hint">carregando…</p>';
+  const rows = await getRankedRanking();
+  const meId = getSession()?.user?.id;
+  if (!rows?.length){ if (list) list.innerHTML = '<p class="hint">Ninguém jogou ranqueada ainda — seja o primeiro! 🏆</p>'; return; }
+  if (list) list.innerHTML = rows.slice(0, 20).map((r, i) => {
+    const rk2 = rankOf(r.elo_ranked);
+    return '<li class="rank-item ' + (r.id === meId ? "me" : "") + '" style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--line,#16233C);border-radius:12px;margin-bottom:6px">' +
+      '<span class="rank-pos">' + (i + 1) + '</span>' +
+      '<img class="rank-avatar" src="' + (r.avatar_url || "icons/icon.svg") + '" alt="" style="width:34px;height:34px;border-radius:50%">' +
+      '<span class="rank-name" style="flex:1">' + rk2.icon + " " + escapeHtml(r.username) + '</span>' +
+      '<span class="rank-elo">' + r.elo_ranked + ' PR</span></li>';
+  }).join("");
 }

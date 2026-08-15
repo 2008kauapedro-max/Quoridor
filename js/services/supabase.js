@@ -256,3 +256,13 @@ export async function logMatch(otherId){
   if (me >= otherId) return;
   await sb.from("match_log").insert({ a: me, b: otherId });
 }
+
+export async function getRankedRanking(){
+  if (!sb) return null;
+  const { data } = await sb.from("profiles")
+    .select("id, username, avatar_url, frame, elo_ranked, ranked_games")
+    .gt("ranked_games", 0)
+    .order("elo_ranked", { ascending: false })
+    .limit(100);
+  return data || null;
+}

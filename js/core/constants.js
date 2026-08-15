@@ -134,3 +134,14 @@ export function pieceWallFor(id,color,online=false){
 }
 
 export const SIZE_RACE_R = 14, SIZE_RACE_C = 9, GOAL_RACE = 0, WALLS_RACE = 14;
+export const RANKS = [
+  { min: 0,    name: "Bronze",     icon: "🥉" },
+  { min: 1100, name: "Prata",      icon: "🥈" },
+  { min: 1250, name: "Ouro",       icon: "🥇" },
+  { min: 1400, name: "Platina",    icon: "💠" },
+  { min: 1550, name: "Diamante",   icon: "💎" },
+  { min: 1700, name: "Mestre",     icon: "👑" },
+  { min: 1850, name: "Desafiante", icon: "🏆" }
+];
+export function rankOf(rp){ let r = RANKS[0]; for (const k of RANKS) if ((rp ?? 1000) >= k.min) r = k; return r; }
+export function nextRank(rp){ for (const k of RANKS) if (k.min > (rp ?? 1000)) return k; return null; }

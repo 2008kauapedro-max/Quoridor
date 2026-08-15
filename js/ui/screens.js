@@ -1454,7 +1454,7 @@ export function initScreens(){
     if ($("btnCreateRoomHome")) $("btnCreateRoomHome").style.display = "none";
     if ($("btnJoinCodeHome")) $("btnJoinCodeHome").style.display = "none";
   })();
-  (function reorgLobby(){
+  (function reorgLobby(){ return;
     const online = $("btnOnline");
     if (!online || $("qaLobby")) return;
     const parent = online.parentElement;
@@ -1561,6 +1561,52 @@ export function initScreens(){
         b.style.display = "none";
       });
     } catch (e){ console.warn("lobby fix ignorado:", e); }
+  })();
+  (function fixLobbyFinal2(){
+    try {
+      const parent = $("btnFindMatch")?.parentElement;
+      if (!parent || $("qaLobbyFinal2")) return;
+      for (const wid of ["qaLobby", "qaLobbyFinal"]){
+        const w = $(wid);
+        if (w){ while (w.firstChild) parent.appendChild(w.firstChild); w.remove(); }
+      }
+      const clean = (b) => { if (b) b.style.cssText = ""; };
+      const firstMode = $("btnFindMatch");
+      for (const id of ["btnSidebarOpen", "btnBell", "homeUserChip", "btnLogin"]){
+        const b = $(id); if (b){ clean(b); parent.insertBefore(b, firstMode); }
+      }
+      const back = (id, dest) => { const b = $(id); if (b && dest){ clean(b); dest.appendChild(b); } };
+      back("btnBellClose", document.querySelector(".bell-head"));
+      back("btnSidebarClose", document.querySelector(".sidebar-head"));
+      back("msgBubbleClose", $("msgBubble"));
+      back("btnInstallBanner", $("installBanner"));
+      back("btnDismissBanner", $("installBanner"));
+      const sb = $("sidebar");
+      for (const id of ["btnProfile", "btnFriends", "btnSkins", "btnRanking", "btnSettings", "btnHowTo", "btnInstall", "btnLogout", "btnDonateSide"]){
+        const b = $(id); if (b){ clean(b); sb.appendChild(b); }
+      }
+      for (const id of ["btnCreateRoomHome", "btnJoinCodeHome", "btnLocal", "btnAI", "btnOnline"]){
+        const b = $(id); if (b) b.style.display = "none";
+      }
+      const wrap = document.createElement("div");
+      wrap.id = "qaLobbyFinal2";
+      wrap.style.cssText = "display:flex;flex-direction:column;gap:12px;width:100%;max-width:430px;margin:0 auto;box-sizing:border-box";
+      parent.insertBefore(wrap, $("installBanner"));
+      const big = (b, bg, fg) => { b.style.cssText = "width:100%;margin:0;padding:15px;font-size:16px;font-weight:800;border:none;border-radius:14px;cursor:pointer;color:" + (fg || "#fff") + ";" + bg; };
+      const smallB = (b) => { b.style.cssText = "width:100%;margin:0;padding:13px 6px;font-size:13px;font-weight:700;border:1px solid var(--line,#16233C);border-radius:12px;background:var(--card,#0C1322);color:var(--text,#E9F2FF);cursor:pointer"; };
+      big($("btnFindMatch"), "background:linear-gradient(135deg,#246BCE,#63B8FF);box-shadow:0 6px 18px rgba(36,107,206,.35)");
+      wrap.appendChild($("btnFindMatch"));
+      if ($("btnRankedHome")){ big($("btnRankedHome"), "background:linear-gradient(135deg,#8a5a2b,#F5C033);box-shadow:0 6px 18px rgba(245,192,51,.25)", "#1e293b"); wrap.appendChild($("btnRankedHome")); }
+      const g1 = document.createElement("div");
+      g1.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:10px";
+      for (const id of ["qaAltBtn", "btnRace"]){ const b = $(id); if (b){ smallB(b); g1.appendChild(b); } }
+      wrap.appendChild(g1);
+      if ($("btnDonateLobby")){
+        $("btnDonateLobby").style.cssText = "width:100%;margin:4px 0 0;padding:10px;background:transparent;border:1px dashed #fbbf2466;color:#fbbf24;font-weight:600;border-radius:12px;cursor:pointer;font-size:12px";
+        wrap.appendChild($("btnDonateLobby"));
+      }
+      const og = $("qaHomeGrid"); if (og && !og.children.length) og.remove();
+    } catch (e){ console.warn("lobby final2 ignorado:", e); }
   })();
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
   buildArenaHud();

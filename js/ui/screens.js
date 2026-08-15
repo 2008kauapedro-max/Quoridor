@@ -1485,7 +1485,7 @@ export function initScreens(){
       wrap.appendChild(apoia);
     }
   })();
-  (function reorgLobby2(){
+  (function reorgLobby2(){ return;
     const oldWrap = $("qaLobby");
     const online = $("btnOnline");
     if (!online) return;

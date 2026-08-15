@@ -1678,7 +1678,7 @@ export function initScreens(){
       if (!chip) return;
       const bell = document.querySelector(".hamburger.bell") || document.querySelector(".hamburger");
       if (bell && chip.parentElement !== bell.parentElement) bell.parentElement.appendChild(chip);
-      chip.style.cssText = "position:absolute;top:14px;right:14px;z-index:60;margin:0;height:46px;box-sizing:border-box";
+      chip.style.cssText = "position:absolute;top:30px;right:14px;z-index:60;margin:0;height:46px;box-sizing:border-box";
     } catch (e){ console.warn("chip-pos ignorado:", e); }
   })();
   (function fixOrder4(){

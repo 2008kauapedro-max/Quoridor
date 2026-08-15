@@ -1427,7 +1427,7 @@ export function initScreens(){
       SFX.click();
       openModal("🎮 Modos Alternativos", [
         { label: "🤖 Jogar vs IA", onClick: () => $("btnAI").click() },
-        { label: "🛋️ Jogar Local (sofá)", onClick: () => $("btnLocal").click() },
+        { label: "🛋️ Jogar Local", onClick: () => $("btnLocal").click() },
         { label: "Cancelar", onClick: null }
       ], '<div style="display:flex;flex-direction:column;gap:10px;padding:6px 0">' +
          '<p class="hint" style="margin:0;text-align:center">👥 Sala Personalizada</p>' +

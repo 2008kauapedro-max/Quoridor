@@ -1637,6 +1637,23 @@ export function initScreens(){
       apoia.style.cssText = "display:block;width:100%;max-width:430px;margin:12px auto 0;padding:10px;background:transparent;border:1px dashed #fbbf2466;color:#fbbf24;font-weight:600;border-radius:12px;cursor:pointer;font-size:12px";
     } catch (e){ console.warn("ordem4 ignorado:", e); }
   })();
+  (function fixLobbyWidths(){
+    try {
+      const W = "width:100%;max-width:460px;margin:0 auto 12px;box-sizing:border-box";
+      const online = $("btnFindMatch");
+      const ranked = $("btnRankedHome");
+      const grid = $("qaHomeGrid");
+      const apoia = $("btnDonateLobby");
+      if (online) online.style.cssText = W + ";display:block;padding:15px;font-size:16px;font-weight:800;border:none;border-radius:14px;cursor:pointer;color:#fff;background:linear-gradient(135deg,#246BCE,#63B8FF);box-shadow:0 6px 18px rgba(36,107,206,.35)";
+      if (ranked) ranked.style.cssText = W + ";display:block;padding:15px;font-size:16px;font-weight:800;border:none;border-radius:14px;cursor:pointer;color:#1e293b;background:linear-gradient(135deg,#8a5a2b,#F5C033);box-shadow:0 6px 18px rgba(245,192,51,.25)";
+      if (grid) grid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:10px;" + W;
+      for (const id of ["qaAltBtn", "btnRace"]){
+        const b = $(id);
+        if (b) b.style.cssText = "width:100%;margin:0;padding:13px 6px;font-size:13px;font-weight:700;border:1px solid var(--line,#16233C);border-radius:12px;background:var(--card,#0C1322);color:var(--text,#E9F2FF);cursor:pointer;box-sizing:border-box";
+      }
+      if (apoia) apoia.style.cssText = "display:block;width:100%;max-width:460px;margin:0 auto;padding:10px;background:transparent;border:1px dashed #fbbf2466;color:#fbbf24;font-weight:600;border-radius:12px;cursor:pointer;font-size:12px;box-sizing:border-box";
+    } catch (e){ console.warn("lobby-widths ignorado:", e); }
+  })();
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
   buildArenaHud();
   initWorkshop();

@@ -142,7 +142,7 @@ function openDonateModal(){
 
 /* ═══════════ LOJA — SKINS PAGAS COM CONFIRMAÇÃO ═══════════ */
 let TRIONDA_ART = null;
-(function(){ const im = new Image(); im.onload = () => { TRIONDA_ART = "img/trionda.png"; }; im.src = "img/trionda.png"; })();
+(function(){ const im = new Image(); im.onload = () => { TRIONDA_ART = "img/flags/bolacopa.png"; }; im.src = "img/flags/bolacopa.png"; })();
 function readList(k){ try { return JSON.parse(localStorage.getItem(k) || "[]"); } catch (_){ return []; } }
 function writeList(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch (_){} }
 const isBought = (id) => readList("qa_paid").includes(id);

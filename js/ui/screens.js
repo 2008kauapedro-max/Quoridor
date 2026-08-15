@@ -1664,6 +1664,13 @@ export function initScreens(){
       if (online) online.style.cssText += ";margin-bottom:12px !important";
     } catch (e){ console.warn("gap6 ignorado:", e); }
   })();
+  (function fixOrder8(){
+    try {
+      const ranked = $("btnRankedHome");
+      const online = $("btnFindMatch");
+      if (ranked && online) online.before(ranked);
+    } catch (e){ console.warn("ordem8 ignorado:", e); }
+  })();
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
   buildArenaHud();
   initWorkshop();

@@ -187,7 +187,7 @@ function maybeShowLaunch(){
     { label: "⚽ Quero por R$ 1,00!", onClick: () => openBuyModal(it) },
     { label: "Depois", onClick: null }
   ], '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0">' +
-     '<img src="' + (TRIONDA_ART || "img/trionda.png") + '" onerror="this.onerror=null;this.src='img/flags/bolacopa.png'" style="width:120px;height:120px;border-radius:50%;box-shadow:0 10px 30px #0009;object-fit:cover">' +
+     '<img src="' + (TRIONDA_ART || "img/trionda.png") + '" onerror="this.onerror=null;this.src=&quot;img/flags/bolacopa.png&quot;" style="width:120px;height:120px;border-radius:50%;box-shadow:0 10px 30px #0009;object-fit:cover">' +
      '<p style="margin:0;font-size:14px;line-height:1.55;color:#cbd5e1;text-align:center">A <b style="color:#F5F7FA">bola oficial da Copa 2026</b> aterrissou no The Rage Arena! ⚽✨<br>Jogue com a <b>Trionda</b> e deixe os rivais no chão — por apenas <b style="color:#22c55e">R$ 1,00</b>! 😱🏆</p></div>'), 1500);
 }
 

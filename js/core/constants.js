@@ -134,14 +134,20 @@ export function pieceWallFor(id,color,online=false){
 }
 
 export const SIZE_RACE_R = 14, SIZE_RACE_C = 9, GOAL_RACE = 0, WALLS_RACE = 14;
-export const RANKS = [
-  { min: 0,    name: "Bronze",     icon: "🥉" },
-  { min: 1100, name: "Prata",      icon: "🥈" },
-  { min: 1250, name: "Ouro",       icon: "🥇" },
-  { min: 1400, name: "Platina",    icon: "💠" },
-  { min: 1550, name: "Diamante",   icon: "💎" },
-  { min: 1700, name: "Mestre",     icon: "👑" },
-  { min: 1850, name: "Desafiante", icon: "🏆" }
-];
-export function rankOf(rp){ let r = RANKS[0]; for (const k of RANKS) if ((rp ?? 1000) >= k.min) r = k; return r; }
-export function nextRank(rp){ for (const k of RANKS) if (k.min > (rp ?? 1000)) return k; return null; }
+export const RANKED = {
+  TIERS: [
+    { min: 0,     name: "Bronze",    icon: "🥉" },
+    { min: 1000,  name: "Prata",     icon: "🥈" },
+    { min: 2500,  name: "Ouro",      icon: "🥇" },
+    { min: 5000,  name: "Platina",   icon: "💠" },
+    { min: 9000,  name: "Esmeralda", icon: "💚" },
+    { min: 15000, name: "Mestre",    icon: "👑" },
+    { min: 25000, name: "Lendário",  icon: "🌟" },
+    { min: 50000, name: "Cósmico",   icon: "🌌" }
+  ],
+  RP_BASE_WIN: 25, RP_CAP: 40, MMR_K: 32, MMR_K_PLACEMENT: 64,
+  PLACEMENT_GAMES: 5, EFF_BONUS: [0, 1, 3, 5],
+  ACTIVITY_DAYS: 30, PAIR_DAY_CAP: 3
+};
+export function rankOf(rp){ let r = RANKED.TIERS[0]; for (const k of RANKED.TIERS) if ((rp ?? 0) >= k.min) r = k; return r; }
+export function nextRank(rp){ for (const k of RANKED.TIERS) if (k.min > (rp ?? 0)) return k; return null; }

@@ -266,3 +266,45 @@ export async function getRankedRanking(){
     .limit(100);
   return data || null;
 }
+
+export async function claimRankedMatch(roomCode){
+  if (!sb) return null;
+  const { data, error } = await sb.rpc("ranked_claim_match", { p_room: roomCode });
+  if (error) throw error; return data;
+}
+export async function submitRankedResult(p){
+  if (!sb) return null;
+  const { data, error } = await sb.rpc("ranked_report_result", {
+    p_match: p.matchId, p_won: p.iWon, p_abandoned: p.abandoned,
+    p_impacts: p.impacts, p_wu: p.wallsUsed, p_wl: p.wallsLeft, p_dur: p.durationSec });
+  if (error) throw error; return data;
+}
+export async function getRankedResult(matchId){
+  if (!sb) return null;
+  const { data, error } = await sb.rpc("ranked_get_result", { p_match: matchId });
+  if (error) throw error; return data;
+}
+export async function autoWinRanked(matchId){
+  if (!sb) return null;
+  const { data, error } = await sb.rpc("ranked_auto_win", { p_match: matchId });
+  if (error) throw error; return data;
+}
+export async function getMyRanked(){
+  const ses = getSession();
+  if (!sb || !ses) return null;
+  const { data } = await sb.from("ranked").select("*").eq("user_id", ses.user.id).maybeSingle();
+  return data || null;
+}
+export async function getRankedBoard(){
+  if (!sb) return null;
+  const { data } = await sb.from("ranked").select("*, profiles(username, avatar_url, frame)")
+    .order("rp", { ascending: false }).order("mmr", { ascending: false }).limit(100);
+  return data || null;
+}
+export async function getRankedHistory(){
+  const ses = getSession();
+  if (!sb || !ses) return null;
+  const { data } = await sb.from("ranked_history").select("*")
+    .eq("user_id", ses.user.id).order("created_at", { ascending: false }).limit(10);
+  return data || null;
+}

@@ -74,19 +74,19 @@ function pollRoom(code,onMatched){
   });
 }
 
-export async function startQueue(onMatched, mode){
+export async function startQueue(onMatched, mode, mmr){
   reset();
   await sbClient?.from("rooms").delete().eq("host_id",me()).eq("status","waiting");
-  const other=await findWaitingOther(mode);
+  const other= mode==="ranked" ? await findWaitingRanked(mmr) : await findWaitingOther(mode);
   if(other&&await tryJoin(other.code)){pollRoom(other.code,onMatched);return;}
-  const code=await createRoom(true, mode);
+  const code=await createRoom(true, mode, mode==="ranked"&&mmr?{mmr}:null);
   pollRoom(code,onMatched);
   every(1500,async()=>{
     if(matched)return;
     await sbClient?.from("rooms").update({last_seen:new Date().toISOString()}).eq("code",code).eq("status","waiting");
     const mine=await readRoom(code);
     if(mine&&mine.status==="waiting"){
-      const o=await findWaitingOther(mode);
+      const o= mode==="ranked" ? await findWaitingRanked(mmr) : await findWaitingOther(mode);
       if(o&&await tryJoin(o.code)){
         await sbClient.from("rooms").delete().eq("code",code);
         stopPolls();pollRoom(o.code,onMatched);
@@ -141,3 +141,18 @@ export function hostRoom(code,onMatched){reset();pollRoom(code,onMatched);}
 export async function ensureAnon(){if(!sbClient)return false;if(getSession())return true;const r=await sbClient.auth.signInAnonymously();return !r.error;}
 export const net={startQueue,cancelQueue,createRoom,joinRoom,leaveRoom,hostRoom,
   onEvent,sendAction,sendChat,sendSkin,sendSkinReq,onStatus,inviteFriend,onMatch};
+async function findWaitingRanked(mmr){
+  const cutoff=new Date(Date.now()-20000).toISOString();
+  const {data}=await sbClient.from("rooms").select("code,created_at,settings")
+    .eq("is_public",true).eq("status","waiting").eq("mode","ranked").neq("host_id",me())
+    .gte("last_seen",cutoff).order("created_at",{ascending:true}).limit(20);
+  for(const r of (data||[])){
+    if(mmr!=null){
+      const rm=+(r.settings?.mmr??1000);
+      const age=(Date.now()-new Date(r.created_at).getTime())/1000;
+      if(Math.abs(rm-mmr)>100+age*8) continue;
+    }
+    return {code:r.code};
+  }
+  return null;
+}

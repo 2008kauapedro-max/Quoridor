@@ -8,6 +8,7 @@ import {
 import {
   newGame, newGameRace, newGameCustom, applyMove, applyWall, validateWall, randomFirstTurn, applyEvent
 } from "../core/rules.js";
+import { analyzeWallImpacts } from "../core/ranked.js";
 import { chooseAiAction } from "../core/ai.js";
 import { createBoard } from "./board.js";
 import { SFX, toast, confetti } from "./effects.js";
@@ -20,7 +21,7 @@ import {
   loginEmail, registerEmail, loginGoogle, logout, resetPassword,
   getProfile, updateProfile, uploadAvatar, getRanking, searchPlayers, getFriends,
   getFriendRequests, respondFriendRequest, removeFriend, sendFriendRequest, getAnnouncements, postAnnouncement,
-    pairCount, logMatch, requestPurchase, listPendingPurchases, approvePurchase, rejectPurchase, getRankedRanking
+    pairCount, logMatch, requestPurchase, listPendingPurchases, approvePurchase, rejectPurchase, getRankedRanking, claimRankedMatch, submitRankedResult, getRankedResult, autoWinRanked, getMyRanked, getRankedBoard, getRankedHistory
 } from "../services/supabase.js";
 import { net } from "../services/realtime.js";
 import {
@@ -39,7 +40,7 @@ export function showScreen(name){
   if (name === "ranking") refreshRanking("global");
   if (name === "skins"){ pieceSub = "classic"; renderSkins(); }
   if (name === "profile") refreshProfile();
-  if (name === "ranked") refreshRanked();
+  if (name === "ranked") refreshRanked2();
 }
 
 export function applySettings(s){
@@ -271,7 +272,14 @@ export function startGame(opts){
   if (opts.myColor) S.myColor = opts.myColor;
   S.private = !!opts.private;
   S.ranked = !!opts.ranked;
-  if (S.ranked) setTimeout(() => toast("🏆 Ranqueada valendo patente!"), 2200);
+  S.matchId = null;
+  if (S.ranked){
+    setTimeout(() => toast("🏆 Ranqueada valendo RP!"), 2200);
+    claimRankedMatch(opts.code).then((r) => {
+      S.matchId = r?.match_id || null;
+      if (!S.matchId){ S.ranked = false; toast("⚠️ Falha ao registrar a ranqueada — valendo só casual."); }
+    }).catch(() => { S.matchId = null; S.ranked = false; });
+  }
   if (S.private) setTimeout(() => toast("🏠 Sala privada vale Elo — farm com o mesmo rival não"), 2200);
   if (opts.firstTurn) S.state.turn = opts.firstTurn;
   else if (!opts.state) S.state.turn = randomFirstTurn();
@@ -653,14 +661,6 @@ async function endGame(){
   }
   if (S.private) extra.privateGames = (extra.privateGames||0)+1;
   localStorage.setItem("qa_extra", JSON.stringify(extra));
-  if (S.ranked && S.mode === "online"){
-    const rDelta = humanWon ? 16 : -16;
-    extra.rankedRp = Math.max(0, (extra.rankedRp ?? 1000) + rDelta);
-    extra.rankedGames = (extra.rankedGames ?? 0) + 1;
-    localStorage.setItem("qa_extra", JSON.stringify(extra));
-    updateProfile({ elo_ranked: extra.rankedRp, ranked_games: extra.rankedGames });
-    toast(humanWon ? "🏆 +" + rDelta + " PR!" : "📉 " + rDelta + " PR");
-  }
 
   let repeated = false;
   if (S.mode === "online" && !S.private && S.oppId && getSession()){
@@ -691,6 +691,30 @@ async function endGame(){
   $("btnRematch").classList.toggle("hidden", S.mode === "online");
   $("overlay").classList.remove("hidden");
   clearSnapshot();
+  if (S.ranked && S.mode === "online" && S.matchId){
+    const st = S.state, my = S.myColor, mid = S.matchId, won = humanWon, sec = S.seconds;
+    (async () => {
+      try {
+        const impacts = analyzeWallImpacts(st, my);
+        let rr = await submitRankedResult({ matchId: mid, iWon: won, abandoned: !!st.abandoned,
+          impacts, wallsUsed: st.stats.walls[my], wallsLeft: st.players[my].walls, durationSec: sec });
+        for (let i = 0; i < 20 && rr?.status === "pending"; i++){
+          await new Promise(r2 => setTimeout(r2, 3000));
+          rr = await getRankedResult(mid);
+        }
+        if (rr?.status === "pending") rr = await autoWinRanked(mid);
+        if (rr?.status === "processed" && rr.me){
+          const b = rr.me;
+          const t0 = rankOf(b.rp_before), t1 = rankOf(b.rp_after);
+          $("winSub").textContent += " · 🏆 " + (b.d_total >= 0 ? "+" : "") + b.d_total + " RP (" +
+            b.rp_before.toLocaleString("pt-BR") + " → " + b.rp_after.toLocaleString("pt-BR") + ")";
+          $("winSub").textContent += " | base " + (b.d_base > 0 ? "+" : "") + b.d_base +
+            " · mmr " + (b.d_mmr > 0 ? "+" : "") + b.d_mmr + " · ef " + (b.d_eff > 0 ? "+" : "") + b.d_eff;
+          if (t1.name !== t0.name) toast(t1.min > t0.min ? "🎉 PROMOÇÃO! Bem-vindo à " + t1.name + "!" : "📉 Rebaixado para " + t1.name + ".");
+        }
+      } catch (_){}
+    })();
+  }
 }
 
 export function endSession(goHome = true){
@@ -1720,7 +1744,8 @@ export function initScreens(){
       if (!isConfigured()){ toast("Configure o Supabase em js/config.js."); return; }
       if (!getSession()){ const ok = await net.ensureAnon(); if (!ok){ toast("Entre na sua conta."); showScreen("auth"); return; } }
       $("searchOverlay").classList.remove("hidden");
-      net.startQueue((info) => { $("searchOverlay").classList.add("hidden"); startGame({ mode: "online", ...info }); }, "ranked");
+      const myR = await getMyRanked().catch(() => null);
+      net.startQueue((info) => { $("searchOverlay").classList.add("hidden"); startGame({ mode: "online", ...info }); }, "ranked", myR?.mmr ?? 1000);
     };
     document.querySelectorAll("#rankedScreen [data-back]").forEach((b) =>
       b.addEventListener("click", () => { SFX.click(); showScreen(b.dataset.back); }));
@@ -1843,4 +1868,60 @@ function openCustomRoom(){
     mark(); warn();
   };
   mark(); warn();
+}
+
+async function refreshRanked2(){
+  const card = $("rankedCard"), list = $("rankedList");
+  if (card) card.innerHTML = '<p class="hint">carregando…</p>';
+  if (list) list.innerHTML = '<p class="hint">carregando…</p>';
+  const [meR, board, hist] = await Promise.all([
+    getMyRanked().catch(() => null), getRankedBoard().catch(() => null), getRankedHistory().catch(() => null)
+  ]);
+  const rp = meR?.rp ?? 0;
+  const t = rankOf(rp), nx = nextRank(rp);
+  const wins = meR?.wins ?? 0, losses = meR?.losses ?? 0, games = wins + losses;
+  const wr = games ? Math.round((wins / games) * 100) : 0;
+  const pct = nx ? Math.max(0, Math.min(100, ((rp - t.min) / (nx.min - t.min)) * 100)) : 100;
+  const meId = getSession()?.user?.id;
+  const pos = (board || []).findIndex((r) => r.user_id === meId) + 1;
+  const placing = (meR?.placement ?? 0) < 5;
+  if (card) card.innerHTML =
+    '<div style="background:var(--card,#0C1322);border:1px solid var(--line,#16233C);border-radius:16px;padding:18px;text-align:center">' +
+    '<div style="font-size:54px">' + t.icon + '</div>' +
+    '<div style="font-size:20px;font-weight:800;margin:4px 0">' + t.name + '</div>' +
+    '<div style="font-size:13px;color:#63B8FF;font-weight:700">' + rp.toLocaleString("pt-BR") + ' RP' +
+      (t.name === "Cósmico" && pos > 0 ? ' · 🌌 TOP #' + pos : '') + '</div>' +
+    '<div style="height:8px;background:rgba(255,255,255,.1);border-radius:5px;margin:12px 0 4px;overflow:hidden"><i style="display:block;height:100%;width:' + pct + '%;background:linear-gradient(90deg,#246BCE,#63B8FF);border-radius:5px"></i></div>' +
+    '<div style="font-size:10px;color:#7E93B4">' + (nx ? "Faltam " + (nx.min - rp).toLocaleString("pt-BR") + " RP pra " + nx.icon + " " + nx.name : "🌌 Patente máxima — dispute o TOP 1!") + '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px;font-size:11px;color:#7E93B4">' +
+    '<span>✅ ' + wins + ' V · ❌ ' + losses + ' D</span><span>🎯 ' + wr + '% vitória</span>' +
+    '<span>🔥 seq. ' + (meR?.streak ?? 0) + ' (rec. ' + (meR?.best_streak ?? 0) + ')</span><span>📈 maior RP ' + (meR?.best_rp ?? 0).toLocaleString("pt-BR") + '</span>' +
+    '<span>🧱 méd. ' + (meR?.eff_games ? (meR.walls_sum / meR.eff_games).toFixed(1) : "0") + ' barreiras</span><span>🏅 posição #' + (pos > 0 ? pos : "—") + '</span>' +
+    '</div>' +
+    (placing ? '<p style="margin:10px 0 0;font-size:12px;color:#F5C033;font-weight:700">🎯 Colocação: ' + (meR?.placement ?? 0) + '/5</p>' : '') +
+    '</div>';
+  const active = (r) => (Date.now() - new Date(r.last_active).getTime()) < 30 * 864e5;
+  const top1 = (board || []).find(active);
+  let html = "";
+  if (top1) html += '<div style="background:linear-gradient(135deg,#3b2b00,#1a1200);border:1px solid #F5C033;border-radius:14px;padding:12px;margin-bottom:10px;text-align:center">' +
+    '<div style="font-size:11px;color:#F5C033;font-weight:800">👑 TOP 1 GLOBAL</div>' +
+    '<div style="font-size:16px;font-weight:800;margin:2px 0">' + escapeHtml(top1.profiles?.username || "Jogador") + '</div>' +
+    '<div style="font-size:12px;color:#63B8FF">' + rankOf(top1.rp).icon + " " + rankOf(top1.rp).name + " · " + top1.rp.toLocaleString("pt-BR") + ' RP</div></div>';
+  html += (board || []).slice(0, 20).map((r, i) => {
+    const tk = rankOf(r.rp);
+    return '<li style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--line,#16233C);border-radius:12px;margin-bottom:6px;' + (r.user_id === meId ? "background:rgba(36,107,206,.15);" : "") + '">' +
+      '<span style="width:26px;font-weight:800">' + (i + 1) + '</span>' +
+      '<img src="' + (r.profiles?.avatar_url || "icons/icon.svg") + '" alt="" style="width:32px;height:32px;border-radius:50%">' +
+      '<span style="flex:1;font-weight:700">' + tk.icon + " " + escapeHtml(r.profiles?.username || "Jogador") + (active(r) ? "" : " 💤") + '</span>' +
+      '<span style="color:#63B8FF;font-weight:700">' + r.rp.toLocaleString("pt-BR") + '</span></li>';
+  }).join("");
+  if (!board?.length) html = '<p class="hint">Nenhuma partida ranqueada ainda — seja o primeiro TOP 1! 👑</p>' + html;
+  if (hist?.length){
+    html += '<h3 style="text-align:center;margin:14px 0 8px">📜 Últimas partidas</h3>';
+    html += hist.map((h) => '<li style="display:flex;justify-content:space-between;padding:6px 8px;border:1px solid var(--line,#16233C);border-radius:10px;margin-bottom:4px;font-size:12px">' +
+      '<span>' + (h.won ? "✅" : "❌") + (h.abandoned ? " 🏳️" : "") + '</span>' +
+      '<span style="color:#7E93B4">' + new Date(h.created_at).toLocaleDateString("pt-BR") + '</span>' +
+      '<span style="font-weight:700;color:' + (h.rp_after >= h.rp_before ? "#4ADE80" : "#F87171") + '">' + (h.rp_after - h.rp_before >= 0 ? "+" : "") + (h.rp_after - h.rp_before) + ' RP</span></li>').join("");
+  }
+  if (list) list.innerHTML = html;
 }

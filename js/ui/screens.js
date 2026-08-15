@@ -1608,6 +1608,16 @@ export function initScreens(){
       const og = $("qaHomeGrid"); if (og && !og.children.length) og.remove();
     } catch (e){ console.warn("lobby final2 ignorado:", e); }
   })();
+  (function fixApoioLast(){
+    try {
+      const wrap = $("qaLobbyFinal2");
+      const apoia = $("btnDonateLobby");
+      const banner = $("installBanner");
+      if (!wrap || !apoia) return;
+      wrap.appendChild(apoia);
+      if (banner && banner.parentElement === wrap.parentNode) wrap.parentNode.insertBefore(banner, wrap);
+    } catch (e){ console.warn("apoio-last ignorado:", e); }
+  })();
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
   buildArenaHud();
   initWorkshop();

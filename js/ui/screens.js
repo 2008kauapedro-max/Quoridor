@@ -1409,6 +1409,49 @@ export function initScreens(){
     if (id) net.inviteFriend(id, "race");
   });
 
+  (function reorgHome2(){
+    if ($("qaAltBtn")) return;
+    let grid = $("qaHomeGrid");
+    if (!grid){
+      grid = document.createElement("div");
+      grid.id = "qaHomeGrid";
+      grid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0";
+      ($("btnRankedHome") || $("btnOnline")).after(grid);
+    }
+    const small = (b) => { b.style.cssText += ";padding:12px 8px;font-size:13px;margin:0;width:100%"; };
+    const alt = document.createElement("button");
+    alt.className = "menu-btn"; alt.id = "qaAltBtn";
+    alt.textContent = "🎮 Modos Alternativos";
+    small(alt);
+    alt.onclick = () => {
+      SFX.click();
+      openModal("🎮 Modos Alternativos", [
+        { label: "🤖 Jogar vs IA", onClick: () => $("btnAI").click() },
+        { label: "🛋️ Jogar Local (sofá)", onClick: () => $("btnLocal").click() },
+        { label: "Cancelar", onClick: null }
+      ], '<div style="display:flex;flex-direction:column;gap:10px;padding:6px 0">' +
+         '<p class="hint" style="margin:0;text-align:center">👥 Sala Personalizada</p>' +
+         '<input id="qaRoomCode2" class="input" placeholder="🔑 Código da sala" style="text-transform:uppercase">' +
+         '<button id="qaJoinCode2" class="menu-btn primary" style="width:100%;margin:0">🔑 Entrar com Código</button>' +
+         '<button id="qaCreateRoom2" class="menu-btn" style="width:100%;margin:0">🏠 Criar Sala</button></div>');
+      $("qaJoinCode2").onclick = async () => {
+        const code = $("qaRoomCode2").value.trim().toUpperCase();
+        if (!code){ toast("Digite o código da sala!"); return; }
+        closeModal();
+        if (!isConfigured()){ toast("Configure o Supabase em js/config.js."); return; }
+        if (!getSession()){ const ok = await net.ensureAnon(); if (!ok){ toast("Entre na sua conta."); showScreen("auth"); return; } }
+        net.joinRoom(code, (info) => startGame({ mode: "online", private: true, ...info }));
+      };
+      $("qaCreateRoom2").onclick = () => { closeModal(); $("btnCreateRoomHome").click(); };
+    };
+    grid.appendChild(alt);
+    if ($("btnRace")){ small($("btnRace")); if ($("btnRace").parentNode !== grid) grid.appendChild($("btnRace")); }
+    for (const id of ["btnAI", "btnLocal", "btnRoomHome"]){
+      const b = $(id); if (b) b.style.display = "none";
+    }
+    if ($("btnCreateRoomHome")) $("btnCreateRoomHome").style.display = "none";
+    if ($("btnJoinCodeHome")) $("btnJoinCodeHome").style.display = "none";
+  })();
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
   buildArenaHud();
   initWorkshop();

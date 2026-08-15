@@ -1625,6 +1625,18 @@ export function initScreens(){
       chip.style.cssText = "position:fixed;top:10px;right:12px;z-index:60;margin:0;width:auto";
     } catch (e){ console.warn("chip-pos ignorado:", e); }
   })();
+  (function fixOrder4(){
+    try {
+      const apoia = $("btnDonateLobby");
+      const grid = $("qaHomeGrid");
+      const ranked = $("btnRankedHome");
+      const online = $("btnFindMatch");
+      if (!apoia) return;
+      const anchor = grid || ranked || online;
+      if (anchor) anchor.after(apoia);
+      apoia.style.cssText = "display:block;width:100%;max-width:430px;margin:12px auto 0;padding:10px;background:transparent;border:1px dashed #fbbf2466;color:#fbbf24;font-weight:600;border-radius:12px;cursor:pointer;font-size:12px";
+    } catch (e){ console.warn("ordem4 ignorado:", e); }
+  })();
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
   buildArenaHud();
   initWorkshop();

@@ -180,15 +180,14 @@ function openBuyModal(it){
 }
 
 function maybeShowLaunch(){
-  if (localStorage.getItem("qa_trionda_seen") || isBought("p-bolacopa") || hasPending("p-bolacopa")) return;
-  localStorage.setItem("qa_trionda_seen", "1");
+  if (isBought("p-bolacopa") || hasPending("p-bolacopa")) return;
   const it = SKIN_CATALOG.find((i) => i.id === "p-bolacopa");
   if (!it) return;
   setTimeout(() => openModal("🚀 LANÇAMENTO — Trionda 2026!", [
     { label: "⚽ Quero por R$ 1,00!", onClick: () => openBuyModal(it) },
     { label: "Depois", onClick: null }
   ], '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0">' +
-     (TRIONDA_ART ? '<img src="' + TRIONDA_ART + '" style="width:120px;height:120px;border-radius:50%;box-shadow:0 10px 30px #0009;object-fit:cover">' : '<div style="font-size:64px">⚽</div>') +
+     '<img src="' + (TRIONDA_ART || "img/trionda.png") + '" onerror="this.onerror=null;this.src='img/flags/bolacopa.png'" style="width:120px;height:120px;border-radius:50%;box-shadow:0 10px 30px #0009;object-fit:cover">' +
      '<p style="margin:0;font-size:14px;line-height:1.55;color:#cbd5e1;text-align:center">A <b style="color:#F5F7FA">bola oficial da Copa 2026</b> aterrissou no The Rage Arena! ⚽✨<br>Jogue com a <b>Trionda</b> e deixe os rivais no chão — por apenas <b style="color:#22c55e">R$ 1,00</b>! 😱🏆</p></div>'), 1500);
 }
 
@@ -1945,7 +1944,7 @@ function maybeShowNews(){
       { label: "⚔️ Conhecer a Ranqueada", onClick: () => { showScreen("ranked"); setTimeout(() => { if (!localStorage.getItem("qa_news_custom")) showCustomNews(); }, 700); } },
       { label: "Depois", onClick: () => { if (!localStorage.getItem("qa_news_custom")) showCustomNews(); } }
     ], '<div style="text-align:center;padding:6px 0;display:flex;flex-direction:column;gap:8px">' +
-       '<div style="font-size:38px">🥉🥈💠💚👑🌟🌌</div>' +
+       '<div style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap">' + ["bronze","prata","ouro","platina","esmeralda","mestre","lendario","cosmico"].map((f) => '<img src="img/ranks/' + f + '.png" alt="" style="width:36px;height:36px;object-fit:contain">').join("") + '</div>' +
        '<p style="margin:0"><b>8 patentes</b> — do Bronze ao Cósmico!</p>' +
        '<p style="margin:0">Ganhe <b>RP</b> por vitória, matchmaking por <b>MMR</b>, partidas de <b>colocação</b> e leaderboard com <b>TOP 1</b>!</p>' +
        '<p style="margin:0;color:#7E93B4;font-size:12px">Vitória vale +25 RP (até +40 com bônus) · barreiras estratégicas dão bônus de eficiência!</p></div>');

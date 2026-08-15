@@ -1919,11 +1919,11 @@ async function refreshRanked2(){
     '<div style="font-size:11px;color:#F5C033;font-weight:800">👑 TOP 1 GLOBAL</div>' +
     '<div style="font-size:16px;font-weight:800;margin:2px 0">' + escapeHtml(top1.profiles?.username || "Jogador") + '</div>' +
     '<div style="font-size:12px;color:#63B8FF">' + tierIconHtml(rankOf(top1.rp), 20) + " " + rankOf(top1.rp).name + " · " + top1.rp.toLocaleString("pt-BR") + ' RP</div></div>';
-  html += (board || []).slice(0, 20).map((r, i) => {
+  html += (board || []).slice(0, 10).map((r, i) => {
     const tk = rankOf(r.rp);
     return '<li style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--line,#16233C);border-radius:12px;margin-bottom:6px;' + (r.user_id === meId ? "background:rgba(36,107,206,.15);" : "") + '">' +
       '<span style="width:26px;font-weight:800">' + (i + 1) + '</span>' +
-      '<img src="' + (r.profiles?.avatar_url || "icons/icon.svg") + '" alt="" style="width:32px;height:32px;border-radius:50%">' +
+      '<img src="' + (r.profiles?.avatar_url || "img/logo.png") + '" onerror="this.onerror=null;this.src=&quot;img/logo.png&quot;" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;background:var(--card,#0C1322);border:1px solid var(--line,#16233C);flex-shrink:0">' +
       '<span style="flex:1;font-weight:700">' + tierIconHtml(tk, 20) + " " + escapeHtml(r.profiles?.username || "Jogador") + (active(r) ? "" : " 💤") + '</span>' +
       '<span style="color:#63B8FF;font-weight:700">' + r.rp.toLocaleString("pt-BR") + '</span></li>';
   }).join("");
@@ -1974,8 +1974,11 @@ function tierIconHtml(t, size){
 
 async function cleanupPendingRanked(){
   try {
-    const pend = await listPendingRanked();
-    for (const m of pend.slice(0, 5)) await autoWinRanked(m.id);
-    if (pend.length) setTimeout(() => showScreen("ranked"), 800);
+    for (let i = 0; i < 6; i++){
+      const pend = await listPendingRanked();
+      if (!pend.length) return;
+      for (const m of pend.slice(0, 5)) await autoWinRanked(m.id);
+      await new Promise((r) => setTimeout(r, 20000));
+    }
   } catch (_){}
 }

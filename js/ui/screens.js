@@ -663,7 +663,7 @@ async function endGame(){
   }
 
   let repeated = false;
-  if (S.mode === "online" && S.oppId && getSession()){
+  if (S.mode === "online" && !S.private && S.oppId && getSession()){
     try {
       repeated = (await pairCount(S.oppId)) >= 3;
       if (!repeated) await logMatch(S.oppId);

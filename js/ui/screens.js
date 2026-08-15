@@ -1671,6 +1671,24 @@ export function initScreens(){
       if (ranked && online) online.before(ranked);
     } catch (e){ console.warn("ordem8 ignorado:", e); }
   })();
+  (function fixOrder9(){
+    setTimeout(() => {
+      try {
+        const ranked = $("btnRankedHome");
+        const online = $("btnFindMatch");
+        const grid = $("qaHomeGrid");
+        const apoia = $("btnDonateLobby");
+        if (!ranked || !online) return;
+        online.before(ranked);
+        if (grid) online.after(grid);
+        if (apoia && grid) grid.after(apoia);
+        const W = "width:100%;max-width:460px;margin:0 auto 12px;box-sizing:border-box";
+        ranked.style.cssText = W + ";display:block;padding:15px;font-size:16px;font-weight:800;border:none;border-radius:14px;cursor:pointer;color:#1e293b;background:linear-gradient(135deg,#8a5a2b,#F5C033);box-shadow:0 6px 18px rgba(245,192,51,.25)";
+        online.style.cssText = W + ";display:block;padding:15px;font-size:16px;font-weight:800;border:none;border-radius:14px;cursor:pointer;color:#fff;background:linear-gradient(135deg,#246BCE,#63B8FF);box-shadow:0 6px 18px rgba(36,107,206,.35)";
+        if (grid) grid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:10px;" + W;
+      } catch (e){ console.warn("ordem9 ignorado:", e); }
+    }, 80);
+  })();
   net.onStatus((on) => $("reconnect").classList.toggle("hidden", on));
   buildArenaHud();
   initWorkshop();

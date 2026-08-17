@@ -714,13 +714,8 @@ async function endGame(){
         repeated
       })
     : { xp: 0, eloDelta: 0, unlocked: [] };
-  $("winText").textContent = NAMES[w] + " venceu!";
-  $("winSub").textContent = `+${res.xp} XP` + (res.eloDelta ? ` · ${res.eloDelta > 0 ? "+" : ""}${res.eloDelta} Elo` : "");
-  for (const key of res.unlocked) toast("🏅 Conquista: " + ACHIEVEMENTS.find((a) => a.key === key)?.name);
-  $("overlayCard").className = "overlay-card " + w;
-  /* animação épica via CSS */
   $("btnRematch").classList.toggle("hidden", S.mode === "online");
-  $("overlay").classList.remove("hidden");
+  showVictory(w, humanWon, res);
   clearSnapshot();
   if (S.ranked && S.mode === "online" && S.matchId){
     const st = S.state, my = S.myColor, mid = S.matchId, won = humanWon, sec = S.seconds;

@@ -2069,6 +2069,18 @@ function refreshClips(){
 
 let VF = null, vfTimers = [];
 function buildVictory(){
+  if (!document.getElementById("vfCss3")){
+    const st3 = document.createElement("style"); st3.id = "vfCss3";
+    st3.textContent = `
+#victoryFx .vf-shock{position:absolute;left:50%;top:45%;width:10vmin;height:10vmin;margin:-5vmin 0 0 -5vmin;border:4px solid rgba(255,255,255,.85);border-radius:50%;z-index:1;opacity:0;animation:vfShock 1.1s cubic-bezier(.22,1,.36,1) forwards}
+@keyframes vfShock{0%{opacity:.9;transform:scale(.2)}100%{opacity:0;transform:scale(16)}}
+#victoryFx .vf-wrap{position:relative;z-index:2;display:inline-block}
+#victoryFx .vf-wrap::after{content:"";position:absolute;inset:0;border-radius:12px;background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.8) 50%,transparent 58%);background-size:250% 250%;background-position:120% 0;animation:vfShine 2.6s ease-in-out 1.2s infinite;mix-blend-mode:screen;pointer-events:none}
+@keyframes vfShine{0%{background-position:120% 0}55%,100%{background-position:-120% 0}}
+#victoryFx .vf-bg{animation:vfZoom .8s cubic-bezier(.22,1.2,.36,1) both, vfBgPulse 3.4s ease-in-out 1s infinite}
+@keyframes vfBgPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}`;
+    document.head.appendChild(st3);
+  }
   if (!document.getElementById("vfCss2")){
     const st2 = document.createElement("style"); st2.id = "vfCss2";
     st2.textContent = `
@@ -2149,6 +2161,24 @@ function showVictory(w, humanWon, res){
     const b = $(id); if (b){ b.style.animationDelay = (1.1 + i * 0.15) + "s"; act.appendChild(b); }
   });
   fx.classList.remove("hidden");
+  try {
+    for (let i = 0; i < 3; i++){
+      const sh = document.createElement("div"); sh.className = "vf-shock";
+      sh.style.animationDelay = (0.15 + i * 0.22) + "s";
+      fx.appendChild(sh); setTimeout(() => sh.remove(), 1600);
+    }
+    setTimeout(() => {
+      for (let i = 0; i < 42; i++){
+        const sp = document.createElement("span"); sp.className = "vf-spark";
+        const a = Math.random() * Math.PI * 2, d = 60 + Math.random() * 140;
+        sp.style.left = "50%"; sp.style.top = "45%";
+        sp.style.background = ["#ffd166", "#ffffff", "#ff9500", "#b388ff"][i % 4];
+        sp.style.setProperty("--tx", Math.cos(a) * d + "px");
+        sp.style.setProperty("--ty", Math.sin(a) * d + "px");
+        fx.appendChild(sp); setTimeout(() => sp.remove(), 950);
+      }
+    }, 750);
+  } catch (_){}
   if (true){
     vfTimers.push(setInterval(() => {
       const x = 10 + Math.random() * 80, y = 10 + Math.random() * 60;

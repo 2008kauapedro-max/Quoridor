@@ -58,6 +58,35 @@
   [data-skin="ocean"] #board{background:linear-gradient(160deg,#0c4a6e,#082f49)}
   [data-skin="sunset"] #board{background:linear-gradient(160deg,#7c2d12,#431407)}
   [data-skin="mono"] #board{background:linear-gradient(160deg,#374151,#111827)}
+  /* ═══ ⚽ CAMPO DE FUTEBOL ANIMADO ═══ */
+  [data-skin="football"] #board{
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,.045) 0 2px, transparent 2px 44px),
+      repeating-linear-gradient(0deg, #15803d 0 12.5%, #1a9a4a 12.5% 25%);
+    animation:grassMove 7s linear infinite;
+    box-shadow:inset 0 0 60px rgba(0,0,0,.45);
+  }
+  @keyframes grassMove{from{background-position:0 0,0 0}to{background-position:0 44px,0 44px}}
+  [data-skin="football"] .cell{background:transparent;box-shadow:none}
+  [data-skin="football"] #board::before{
+    content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.85;
+    background:
+      linear-gradient(#fff,#fff) 50% 50%/100% 2px no-repeat,
+      radial-gradient(circle, transparent 0 15%, rgba(255,255,255,.9) 15% 16.5%, transparent 17%) 50% 50%/42% 42% no-repeat,
+      radial-gradient(circle, #fff 0 2.5%, transparent 3%) 50% 50%/10% 10% no-repeat,
+      linear-gradient(#fff,#fff) 50% 16%/56% 2px no-repeat,
+      linear-gradient(#fff,#fff) 22% 8%/2px 16% no-repeat,
+      linear-gradient(#fff,#fff) 78% 8%/2px 16% no-repeat,
+      linear-gradient(#fff,#fff) 50% 84%/56% 2px no-repeat,
+      linear-gradient(#fff,#fff) 22% 92%/2px 16% no-repeat,
+      linear-gradient(#fff,#fff) 78% 92%/2px 16% no-repeat;
+  }
+  [data-skin="football"] #board::after{
+    content:"";position:absolute;left:50%;top:50%;width:42%;height:42%;margin:-21% 0 0 -21%;
+    border:2px solid rgba(255,255,255,.55);border-radius:50%;pointer-events:none;
+    animation:pulseCircle 2.6s ease-in-out infinite;
+  }
+  @keyframes pulseCircle{0%,100%{transform:scale(1);opacity:.35}50%{transform:scale(1.12);opacity:.8}}
   /* ═══ GUIAS DE BARREIRA ═══ */
   .guide{position:absolute;background:var(--accent,#2f7fd6);border-radius:3px;opacity:0;transition:opacity .15s}
   #board.mode-h .guide.h{opacity:.25}

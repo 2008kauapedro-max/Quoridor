@@ -34,7 +34,7 @@ export const AI_LEVELS = [
   { key: "expert", icon: "👑", name: "Especialista" }
 ];
 
-export const SKINS = [{ key: "classic", name: "Clássica", swatch: ["#b07a42", "#fffdf6"] }];
+export const SKINS = [{ key: "classic", name: "Clássica", swatch: ["#b07a42", "#fffdf6"] }, { key: "football", name: "⚽ Campo", swatch: ["#15803d", "#ffffff"] }];
 
 export const ACHIEVEMENTS = [
   { key: "first_win", icon: "🏅", name: "Primeira Vitória", desc: "Vença sua primeira partida", xp: 20 },
@@ -86,6 +86,7 @@ export const SKIN_CATALOG = [
   { id:"p-corinthians", cat:"piece", name:"Corinthians", sub:"time", swatch:["#000000","#ffffff"], ...P("corinthians","#3a3a3a","#000000",145,"repeating-linear-gradient(45deg,#000000 0 8px,#ffffff 8px 16px)"), unlock:{desc:"Vença 3 partidas.",cur:s=>s.wins,target:3} },
 
   { id:"classic", cat:"board", name:"Clássico", swatch:["#b98a5a","#e9d7b7"], free:true },
+  { id:"football", cat:"board", name:"Campo de Futebol", swatch:["#15803d","#ffffff"], free:true },
   { id:"f-none",  cat:"frame", name:"Sem moldura", swatch:["#888","#444"], free:true }
 ];
 

@@ -2069,6 +2069,21 @@ function refreshClips(){
 
 let VF = null, vfTimers = [];
 function buildVictory(){
+  window.VF_SVG = window.VF_SVG || `<svg viewBox="0 0 320 230" style="width:min(80vw,520px);filter:drop-shadow(0 0 45px rgba(255,190,60,.55));animation:vfEmblem .9s cubic-bezier(.34,1.56,.64,1) both, vfBob 3.2s ease-in-out 1s infinite">
+  <defs><linearGradient id="vfg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#b45309"/></linearGradient></defs>
+  <g fill="#16a34a" stroke="#14532d" stroke-width="2">
+    <ellipse cx="70" cy="120" rx="10" ry="26" transform="rotate(28 70 120)"/><ellipse cx="58" cy="95" rx="9" ry="24" transform="rotate(18 58 95)"/><ellipse cx="55" cy="68" rx="8" ry="22" transform="rotate(6 55 68)"/><ellipse cx="60" cy="42" rx="7" ry="20" transform="rotate(-8 60 42)"/>
+    <ellipse cx="250" cy="120" rx="10" ry="26" transform="rotate(-28 250 120)"/><ellipse cx="262" cy="95" rx="9" ry="24" transform="rotate(-18 262 95)"/><ellipse cx="265" cy="68" rx="8" ry="22" transform="rotate(-6 265 68)"/><ellipse cx="260" cy="42" rx="7" ry="20" transform="rotate(8 260 42)"/>
+  </g>
+  <path d="M105 95 L125 38 L148 78 L160 26 L172 78 L195 38 L215 95 Z" fill="url(#vfg)" stroke="#7c2d12" stroke-width="3"/>
+  <rect x="105" y="93" width="110" height="26" rx="8" fill="url(#vfg)" stroke="#7c2d12" stroke-width="3"/>
+  <circle cx="125" cy="106" r="6" fill="#dc2626"/><circle cx="160" cy="106" r="7" fill="#2563eb"/><circle cx="195" cy="106" r="6" fill="#dc2626"/>
+  <circle cx="125" cy="38" r="7" fill="url(#vfg)" stroke="#7c2d12" stroke-width="2"/><circle cx="160" cy="26" r="8" fill="url(#vfg)" stroke="#7c2d12" stroke-width="2"/><circle cx="195" cy="38" r="7" fill="url(#vfg)" stroke="#7c2d12" stroke-width="2"/>
+  <path d="M55 160 Q160 128 265 160 L265 196 Q160 164 55 196 Z" fill="#dc2626" stroke="#7f1d1d" stroke-width="3"/>
+  <path d="M55 160 L28 150 L38 178 L28 206 L55 196 Z" fill="#b91c1c" stroke="#7f1d1d" stroke-width="3"/>
+  <path d="M265 160 L292 150 L282 178 L292 206 L265 196 Z" fill="#b91c1c" stroke="#7f1d1d" stroke-width="3"/>
+  <text x="160" y="182" text-anchor="middle" font-size="30" font-weight="900" fill="#fde047" font-family="Arial,sans-serif" style="letter-spacing:2px">VICTORY</text>
+</svg>`;
   if (!document.getElementById("vfCss3")){
     const st3 = document.createElement("style"); st3.id = "vfCss3";
     st3.textContent = `

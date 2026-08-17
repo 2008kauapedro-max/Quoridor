@@ -33,8 +33,7 @@ const $ = (id) => document.getElementById(id);
 let current = "loading";
 let myAvatar = null;
 
-export function showScreen(hideVictory && 0;
-name){
+export function showScreen(name){
   try { hideVictory(); } catch (_){}
   document.querySelectorAll(".screen").forEach((s) =>
     s.classList.toggle("active", s.dataset.screen === name));

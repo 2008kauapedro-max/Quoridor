@@ -2069,6 +2069,21 @@ function refreshClips(){
 
 let VF = null, vfTimers = [];
 function buildVictory(){
+  if (!document.getElementById("vfCss2")){
+    const st2 = document.createElement("style"); st2.id = "vfCss2";
+    st2.textContent = `
+#victoryFx .vf-raysbg{position:absolute;inset:-30%;background:repeating-conic-gradient(from 0deg, rgba(168,85,247,.28) 0 12deg, transparent 12deg 24deg);animation:vfRaysSpin 16s linear infinite}
+@keyframes vfRaysSpin{to{transform:rotate(360deg)}}
+#victoryFx .vf-glow{position:absolute;left:50%;top:45%;width:72vmin;height:72vmin;transform:translate(-50%,-50%);background:radial-gradient(circle, rgba(255,200,80,.45), transparent 62%);animation:vfGlow 2s ease-in-out infinite}
+@keyframes vfGlow{0%,100%{opacity:.55;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.18)}}
+#vfImg{position:relative;z-index:2;width:min(80vw,540px);max-height:52vh;object-fit:contain;filter:drop-shadow(0 0 45px rgba(255,190,60,.55));animation:vfEmblem .9s cubic-bezier(.34,1.56,.64,1) both, vfBob 3.2s ease-in-out 1s infinite}
+@keyframes vfEmblem{0%{transform:scale(0) rotate(-14deg);opacity:0}60%{transform:scale(1.15) rotate(3deg);opacity:1}80%{transform:scale(.96) rotate(-1deg)}100%{transform:scale(1) rotate(0)}}
+#victoryFx .vf-twinkle{position:absolute;z-index:1;color:#fff;text-shadow:0 0 10px #fff,0 0 20px #b388ff;animation:vfTwinkle 1.4s ease-in-out forwards}
+@keyframes vfTwinkle{0%,100%{opacity:0;transform:scale(.4) rotate(0)}50%{opacity:1;transform:scale(1.25) rotate(45deg)}}
+#victoryFx.lost .vf-raysbg{filter:grayscale(1) brightness(.6)}
+#victoryFx.lost .vf-glow{background:radial-gradient(circle, rgba(148,163,184,.3), transparent 62%)}`;
+    document.head.appendChild(st2);
+  }
   if (!document.getElementById("vfCss")){
     const st = document.createElement("style"); st.id = "vfCss";
     st.textContent = `
@@ -2100,7 +2115,7 @@ function buildVictory(){
   if (VF) return VF;
   VF = document.createElement("div");
   VF.id = "victoryFx"; VF.className = "hidden";
-  VF.innerHTML = '<div class="vf-bg"></div><div class="vf-ring r1"></div><div class="vf-ring r2"></div><div class="vf-ring r3"></div>' +
+  VF.innerHTML = '<div class="vf-bg"></div><div class="vf-raysbg"></div><div class="vf-glow"></div><div class="vf-ring r1"></div><div class="vf-ring r2"></div><div class="vf-ring r3"></div>' +
     '<div class="vf-emoji" id="vfEmoji">🏆</div><h1 class="vf-title" id="vfTitle"></h1>' +
     '<p class="vf-sub" id="vfSub"></p><div class="vf-actions" id="vfActions"></div>';
   document.body.appendChild(VF);
@@ -2119,9 +2134,15 @@ function showVictory(w, humanWon, res){
   const c2 = humanWon ? (w === "red" ? "#7f1d1d" : "#1e3a8a") : "#1e293b";
   fx.style.setProperty("--vfc1", c1);
   fx.style.setProperty("--vfc2", c2);
-  $("vfEmoji").textContent = humanWon ? "🏆" : "😞";
-  const txt = humanWon ? "VITÓRIA!" : "DERROTA";
-  $("vfTitle").innerHTML = [...txt].map((ch, i) => '<span style="animation-delay:' + (0.15 + i * 0.07) + 's,' + (0.9 + i * 0.07) + 's">' + ch + '</span>').join("");
+  if (humanWon){
+    $("vfEmoji").innerHTML = '<img id="vfImg" src="img/victory.png" alt="" onerror="this.outerHTML=\'🏆\'">';
+    $("vfTitle").style.display = "none";
+  } else {
+    $("vfEmoji").textContent = "😞";
+    $("vfTitle").style.display = "";
+    $("vfTitle").innerHTML = [..."DERROTA"].map((ch, i) => '<span style="animation-delay:' + (0.15 + i * 0.07) + 's,' + (0.9 + i * 0.07) + 's">' + ch + '</span>').join("");
+  }
+  fx.classList.toggle("lost", !humanWon);
   $("vfSub").textContent = "+" + res.xp + " XP" + (res.eloDelta ? " · " + (res.eloDelta > 0 ? "+" : "") + res.eloDelta + " Elo" : "");
   const act = $("vfActions"); act.innerHTML = "";
   ["btnRematch", "btnReplayWatch", "btnExitToHome"].forEach((id, i) => {
@@ -2148,5 +2169,13 @@ function showVictory(w, humanWon, res){
       f.style.animationDuration = (3 + Math.random() * 2) + "s";
       fx.appendChild(f); setTimeout(() => f.remove(), 5200);
     }, 420));
+    vfTimers.push(setInterval(() => {
+      const t = document.createElement("span"); t.className = "vf-twinkle";
+      t.textContent = "✦";
+      t.style.left = Math.random() * 92 + "%";
+      t.style.top = Math.random() * 80 + "%";
+      t.style.fontSize = (10 + Math.random() * 18) + "px";
+      fx.appendChild(t); setTimeout(() => t.remove(), 1500);
+    }, 260));
   }
 }

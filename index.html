@@ -508,8 +508,11 @@
   <!-- OVERLAYS -->
   <div id="overlay" class="overlay hidden" role="dialog" aria-modal="true">
     <div id="overlayCard" class="overlay-card">
-      <div id="winEmoji">🏆</div>
-      <h2 id="winText">Vermelho venceu!</h2>
+      <div class="win-stage">
+        <div id="winRays" class="win-rays"></div>
+        <div id="winEmoji" class="win-trophy">🏆</div>
+      </div>
+      <h2 id="winText" class="win-title">Vermelho venceu!</h2>
       <p id="winSub" class="win-sub">+25 Elo · +40 XP</p>
       <div class="overlay-actions">
         <button id="btnRematch" class="menu-btn primary">🔄 Revanche</button>
@@ -544,6 +547,7 @@
     <button class="side-close" id="msgBubbleClose">✕</button>
   </div>
   <div id="toast" role="status" aria-live="polite"></div>
+  <div id="victoryFlash" class="victory-flash"></div>
   <div id="confetti" aria-hidden="true"></div>
 
   <script>

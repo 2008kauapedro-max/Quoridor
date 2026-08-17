@@ -441,3 +441,72 @@ html[data-theme="dark"] #toast{ background:#f2f4f8; color:#171a1e; }
 .side-link:hover{background:rgba(255,255,255,.06)}
 
 #toast.show{ opacity:1; transform:translate(-50%,0); }
+/* ═══════════ VITÓRIA ÉPICA ═══════════ */
+.victory-flash{
+  position:fixed; inset:0; z-index:75; pointer-events:none;
+  background:#fff; opacity:0; mix-blend-mode:screen;
+}
+.victory-flash.active{ animation:flashBang .7s ease-out; }
+@keyframes flashBang{
+  0%{opacity:0} 15%{opacity:.95} 40%{opacity:.3} 100%{opacity:0}
+}
+body.screen-shake{ animation:screenShake .45s cubic-bezier(.36,.07,.19,.97); }
+@keyframes screenShake{
+  10%,90%{transform:translate3d(-2px,0,0)}
+  20%,80%{transform:translate3d(3px,0,0)}
+  30%,50%,70%{transform:translate3d(-5px,0,0)}
+  40%,60%{transform:translate3d(5px,0,0)}
+}
+.win-stage{
+  position:relative; width:160px; height:160px; margin:10px auto 18px;
+  display:grid; place-items:center;
+}
+.win-rays{
+  position:absolute; inset:-20%; border-radius:50%;
+  background:conic-gradient(from 0deg, transparent 0 8deg, rgba(255,215,0,.35) 8deg 12deg, transparent 12deg 40deg, rgba(255,215,0,.35) 40deg 44deg, transparent 44deg 72deg, rgba(255,215,0,.35) 72deg 76deg, transparent 76deg 104deg, rgba(255,215,0,.35) 104deg 108deg, transparent 108deg 136deg, rgba(255,215,0,.35) 136deg 140deg, transparent 140deg 168deg, rgba(255,215,0,.35) 168deg 172deg, transparent 172deg 200deg, rgba(255,215,0,.35) 200deg 204deg, transparent 204deg 232deg, rgba(255,215,0,.35) 232deg 236deg, transparent 236deg 264deg, rgba(255,215,0,.35) 264deg 268deg, transparent 268deg 296deg, rgba(255,215,0,.35) 296deg 300deg, transparent 300deg 360deg);
+  filter:blur(6px);
+  animation:raysSpin 8s linear infinite;
+}
+@keyframes raysSpin{to{transform:rotate(360deg)}}
+.win-trophy{
+  font-size:110px; line-height:1; filter:drop-shadow(0 0 20px rgba(255,215,0,.8)) drop-shadow(0 10px 30px rgba(0,0,0,.6));
+  animation:trophyEpic 1.4s cubic-bezier(.34,1.56,.64,1) infinite;
+}
+@keyframes trophyEpic{
+  0%{transform:scale(.3) rotate(-15deg); opacity:0}
+  50%{transform:scale(1.2) rotate(5deg); opacity:1}
+  70%{transform:scale(.95) rotate(-3deg)}
+  100%{transform:scale(1) rotate(0); opacity:1}
+}
+.overlay:not(.hidden) .win-trophy{ animation:trophyPulse 2.2s ease-in-out .8s infinite; }
+@keyframes trophyPulse{
+  0%,100%{transform:scale(1) rotate(0); filter:drop-shadow(0 0 20px rgba(255,215,0,.7)) drop-shadow(0 10px 30px rgba(0,0,0,.6))}
+  50%{transform:scale(1.08) rotate(2deg); filter:drop-shadow(0 0 35px rgba(255,215,0,1)) drop-shadow(0 15px 40px rgba(0,0,0,.7))}
+}
+.win-title{
+  font-family:var(--font-display);
+  font-size:clamp(28px,6vmin,42px);
+  font-weight:900;
+  margin:10px 0 8px;
+  background:linear-gradient(180deg, #fff7d6 0%, #ffd54a 40%, #ff9500 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+  letter-spacing:.02em;
+  text-shadow:0 0 30px rgba(255,200,0,.3);
+  animation:titleGlow 2s ease-in-out infinite;
+}
+@keyframes titleGlow{
+  0%,100%{filter:drop-shadow(0 0 10px rgba(255,215,0,.4))}
+  50%{filter:drop-shadow(0 0 25px rgba(255,215,0,.9))}
+}
+.overlay-card.red .win-rays{ filter:blur(6px) hue-rotate(-30deg) saturate(1.3); }
+.overlay-card.blue .win-rays{ filter:blur(6px) hue-rotate(180deg) saturate(1.3); }
+.overlay-card.red .win-title{
+  background:linear-gradient(180deg, #ffe0d6 0%, #ff8a7a 40%, #e0453a 100%);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+}
+.overlay-card.blue .win-title{
+  background:linear-gradient(180deg, #e0f0ff 0%, #7ec1ff 40%, #2f7fd6 100%);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+}

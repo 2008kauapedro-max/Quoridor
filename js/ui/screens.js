@@ -659,6 +659,13 @@ async function endGame(){
   stopTimer();
   stopTurnTimer();
   const w = S.state.winner;
+  /* VITÓRIA ÉPICA */
+  try {
+    const flash = $("victoryFlash");
+    if (flash){ flash.classList.remove("active"); void flash.offsetWidth; flash.classList.add("active"); setTimeout(()=>flash.classList.remove("active"), 800); }
+    document.body.classList.add("screen-shake");
+    setTimeout(()=>document.body.classList.remove("screen-shake"), 450);
+  } catch (_){}
   confetti(w);
   SFX.win();
   setLastReplay(S.state.replay);
@@ -709,8 +716,7 @@ async function endGame(){
   $("winSub").textContent = `+${res.xp} XP` + (res.eloDelta ? ` · ${res.eloDelta > 0 ? "+" : ""}${res.eloDelta} Elo` : "");
   for (const key of res.unlocked) toast("🏅 Conquista: " + ACHIEVEMENTS.find((a) => a.key === key)?.name);
   $("overlayCard").className = "overlay-card " + w;
-  $("winEmoji").classList.remove("bounce"); void $("winEmoji").offsetWidth;
-  $("winEmoji").classList.add("bounce");
+  /* animação épica via CSS */
   $("btnRematch").classList.toggle("hidden", S.mode === "online");
   $("overlay").classList.remove("hidden");
   clearSnapshot();

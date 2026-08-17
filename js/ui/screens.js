@@ -33,7 +33,9 @@ const $ = (id) => document.getElementById(id);
 let current = "loading";
 let myAvatar = null;
 
-export function showScreen(name){
+export function showScreen(hideVictory && 0;
+name){
+  try { hideVictory(); } catch (_){}
   document.querySelectorAll(".screen").forEach((s) =>
     s.classList.toggle("active", s.dataset.screen === name));
   current = name;
@@ -263,6 +265,7 @@ function handleSkinMsg(raw){
 }
 
 export function startGame(opts){
+  try { hideVictory(); } catch (_){}
   endSession(false);
   S = freshSession(opts.mode, opts.level);
   S.race = !!opts.race;
@@ -2069,3 +2072,59 @@ function refreshClips(){
     sb.appendChild(item);
   }
 })();
+
+let VF = null, vfTimers = [];
+function buildVictory(){
+  if (VF) return VF;
+  VF = document.createElement("div");
+  VF.id = "victoryFx"; VF.className = "hidden";
+  VF.innerHTML = '<div class="vf-bg"></div><div class="vf-ring r1"></div><div class="vf-ring r2"></div><div class="vf-ring r3"></div>' +
+    '<div class="vf-emoji" id="vfEmoji">🏆</div><h1 class="vf-title" id="vfTitle"></h1>' +
+    '<p class="vf-sub" id="vfSub"></p><div class="vf-actions" id="vfActions"></div>';
+  document.body.appendChild(VF);
+  return VF;
+}
+function hideVictory(){
+  if (!VF) return;
+  VF.classList.add("hidden");
+  vfTimers.forEach(clearInterval); vfTimers = [];
+  VF.querySelectorAll(".vf-spark,.vf-float").forEach((n) => n.remove());
+}
+function showVictory(w, humanWon, res){
+  const fx = buildVictory();
+  vfTimers.forEach(clearInterval); vfTimers = [];
+  const c1 = humanWon ? (w === "red" ? "#e0453a" : "#2f7fd6") : "#64748b";
+  const c2 = humanWon ? (w === "red" ? "#7f1d1d" : "#1e3a8a") : "#1e293b";
+  fx.style.setProperty("--vfc1", c1);
+  fx.style.setProperty("--vfc2", c2);
+  $("vfEmoji").textContent = humanWon ? "🏆" : "😞";
+  const txt = humanWon ? "VITÓRIA!" : "DERROTA";
+  $("vfTitle").innerHTML = [...txt].map((ch, i) => '<span style="animation-delay:' + (0.15 + i * 0.07) + 's,' + (0.9 + i * 0.07) + 's">' + ch + '</span>').join("");
+  $("vfSub").textContent = "+" + res.xp + " XP" + (res.eloDelta ? " · " + (res.eloDelta > 0 ? "+" : "") + res.eloDelta + " Elo" : "");
+  const act = $("vfActions"); act.innerHTML = "";
+  ["btnRematch", "btnReplayWatch", "btnExitToHome"].forEach((id, i) => {
+    const b = $(id); if (b){ b.style.animationDelay = (1.1 + i * 0.15) + "s"; act.appendChild(b); }
+  });
+  fx.classList.remove("hidden");
+  if (document.documentElement.dataset.animations !== "off"){
+    vfTimers.push(setInterval(() => {
+      const x = 10 + Math.random() * 80, y = 10 + Math.random() * 60;
+      const col = [c1, "#ffd166", "#ffffff"][Math.floor(Math.random() * 3)];
+      for (let i = 0; i < 14; i++){
+        const sp = document.createElement("span"); sp.className = "vf-spark";
+        const a = (Math.PI * 2 * i) / 14, d = 40 + Math.random() * 70;
+        sp.style.left = x + "%"; sp.style.top = y + "%"; sp.style.background = col;
+        sp.style.setProperty("--tx", Math.cos(a) * d + "px");
+        sp.style.setProperty("--ty", Math.sin(a) * d + "px");
+        fx.appendChild(sp); setTimeout(() => sp.remove(), 950);
+      }
+    }, 650));
+    vfTimers.push(setInterval(() => {
+      const f = document.createElement("span"); f.className = "vf-float";
+      f.textContent = ["🎉", "⭐", "🏆", "⚽", "🔥"][Math.floor(Math.random() * 5)];
+      f.style.left = Math.random() * 95 + "%";
+      f.style.animationDuration = (3 + Math.random() * 2) + "s";
+      fx.appendChild(f); setTimeout(() => f.remove(), 5200);
+    }, 420));
+  }
+}

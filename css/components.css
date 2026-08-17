@@ -510,3 +510,27 @@ body.screen-shake{ animation:screenShake .45s cubic-bezier(.36,.07,.19,.97); }
   background:linear-gradient(180deg, #e0f0ff 0%, #7ec1ff 40%, #2f7fd6 100%);
   -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
 }
+
+/* ═══════════ TELA DE VITÓRIA FULLSCREEN ═══════════ */
+#victoryFx{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+#victoryFx.hidden{display:none}
+#victoryFx .vf-bg{position:absolute;inset:-20%;background:radial-gradient(circle at 50% 60%, var(--vfc1) 0%, var(--vfc2) 45%, #05070d 100%);animation:vfZoom .8s cubic-bezier(.22,1.2,.36,1) both}
+@keyframes vfZoom{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
+#victoryFx .vf-ring{position:absolute;left:50%;top:42%;width:20vmin;height:20vmin;border:3px solid var(--vfc1);border-radius:50%;opacity:0;transform:translate(-50%,-50%);animation:vfRing 1.8s ease-out infinite}
+#victoryFx .vf-ring.r2{animation-delay:.6s}
+#victoryFx .vf-ring.r3{animation-delay:1.2s}
+@keyframes vfRing{0%{opacity:.8;transform:translate(-50%,-50%) scale(.4)}100%{opacity:0;transform:translate(-50%,-50%) scale(3)}}
+#victoryFx .vf-spark{position:absolute;width:7px;height:7px;border-radius:50%;z-index:1;animation:vfSpark .9s ease-out forwards}
+@keyframes vfSpark{from{transform:translate(0,0);opacity:1}to{transform:translate(var(--tx),var(--ty));opacity:0}}
+#victoryFx .vf-float{position:absolute;bottom:-50px;font-size:28px;z-index:1;animation:vfFloat linear forwards}
+@keyframes vfFloat{to{transform:translateY(-115vh) rotate(360deg)}}
+#victoryFx .vf-emoji{position:relative;z-index:2;font-size:clamp(90px,22vmin,150px);line-height:1;filter:drop-shadow(0 0 40px var(--vfc1));animation:vfPop .9s cubic-bezier(.34,1.56,.64,1) both, vfBob 3s ease-in-out 1s infinite}
+@keyframes vfPop{from{transform:scale(0) rotate(-540deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+@keyframes vfBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+#victoryFx .vf-title{position:relative;z-index:2;font-family:var(--font-display);font-size:clamp(44px,12vmin,96px);font-weight:900;margin:6px 0 2px;display:flex}
+#victoryFx .vf-title span{display:inline-block;color:#fff;text-shadow:0 0 30px var(--vfc1),0 4px 0 rgba(0,0,0,.35);animation:vfLetter .7s cubic-bezier(.34,1.56,.64,1) both, vfBob 2.4s ease-in-out infinite}
+@keyframes vfLetter{from{transform:translateY(60px) scale(.3) rotate(-20deg);opacity:0}to{transform:none;opacity:1}}
+#victoryFx .vf-sub{position:relative;z-index:2;font-size:clamp(15px,4vmin,22px);font-weight:800;color:#fff;background:rgba(0,0,0,.4);padding:8px 22px;border-radius:999px;margin:8px 0 0;animation:vfUp .6s .9s both}
+#victoryFx .vf-actions{position:relative;z-index:2;display:flex;gap:12px;margin-top:26px;flex-wrap:wrap;justify-content:center}
+#victoryFx .vf-actions .menu-btn{animation:vfUp .5s both}
+@keyframes vfUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}

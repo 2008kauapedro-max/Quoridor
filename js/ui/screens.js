@@ -668,7 +668,7 @@ async function endGame(){
     document.body.classList.add("screen-shake");
     setTimeout(()=>document.body.classList.remove("screen-shake"), 450);
   } catch (_){}
-  confetti(w);
+  confetti(w, true);
   SFX.win();
   setLastReplay(S.state.replay);
 
@@ -2105,7 +2105,7 @@ function showVictory(w, humanWon, res){
     const b = $(id); if (b){ b.style.animationDelay = (1.1 + i * 0.15) + "s"; act.appendChild(b); }
   });
   fx.classList.remove("hidden");
-  if (document.documentElement.dataset.animations !== "off"){
+  if (true){
     vfTimers.push(setInterval(() => {
       const x = 10 + Math.random() * 80, y = 10 + Math.random() * 60;
       const col = [c1, "#ffd166", "#ffffff"][Math.floor(Math.random() * 3)];

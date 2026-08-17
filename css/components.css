@@ -534,3 +534,5 @@ body.screen-shake{ animation:screenShake .45s cubic-bezier(.36,.07,.19,.97); }
 #victoryFx .vf-actions{position:relative;z-index:2;display:flex;gap:12px;margin-top:26px;flex-wrap:wrap;justify-content:center}
 #victoryFx .vf-actions .menu-btn{animation:vfUp .5s both}
 @keyframes vfUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+
+#confetti{z-index:95 !important}

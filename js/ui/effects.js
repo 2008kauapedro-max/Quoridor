@@ -107,9 +107,8 @@ export function toast(msg){
 }
 
 /* ═══════════ CONFETE ═══════════ */
-export function confetti(winner){
-  // modo "sem animações" ligado → pula
-  if (document.documentElement.dataset.animations === "off") return;
+export function confetti(winner, force){
+  if (!force && document.documentElement.dataset.animations === "off") return;
 
   const box = document.getElementById("confetti");
   if (!box) return;

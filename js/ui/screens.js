@@ -1011,6 +1011,7 @@ const isAdmin = () => (getSession()?.user?.email || "").toLowerCase() === ADMIN_
 
 const CAT_KEY = { board:"skin", piece:"piece", frame:"frame" };
 let skinCat = "piece";
+let skinQuery = "";
 let pieceSub = "classic";
 const extraStats = () => ({ ...getStats(), ...(JSON.parse(localStorage.getItem("qa_extra")||"{}")) });
 function skinUnlocked(it){

@@ -61,18 +61,25 @@
   /* ═══ ⚽ CAMPO DE FUTEBOL ANIMADO ═══ */
   [data-skin="football"] #board{
     background:
-      repeating-linear-gradient(0deg, rgba(255,255,255,.045) 0 2px, transparent 2px 44px),
-      repeating-linear-gradient(0deg, #15803d 0 12.5%, #1a9a4a 12.5% 25%);
-    animation:grassMove 7s linear infinite;
-    box-shadow:inset 0 0 60px rgba(0,0,0,.45);
+      radial-gradient(ellipse at 50% 45%, rgba(255,255,255,.12), transparent 75%),
+      repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 2px, transparent 2px 44px),
+      repeating-linear-gradient(0deg, #166534 0 12.5%, #15803d 12.5% 25%);
+    border:10px solid transparent;
+    border-image:repeating-linear-gradient(45deg,#e2e8f0 0 10px,#475569 10px 20px) 10;
+    box-shadow:0 0 0 5px #052e16, inset 0 0 55px rgba(0,0,0,.5);
+    animation:grassMove 8s linear infinite;
   }
-  @keyframes grassMove{from{background-position:0 0,0 0}to{background-position:0 44px,0 44px}}
-  [data-skin="football"] .cell{background:transparent;box-shadow:none}
+  @keyframes grassMove{from{background-position:0 0,0 0,0 0}to{background-position:0 44px,0 44px,0 44px}}
+  [data-skin="football"] .cell{
+    background:rgba(255,255,255,.07);
+    border-radius:22%;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.09);
+  }
   [data-skin="football"] #board::before{
-    content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.85;
+    content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.9;
     background:
       linear-gradient(#fff,#fff) 50% 50%/100% 2px no-repeat,
-      radial-gradient(circle, transparent 0 15%, rgba(255,255,255,.9) 15% 16.5%, transparent 17%) 50% 50%/42% 42% no-repeat,
+      radial-gradient(circle, transparent 0 15%, rgba(255,255,255,.95) 15% 16.5%, transparent 17%) 50% 50%/42% 42% no-repeat,
       radial-gradient(circle, #fff 0 2.5%, transparent 3%) 50% 50%/10% 10% no-repeat,
       linear-gradient(#fff,#fff) 50% 16%/56% 2px no-repeat,
       linear-gradient(#fff,#fff) 22% 8%/2px 16% no-repeat,

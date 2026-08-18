@@ -539,23 +539,18 @@ body.screen-shake{ animation:screenShake .45s cubic-bezier(.36,.07,.19,.97); }
 
 /* ═══════════ ⚽ CAMPO DE FUTEBOL ═══════════ */
 [data-skin="football"] #board{
-  background:
-    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.35 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>"),
-    repeating-linear-gradient(0deg, #1b420e 0 7px, #16380b 7px 14px),
-    #16380b;
+  background:url("../img/grass.png") repeat #122b08;
+  background-size:140px 140px;
 }
 [data-skin="football"] .cell{
   border-radius:10%;
-  background:
-    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.16 0'/></filter><rect width='120' height='120' filter='url(%23g)'/></svg>"),
-    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='90' height='90'><filter id='d'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.22 0'/></filter><rect width='90' height='90' filter='url(%23d)'/></svg>"),
-    linear-gradient(90deg, #55a637 0 50%, #3d8422 50% 100%);
-  box-shadow:
-    inset 0 0 0 1px rgba(0,0,0,.30),
-    inset 0 3px 4px rgba(255,255,255,.16),
-    inset 0 -4px 6px rgba(0,0,0,.32);
+  background:url("../img/grass.png") repeat, linear-gradient(90deg,#4f9a2e 0 50%,#3a7a1e 50% 100%);
+  background-size:80px 80px, 100% 100%;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.30), inset 0 3px 4px rgba(255,255,255,.14), inset 0 -4px 6px rgba(0,0,0,.38);
 }
-[data-skin="football"] .cell:nth-child(even){ filter:brightness(1.05); }
+[data-skin="football"] .cell:nth-child(even){ filter:brightness(1.06); }
+[data-skin="football"] .cell.target{ filter:brightness(1.4); }
+[data-skin="football"] .cell.last{ filter:brightness(1.25) saturate(1.2); }
 .field-lines{ position:absolute; inset:0; z-index:1; pointer-events:none; }
 .field-lines svg{ width:100%; height:100%; display:block; }
 [data-skin="football"] #boardFrame{

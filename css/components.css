@@ -536,3 +536,23 @@ body.screen-shake{ animation:screenShake .45s cubic-bezier(.36,.07,.19,.97); }
 @keyframes vfUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
 
 #confetti{z-index:95 !important}
+
+/* ═══════════ ⚽ CAMPO DE FUTEBOL ═══════════ */
+[data-skin="football"] #board{ background:#123c1c; }
+[data-skin="football"] .cell{
+  border-radius:14%;
+  background:linear-gradient(90deg, #46a13a 0 50%, #2f7d27 50% 100%);
+  box-shadow:inset 0 -3px 6px rgba(0,0,0,.35), inset 0 2px 3px rgba(255,255,255,.28);
+}
+[data-skin="football"] .cell:nth-child(even){ filter:brightness(1.13); }
+.field-lines{ position:absolute; inset:0; z-index:1; pointer-events:none; }
+.field-lines svg{ width:100%; height:100%; display:block; }
+[data-skin="football"] #boardFrame{
+  padding:26px; border-radius:10px;
+  background:
+    repeating-linear-gradient(45deg, rgba(255,255,255,.17) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(-45deg, rgba(255,255,255,.17) 0 2px, transparent 2px 9px),
+    #262b31;
+  border:6px solid #71797f;
+  box-shadow:0 0 0 3px #3a4149, 0 18px 40px rgba(0,0,0,.55);
+}

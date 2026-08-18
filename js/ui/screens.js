@@ -52,6 +52,7 @@ export function applySettings(s){
     theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   html.dataset.theme = theme;
   html.dataset.skin = s.skin;
+  document.dispatchEvent(new CustomEvent("skin-change"));
   html.dataset.piece = s.piece || "p-classic";
   html.dataset.frame = s.frame || "f-none";
   html.dataset.quality = s.quality;

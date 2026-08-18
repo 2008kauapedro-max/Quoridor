@@ -33,6 +33,34 @@ export function createBoard(boardEl, controller = null, flipped = false, state =
     }
   }
 
+  /* ⚽ CAMPO: linhas brancas alinhadas às casas */
+  const overlay = document.createElement("div");
+  overlay.className = "field-lines";
+  const T = cols + (cols - 1) * G;
+  const cx = (i) => i * (1 + G) + 0.5;
+  overlay.innerHTML = `<svg viewBox="0 0 ${T} ${T}" preserveAspectRatio="none">
+    <g fill="none" stroke="#fff" stroke-width="0.07" stroke-linecap="round" opacity=".92">
+      <rect x="0.10" y="0.10" width="${T - 0.2}" height="${T - 0.2}" rx="0.12"/>
+      <line x1="0.10" y1="${T / 2}" x2="${T - 0.10}" y2="${T / 2}"/>
+      <circle cx="${T / 2}" cy="${T / 2}" r="1.35"/>
+      <rect x="${cx(3) - 0.55}" y="0.10" width="3.1" height="1.55"/>
+      <rect x="${cx(4) - 0.8}" y="0.10" width="1.6" height="0.75"/>
+      <path d="M ${cx(4) - 0.95} 1.65 A 0.95 0.95 0 0 0 ${cx(4) + 0.95} 1.65"/>
+      <rect x="${cx(3) - 0.55}" y="${T - 1.65}" width="3.1" height="1.55"/>
+      <rect x="${cx(4) - 0.8}" y="${T - 0.85}" width="1.6" height="0.75"/>
+      <path d="M ${cx(4) - 0.95} ${T - 1.65} A 0.95 0.95 0 0 1 ${cx(4) + 0.95} ${T - 1.65}"/>
+      <path d="M 0.10 0.65 A 0.55 0.55 0 0 0 0.65 0.10"/>
+      <path d="M ${T - 0.65} 0.10 A 0.55 0.55 0 0 0 ${T - 0.10} 0.65"/>
+      <path d="M 0.10 ${T - 0.65} A 0.55 0.55 0 0 1 0.65 ${T - 0.10}"/>
+      <path d="M ${T - 0.65} ${T - 0.10} A 0.55 0.55 0 0 1 ${T - 0.10} ${T - 0.65}"/>
+    </g>
+    <circle cx="${T / 2}" cy="${T / 2}" r="0.14" fill="#fff"/>
+  </svg>`;
+  boardEl.appendChild(overlay);
+  const applyField = () => { overlay.style.display = (document.documentElement.dataset.skin === "football") ? "" : "none"; };
+  applyField();
+  document.addEventListener("skin-change", applyField);
+
   const strips = {};
   for (const k of ["top", "bot"]){
     const d = document.createElement("div");
